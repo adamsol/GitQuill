@@ -1,0 +1,39 @@
+{
+  "name": "git-diff",
+  "productName": "GitDiff",
+  "version": "0.1.0",
+  "description": "GUI for Git.",
+  "keywords": [
+    "git",
+    "diff",
+    "gui"
+  ],
+  "repository": "https://github.com/adamsol/GitDiff",
+  "license": "MIT",
+  "author": {
+    "name": "Adam Sołtysik",
+    "url": "https://github.com/adamsol"
+  },
+  "scripts": {
+    "watch": "webpack --mode=development --watch",
+    "build": "webpack --mode=production",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "css-loader": "^7.0.0",
+    "electron": "^29.1.5",
+    "electron-context-menu": "^3.6.1",
+    "electron-store": "^8.2.0",
+    "postcss-loader": "^8.1.1",
+    "simple-git": "^3.23.0",
+    "splitpanes": "^3.1.5",
+    "style-loader": "^3.3.4",
+    "tailwindcss": "^3.4.3",
+    "vue": "^3.4.19",
+    "vue-loader": "^17.4.2",
+    "webpack": "^5.90.2",
+    "webpack-cli": "^5.1.4"
+  },
+  "type": "module",
+  "main": "main.js"
+}

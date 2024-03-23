@@ -1,0 +1,22 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html, body, #app {
+        @apply h-full;
+    }
+    html {
+        @apply bg-gray-dark text-gray-light cursor-default;
+    }
+}
+
+@layer components {
+    hr {
+        @apply border-gray;
+    }
+    .splitpanes__splitter {
+        @apply w-2;
+    }
+}
