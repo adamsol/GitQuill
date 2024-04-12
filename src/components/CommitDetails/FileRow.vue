@@ -5,7 +5,7 @@
             {{ file.status }}
         </div>
         <div class="whitespace-nowrap overflow-hidden text-ellipsis">
-            {{ file.file }}
+            {{ file.path }}
         </div>
     </div>
 </template>

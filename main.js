@@ -70,6 +70,7 @@ app.whenReady().then(async () => {
     window.maximize();
 
     ipcMain.handle('call-git', async (event, cmd, ...args) => JSON.stringify(await git[cmd](...args)));
+    window.on('focus', () => window.webContents.send('window-focus'));
 
     await window.loadFile('index.html');
 });
