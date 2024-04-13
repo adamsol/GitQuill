@@ -20,10 +20,15 @@
     "start": "electron ."
   },
   "dependencies": {
+    "@guolao/vue-monaco-editor": "^1.5.1",
+    "@mdi/js": "^7.4.47",
     "css-loader": "^7.0.0",
     "electron": "^29.1.5",
     "electron-context-menu": "^3.6.1",
     "electron-store": "^8.2.0",
+    "lodash": "^4.17.21",
+    "monaco-editor": "^0.47.0",
+    "monaco-editor-webpack-plugin": "^7.1.0",
     "postcss-loader": "^8.1.1",
     "simple-git": "^3.23.0",
     "splitpanes": "^3.1.5",

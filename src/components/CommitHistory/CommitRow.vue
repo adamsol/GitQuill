@@ -1,15 +1,15 @@
 
 <template>
     <div
-        class="flex gap-3 px-3 py-1 cursor-pointer hover:bg-accent/10 *:whitespace-nowrap"
-        :class="commit?.hash === selected_commit?.hash ? 'text-accent bg-accent/10' : '[&:not(:first-child)]:*:text-gray'"
+        class="row clickable whitespace-nowrap"
+        :class="active ? 'active' : '[&:not(:first-child)]:*:text-gray'"
         @click="selected_commit = Object.freeze(commit)"
     >
         <div v-if="commit === null" class="italic">
             Uncommitted changes
         </div>
         <template v-else>
-            <div class="grow overflow-hidden text-ellipsis">
+            <div class="grow ellipsis">
                 {{ commit.subject }}
             </div>
             <div>
@@ -30,6 +30,11 @@
         inject: ['selected_commit'],
         props: {
             commit: { type: Object, default: null },
+        },
+        computed: {
+            active() {
+                return this.commit?.hash === this.selected_commit?.hash;
+            },
         },
     };
 </script>

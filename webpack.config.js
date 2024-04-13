@@ -1,6 +1,7 @@
 
 import path from 'path';
 
+import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
 import { VueLoaderPlugin } from 'vue-loader';
 import webpack from 'webpack';
 
@@ -27,6 +28,7 @@ export default {
                             postcssOptions: {
                                 plugins: [
                                     'tailwindcss',
+                                    'tailwindcss/nesting',
                                 ],
                             },
                         },
@@ -47,6 +49,7 @@ export default {
         ],
     },
     plugins: [
+        new MonacoWebpackPlugin(),
         new VueLoaderPlugin(),
 
         new webpack.DefinePlugin({

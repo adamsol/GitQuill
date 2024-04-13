@@ -10,13 +10,58 @@
     html {
         @apply bg-gray-dark text-gray-light cursor-default;
     }
-}
-
-@layer components {
+    *:focus {
+        @apply outline-none;
+    }
     hr {
         @apply border-gray;
     }
+
     .splitpanes__splitter {
         @apply w-2;
+    }
+    .monaco-editor {
+        .diff-hidden-lines {
+            @apply -translate-y-1.5 select-none;
+
+            * {
+                 @apply text-accent;
+            }
+        }
+        .insert-sign, .delete-sign {
+            @apply !opacity-100;
+
+            &, & + .line-numbers {
+                @apply text-gray-light;
+            }
+        }
+        .insert-sign {
+            &, & + .line-numbers {
+                @apply bg-green/35;
+            }
+        }
+        .delete-sign {
+            &, & + .line-numbers {
+                @apply bg-red/35;
+            }
+        }
+        * {
+            --vscode-editorLineNumber-activeForeground: var(--vscode-editorLineNumber-foreground);
+        }
+    }
+}
+
+@layer utilities {
+    .row {
+        @apply flex gap-3 px-3 py-1;
+    }
+    .clickable {
+        @apply cursor-pointer hover:[&:not(.active)]:bg-accent/10;
+    }
+    .active {
+        @apply text-accent bg-accent/15;
+    }
+    .ellipsis {
+        @apply whitespace-nowrap overflow-hidden text-ellipsis;
     }
 }

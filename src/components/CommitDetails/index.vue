@@ -38,7 +38,7 @@
     export default {
         mixins: [EventMixin('window-focus', 'load')],
         components: { CommitterDetails, FileRow },
-        inject: ['selected_commit'],
+        inject: ['selected_commit', 'selected_file'],
         data: () => ({
             commit: undefined,
             files: undefined,
@@ -62,12 +62,20 @@
                         unstaged: filterFiles(summary.files.map(file => ({
                             status: file.working_dir === '?' ? 'A' : file.working_dir,
                             path: file.path,
+                            area: 'unstaged',
                         }))),
                         staged: filterFiles(summary.files.map(file => ({
                             status: file.index === '?' ? ' ' : file.index,
                             path: file.path,
+                            area: 'staged',
                         }))),
                     });
+
+                    const selected_area = this.selected_file?.area;
+                    const selected_path = this.selected_file?.path;
+                    if (this.files[selected_area]?.every(file => file.path !== selected_path)) {
+                        this.selected_file = null;
+                    }
                 } else {
                     let parent = this.selected_commit.parents.split(' ')[0];
                     if (parent === '') {

@@ -1,19 +1,12 @@
 
-import colors from 'tailwindcss/colors';
+import colors from './src/theme/colors';
 
 export default {
     content: ['./src/**/*.vue'],
-    safelist: ['splitpanes__splitter'],
+    safelist: ['splitpanes__splitter', 'monaco-editor'],
     theme: {
         extend: {
-            colors: {
-                gray: {
-                    light: colors.zinc[200],
-                    DEFAULT: colors.zinc[400],
-                    dark: colors.zinc[800],
-                },
-                accent: colors.sky[300],
-            },
+            colors,
             fontSize: {
                 lg: ['1.125rem', '1.5rem'],
             },
