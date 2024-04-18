@@ -7,6 +7,13 @@
             </div>
             <div class="grow" />
 
+            <select v-model="language" title="Language" @change="onSelectLanguage">
+                <option v-for="lang in languages" :value="lang">
+                    {{ lang }}
+                </option>
+            </select>
+            <hr class="mx-2" />
+
             <toggle v-model:active="collapse_unchanged_regions" title="Collapse unchanged regions">
                 <icon name="mdi-view-day" />
             </toggle>
@@ -19,8 +26,9 @@
             <toggle v-model:active="word_wrap" title="Word wrap">
                 <icon name="mdi-wrap" />
             </toggle>
+            <hr class="mx-2" />
 
-            <btn class="ml-5" title="Close" @click="selected_file = null">
+            <btn title="Close" @click="selected_file = null">
                 <icon name="mdi-close" />
             </btn>
         </div>
@@ -31,6 +39,7 @@
                 :options="options"
                 :original="contents[0]"
                 :modified="contents[1]"
+                :language="language"
                 theme="custom"
             />
         </div>
@@ -38,6 +47,8 @@
 </template>
 
 <script>
+    import monaco_metadata from 'monaco-editor/esm/metadata';
+
     import EventMixin from '@/mixins/EventMixin';
     import StoreMixin from '@/mixins/StoreMixin';
 
@@ -53,6 +64,8 @@
         inject: ['selected_commit', 'selected_file'],
         data: () => ({
             contents: [],
+            language: undefined,
+            languages: ['plaintext', ..._.map(monaco_metadata.languages, 'label')],
         }),
         computed: {
             options() {
@@ -69,11 +82,16 @@
                     readOnly: true,
                     links: false,
                     contextmenu : false,
+                    hover: { enabled: false },
                     scrollBeyondLastLine: false,
                     renderLineHighlight: 'none',
                     lineDecorationsWidth: 15,  // https://github.com/microsoft/monaco-editor/issues/200
                     'bracketPairColorization.enabled': false,  // https://github.com/microsoft/monaco-editor/issues/3829
                 };
+            },
+            extension() {
+                const parts = this.selected_file.path.split('.');
+                return parts.length > 1 ? _.last(parts) : _.last(this.selected_file.path.split('/'));
             },
         },
         watch: {
@@ -127,7 +145,11 @@
                 const contents = await Promise.all([loadOriginal(), loadModified()]);
                 if (!_.isEqual(contents, this.contents)) {
                     this.contents = contents;
+                    this.language = electron.store.get(`language.${this.extension}`, this.languages[0]);
                 }
+            },
+            onSelectLanguage() {
+                electron.store.set(`language.${this.extension}`, this.language);
             },
         },
     };

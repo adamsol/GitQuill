@@ -14,7 +14,10 @@
         @apply outline-none;
     }
     hr {
-        @apply border-gray;
+        @apply border-t border-r border-gray/40 self-stretch h-auto;
+    }
+    select {
+        @apply bg-gray-dark;
     }
 
     .splitpanes__splitter {

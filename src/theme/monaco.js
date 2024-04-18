@@ -5,7 +5,13 @@ const [line_opacity, text_opacity] = [0.1, 0.2].map(x => Math.round(x * 255).toS
 
 export default {
 	base: 'vs-dark',
-	rules: [],
+	inherit: true,
+	rules: [
+		{
+			token: 'comment',
+			foreground: colors.gray.DEFAULT,
+		},
+	],
 	colors: {
 		'editor.foreground': colors.gray.light,
 		'diffEditor.insertedLineBackground': colors.green + line_opacity,
