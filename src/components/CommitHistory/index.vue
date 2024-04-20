@@ -1,9 +1,15 @@
 
 <template>
-    <div class="w-full h-full overflow-y-auto">
-        <CommitRow />
-        <CommitRow v-for="commit in commits" :commit />
-    </div>
+    <recycle-scroller
+        v-if="commits"
+        class="w-full h-full"
+        :items="commits"
+        :item-size="32"
+        key-field="hash"
+        v-slot="{ item }"
+    >
+        <CommitRow :commit="item" />
+    </recycle-scroller>
 </template>
 
 <script>
@@ -14,11 +20,7 @@
     export default {
         mixins: [EventMixin('window-focus', 'load')],
         components: { CommitRow },
-        inject: ['selected_commit'],
-        data: () => ({
-            head: undefined,
-            commits: undefined,
-        }),
+        inject: ['head', 'commits', 'selected_commit'],
         async created() {
             await this.load();
         },
@@ -47,11 +49,14 @@
                 for (const commit of log.all) {
                     commit.hash_abbr = commit.hash.slice(0, 7);
                 }
-                this.commits = Object.freeze(log.all);
+                this.commits = Object.freeze([
+                    { hash: 'WORKING_TREE' },
+                    ...log.all,
+                ]);
 
                 const selected_hash = this.selected_commit?.hash;
                 if (this.commits.every(commit => commit.hash !== selected_hash)) {
-                    this.selected_commit = null;
+                    this.selected_commit = this.commits[0];
                 }
             },
         },

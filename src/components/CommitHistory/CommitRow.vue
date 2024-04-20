@@ -5,7 +5,7 @@
         :class="active ? 'active' : '[&:not(:first-child)]:*:text-gray'"
         @click="selected_commit = Object.freeze(commit)"
     >
-        <div v-if="commit === null" class="italic">
+        <div v-if="commit.hash === 'WORKING_TREE'" class="italic">
             Uncommitted changes
         </div>
         <template v-else>
@@ -33,7 +33,7 @@
         },
         computed: {
             active() {
-                return this.commit?.hash === this.selected_commit?.hash;
+                return this.commit.hash === this.selected_commit.hash;
             },
         },
     };

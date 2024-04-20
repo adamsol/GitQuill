@@ -53,7 +53,10 @@
         },
         methods: {
             async load() {
-                if (this.selected_commit === null) {
+                if (this.selected_commit === undefined) {
+                    return;
+                }
+                if (this.selected_commit.hash === 'WORKING_TREE') {
                     const summary = await electron.callGit('status');
                     const filterFiles = files => files.filter(file => file.status !== ' ');
 

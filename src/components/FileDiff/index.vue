@@ -110,7 +110,7 @@
                         return '';
                     } else {
                         let rev;
-                        if (this.selected_commit === null) {
+                        if (this.selected_commit.hash === 'WORKING_TREE') {
                             // https://stackoverflow.com/questions/60853992/how-to-git-show-a-staged-file
                             rev = { unstaged: ':0', staged: 'HEAD' }[this.selected_file.area];
                         } else {
@@ -129,7 +129,7 @@
                         return '';
                     } else {
                         let rev;
-                        if (this.selected_commit === null) {
+                        if (this.selected_commit.hash === 'WORKING_TREE') {
                             rev = { unstaged: '', staged: ':0' }[this.selected_file.area];
                         } else {
                             rev = this.selected_commit.hash;

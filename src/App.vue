@@ -41,7 +41,9 @@
         mixins: [
             provideReactively({
                 data: {
-                    selected_commit: null,
+                    head: undefined,
+                    commits: undefined,
+                    selected_commit: undefined,
                     selected_file: null,
                 },
             }),
