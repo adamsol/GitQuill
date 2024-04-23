@@ -1,15 +1,15 @@
 
-export default (event_name, callback_name) => {
-    let callback;
-    let removeListener;
+let counter = 0;
 
+export default (event_name, callback_name) => {
+    const id = `EventMixin${++counter}`;
     return {
         created() {
-            callback = () => this[callback_name]();
-            removeListener = electron.addListener(event_name, callback);
+            const callback = () => this[callback_name]();
+            this[`${id}_removeListener`] = electron.addListener(event_name, callback);
         },
         unmounted() {
-            removeListener();
+            this[`${id}_removeListener`]();
         },
     };
 };

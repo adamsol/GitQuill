@@ -69,9 +69,22 @@ app.whenReady().then(async () => {
     });
     window.maximize();
 
-    ipcMain.handle('call-git', async (event, cmd, ...args) => JSON.stringify(await git[cmd](...args)));
+    ipcMain.handle('call-git', async (event, cmd, ...args) => {
+        const repr = `git ${cmd} ${JSON.stringify(args)}`;
+        try {
+            const t = performance.now();
+            const result = await git[cmd](...args);
+            console.info(`RUN (${Math.round(performance.now() - t)} ms): ${repr}`);
+            return JSON.stringify(result);
+        } catch (e) {
+            console.error(`ERROR: ${repr}`);
+            throw e;
+        }
+    });
     ipcMain.handle('read-file', async (event, file_path) => await fs.promises.readFile(path.join(git._executor.cwd, file_path), { encoding: 'utf8' }));
+    ipcMain.handle('write-file', async (event, file_path, content) => await fs.promises.writeFile(path.join(git._executor.cwd, file_path), content));
     window.on('focus', () => window.webContents.send('window-focus'));
+    window.on('blur', () => window.webContents.send('window-blur'));
 
     await window.loadFile('index.html');
 });

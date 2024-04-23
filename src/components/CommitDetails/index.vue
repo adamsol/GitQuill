@@ -1,10 +1,10 @@
 
 <template>
     <div v-if="files !== undefined" class="break-words">
-        <div v-if="commit === null">
+        <div v-if="commit.hash === 'WORKING_TREE'">
             <div v-for="attr in ['unstaged', 'staged']" class="mb-2">
                 {{ attr }}:
-                <FileRow v-for="file in files[attr]" :file />
+                <FileRow v-for="file in files[attr]" :key="file.path" :file />
             </div>
         </div>
         <template v-else>
@@ -24,13 +24,14 @@
             </div>
             <hr class="my-2" />
 
-            <FileRow v-for="file in files" :file />
+            <FileRow v-for="file in files" :key="file.path" :file />
         </template>
     </div>
 </template>
 
 <script>
     import EventMixin from '@/mixins/EventMixin';
+    import { getStatus } from '@/utils/git';
 
     import CommitterDetails from './CommitterDetails';
     import FileRow from './FileRow';
@@ -38,10 +39,9 @@
     export default {
         mixins: [EventMixin('window-focus', 'load')],
         components: { CommitterDetails, FileRow },
-        inject: ['selected_commit', 'selected_file'],
+        inject: ['selected_commit', 'files', 'selected_file'],
         data: () => ({
             commit: undefined,
-            files: undefined,
         }),
         watch: {
             selected_commit: {
@@ -57,22 +57,7 @@
                     return;
                 }
                 if (this.selected_commit.hash === 'WORKING_TREE') {
-                    const summary = await electron.callGit('status');
-                    const filterFiles = files => files.filter(file => file.status !== ' ');
-
-                    this.commit = null;
-                    this.files = Object.freeze({
-                        unstaged: filterFiles(summary.files.map(file => ({
-                            status: file.working_dir === '?' ? 'A' : file.working_dir,
-                            path: file.path,
-                            area: 'unstaged',
-                        }))),
-                        staged: filterFiles(summary.files.map(file => ({
-                            status: file.index === '?' ? ' ' : file.index,
-                            path: file.path,
-                            area: 'staged',
-                        }))),
-                    });
+                    this.files = Object.freeze(await getStatus());
 
                     const selected_area = this.selected_file?.area;
                     const selected_path = this.selected_file?.path;
@@ -87,9 +72,13 @@
                     }
                     const summary = await electron.callGit('diffSummary', [parent, this.selected_commit.hash, '--name-status']);
 
-                    this.commit = this.selected_commit;
-                    this.files = Object.freeze(summary.files.map(file => ({ status: file.status, path: file.file })));
+                    this.files = Object.freeze(summary.files.map(file => ({
+                        status: file.status,
+                        path: file.file,
+                        area: 'committed',
+                    })));
                 }
+                this.commit = this.selected_commit;
             },
         },
     };
