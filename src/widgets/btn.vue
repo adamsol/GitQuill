@@ -1,6 +1,6 @@
 
 <template>
-    <button class="clickable rounded-lg p-1" :type>
+    <button class="clickable rounded-lg flex items-center gap-1 p-1 whitespace-nowrap" :type>
         <slot />
     </button>
 </template>

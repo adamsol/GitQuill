@@ -5,7 +5,7 @@
             <CommitHistory v-if="selected_file === null" class="py-2" />
             <FileDiff v-else />
         </pane>
-        <pane>
+        <pane class="min-w-72">
             <CommitDetails class="py-2 pr-3" />
         </pane>
     </splitpanes>
@@ -15,6 +15,7 @@
     import { computed as vue_computed } from 'vue/dist/vue.esm-bundler';
 
     import StoreMixin from '@/mixins/StoreMixin';
+    import { getStatus } from '@/utils/git';
 
     import CommitDetails from './components/CommitDetails';
     import CommitHistory from './components/CommitHistory';
@@ -47,6 +48,27 @@
                     files: undefined,
                     selected_file: null,
                     save_semaphore: Promise.resolve(),
+                },
+                methods: {
+                    async updateFileStatus(file_path) {
+                        const status = await getStatus(file_path);
+                        const files = _.cloneDeep(this.files);
+
+                        for (const area of ['unstaged', 'staged']) {
+                            files[area] = files[area].filter(file => file.path !== file_path);
+                            if (status[area].length === 1) {
+                                files[area] = _.sortBy([...files[area], ...status[area]], 'path');
+                            }
+                        }
+                        this.files = Object.freeze(files);
+                    },
+                    updateSelectedFile() {
+                        if (this.selected_file === null) {
+                            return;
+                        }
+                        const file = this.files[this.selected_file.area].find(file => file.path >= this.selected_file.path);
+                        this.selected_file = file ?? _.last(this.files[this.selected_file.area]) ?? null;
+                    },
                 },
             }),
             StoreMixin('main_pane_size', 70),

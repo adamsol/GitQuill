@@ -8,12 +8,14 @@ import { RecycleScroller } from 'vue-virtual-scroller';
 
 import App from './App';
 import './index.css';
+import * as settings from '@/settings';
 import monaco_theme from './theme/monaco';
 import Btn from './widgets/btn';
 import Icon from './widgets/icon';
 import Toggle from './widgets/toggle';
 
 window._ = _;
+window.settings = settings;
 
 const app = createApp(App);
 
@@ -28,5 +30,8 @@ app.component('Toggle', Toggle);
 
 monaco.editor.defineTheme('custom', monaco_theme);
 app.use(VueMonacoEditorPlugin, { monaco });
+
+app.config.globalProperties.$_ = _;
+app.config.globalProperties.$settings = settings;
 
 app.mount('#app');

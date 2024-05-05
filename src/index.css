@@ -20,9 +20,13 @@
         @apply bg-gray-dark;
     }
 
-    .splitpanes__splitter {
+    .splitpanes--vertical > .splitpanes__splitter {
         @apply w-2;
     }
+    .splitpanes--horizontal > .splitpanes__splitter {
+        @apply h-2;
+    }
+
     .monaco-editor {
         .diff-hidden-lines {
             @apply -translate-y-1.5 select-none;
@@ -56,7 +60,7 @@
 
 @layer utilities {
     .row {
-        @apply flex gap-3 px-3 py-1;
+        @apply flex items-center gap-3 px-3 py-1;
     }
     .clickable {
         @apply cursor-pointer hover:[&:not(.active)]:bg-accent/10;

@@ -9,7 +9,7 @@
             Uncommitted changes
         </div>
         <template v-else>
-            <div class="grow ellipsis">
+            <div class="grow ellipsis" :title="commit.subject">
                 {{ commit.subject }}
             </div>
             <div>

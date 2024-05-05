@@ -1,6 +1,6 @@
 
 <template>
-    <svg class="inline fill-current size-6" viewBox="0 0 24 24">
+    <svg class="fill-current" viewBox="0 0 24 24">
         <path :d />
     </svg>
 </template>

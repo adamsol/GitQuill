@@ -2,13 +2,12 @@
 <template>
     <div class="h-full flex flex-col">
         <div class="flex items-center gap-2 p-2">
-            <div v-if="file !== undefined" class="ellipsis">
+            <div v-if="file !== undefined" class="grow ellipsis">
                 {{ file.path }}
                 <span v-if="file.area !== 'committed'" class="text-gray">
                     ({{ file.area }})
                 </span>
             </div>
-            <div class="grow" />
 
             <select v-model="language" title="Language" @change="onSelectLanguage">
                 <option v-for="lang in languages" :value="lang">
@@ -18,21 +17,21 @@
             <hr class="mx-2" />
 
             <toggle v-model:active="collapse_unchanged_regions" title="Collapse unchanged regions">
-                <icon name="mdi-view-day" />
+                <icon name="mdi-view-day" class="size-6" />
             </toggle>
             <toggle v-model:active="side_by_side_view" title="Side-by-side view">
-                <icon name="mdi-format-columns" />
+                <icon name="mdi-format-columns" class="size-6" />
             </toggle>
             <toggle v-model:active="whitespace_diff" title="Show leading/trailing whitespace diff">
-                <icon name="mdi-format-pilcrow" />
+                <icon name="mdi-format-pilcrow" class="size-6" />
             </toggle>
             <toggle v-model:active="word_wrap" title="Word wrap">
-                <icon name="mdi-wrap" />
+                <icon name="mdi-wrap" class="size-6" />
             </toggle>
             <hr class="mx-2" />
 
             <btn title="Close" @click="selected_file = null">
-                <icon name="mdi-close" />
+                <icon name="mdi-close" class="size-6" />
             </btn>
         </div>
 
@@ -55,30 +54,20 @@
 <script>
     import { editor as monaco_editor } from 'monaco-editor';
     import monaco_metadata from 'monaco-editor/esm/metadata';
+    import { createApp } from 'vue';
 
     import EventMixin from '@/mixins/EventMixin';
     import StoreMixin from '@/mixins/StoreMixin';
-    import { getStatus } from '@/utils/git';
+    import Icon from '@/widgets/icon';
 
     // https://github.com/microsoft/vscode/blob/1.88.1/src/vs/editor/browser/widget/diffEditor/features/revertButtonsFeature.ts
     // https://github.com/microsoft/vscode/blob/1.88.1/src/vs/editor/browser/widget/diffEditor/diffEditorWidget.ts#L532
     class GlyphMarginWidget {
         static counter = 0;
 
-        static titles = {
-            stage: "Stage",
-            unstage: "Unstage",
-            discard: "Discard",
-        };
-        static icons = {
-            stage: 'check',
-            unstage: 'discard',
-            discard: 'trash',
-        };
         constructor({ diff_editor, lane, line_range_mapping, action }) {
             this.dom_node = document.createElement('button');
-            this.dom_node.title = this.constructor.titles[action];
-            this.dom_node.className = `codicon codicon-${this.constructor.icons[action]}`;
+            this.dom_node.title = _.upperFirst(action);
             this.dom_node.addEventListener('click', () => {
                 const [source, target] = action === 'stage' ? ['modified', 'original'] : ['original', 'modified'];
                 diff_editor._editors[target].executeEdits(undefined, [{
@@ -88,6 +77,8 @@
             });
             this.position = { lane, range: line_range_mapping.modified.toExclusiveRange() };
             this.id = `GlyphMarginWidget${++this.constructor.counter}`;
+
+            createApp(Icon, { name: settings.icons[action], class: 'size-4 pointer-events-none' }).mount(this.dom_node);
         }
         getDomNode() { return this.dom_node; }
         getPosition() { return this.position; }
@@ -104,7 +95,10 @@
             EventMixin('window-focus', 'load'),
             EventMixin('window-blur', 'save'),
         ],
-        inject: ['selected_commit', 'files', 'selected_file', 'save_semaphore'],
+        inject: [
+            'selected_commit', 'files', 'selected_file', 'save_semaphore',
+            'updateFileStatus', 'updateSelectedFile',
+        ],
         data: () => ({
             file: undefined,
             loaded_contents: undefined,
@@ -130,6 +124,7 @@
                     contextmenu : false,
                     hover: { enabled: false },
                     quickSuggestions: false,
+                    noSemanticValidation: true,
                     scrollBeyondLastLine: false,
                     renderLineHighlight: 'none',
                     glyphMargin: true,  // https://github.com/microsoft/monaco-editor/issues/4068
@@ -170,7 +165,7 @@
 
                     if (changes.length === 0) {
                         if (!this.files[this.file.area].some(file => file.path === this.file.path)) {
-                            this.selected_file = this.files[this.file.area][0] ?? null;
+                            this.updateSelectedFile();
                         } else {
                             this.whitespace_diff = true;
                         }
@@ -289,16 +284,7 @@
 
                     this.saved_contents = contents;
 
-                    const status = await getStatus(this.file.path);
-                    const files = _.cloneDeep(this.files);
-
-                    for (const area of ['unstaged', 'staged']) {
-                        files[area] = files[area].filter(file => file.path !== this.file.path);
-                        if (status[area].length === 1) {
-                            files[area] = _.sortBy([...files[area], ...status[area]], 'path');
-                        }
-                    }
-                    this.files = Object.freeze(files);
+                    await this.updateFileStatus(this.file.path);
 
                 } finally {
                     lift();
