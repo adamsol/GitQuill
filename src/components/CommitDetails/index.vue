@@ -3,35 +3,59 @@
     <div v-if="files !== undefined" class="h-full break-words">
         <splitpanes
             v-if="commit.hash === 'WORKING_TREE'"
-            class="h-full gap-1"
             horizontal
-            @resized="unstaged_pane_size = $event[0].size"
+            @resized="commit_pane_size = $event[1].size"
         >
-            <pane
-                v-for="area in ['unstaged', 'staged']"
-                class="min-h-20"
-                :size="area === 'unstaged' ? unstaged_pane_size : undefined"
-            >
-                <div class="flex flex-col max-h-full">
-                    <div class="flex items-center gap-1">
-                        <div class="grow">
-                            {{ $_.upperFirst(area) }}
+            <pane class="min-h-40">
+                <splitpanes
+                    horizontal
+                    @resized="unstaged_pane_size = $event[0].size"
+                >
+                    <pane
+                        v-for="area in ['unstaged', 'staged']"
+                        class="min-h-20"
+                        :size="area === 'unstaged' ? unstaged_pane_size : undefined"
+                    >
+                        <div class="flex flex-col max-h-full">
+                            <div class="flex items-center gap-1">
+                                <div class="grow">
+                                    {{ $_.upperFirst(area) }}
+                                </div>
+                                <btn
+                                    v-for="action in area === 'unstaged' ? ['discard', 'stage'] : ['unstage']"
+                                    @click.stop="run(action)"
+                                >
+                                    <icon :name="$settings.icons[action]" class="size-5" />
+                                    {{ $_.upperFirst(action) }} all
+                                </btn>
+                            </div>
+                            <hr class="mt-2" />
+                            <div class="grow overflow-auto">
+                                <FileRow v-for="file in files[area]" :key="file.path" :file />
+                            </div>
                         </div>
-                        <btn
-                            v-for="action in area === 'unstaged' ? ['discard', 'stage'] : ['unstage']"
-                            @click.stop="run(action)"
-                        >
-                            <icon :name="$settings.icons[action]" class="size-5" />
-                            {{ $_.upperFirst(action) }} all
-                        </btn>
-                    </div>
-                    <hr class="mt-2" />
-                    <div class="grow overflow-auto">
-                        <FileRow v-for="file in files[area]" :key="file.path" :file />
-                    </div>
+                    </pane>
+                </splitpanes>
+            </pane>
+            <pane :size="commit_pane_size" class="min-h-24 flex flex-col gap-2">
+                <hr />
+                <textarea v-model.trim="message" class="grow px-2 resize-none" />
+                <div class="flex gap-1 mb-1">
+                    <btn
+                        class="grow justify-center text-accent"
+                        :disabled="message === ''"
+                        @click="run('commit')"
+                    >
+                        <icon name="mdi-source-commit" class="size-6" />
+                        Commit
+                    </btn>
+                    <toggle v-model:active="amend" title="Amend">
+                        <icon name="mdi-wrench" class="size-6 p-0.5" />
+                    </toggle>
                 </div>
             </pane>
         </splitpanes>
+
         <template v-else>
             <div class="text-lg">
                 {{ commit.subject }}
@@ -66,14 +90,17 @@
         mixins: [
             EventMixin('window-focus', 'load'),
             StoreMixin('unstaged_pane_size', 50),
+            StoreMixin('commit_pane_size', 15),
         ],
         components: { CommitterDetails, FileRow },
         inject: [
-            'selected_commit', 'files', 'selected_file',
-            'updateSelectedFile',
+            'commits', 'selected_commit', 'files', 'selected_file',
+            'updateSelectedFile', 'refreshCommitHistory',
         ],
         data: () => ({
             commit: undefined,
+            message: '',
+            amend: false,
         }),
         watch: {
             selected_commit: {
@@ -81,6 +108,16 @@
                     await this.load();
                 },
                 immediate: true,
+            },
+            amend() {
+                const { subject, body } = this.commits[1];
+                const message = subject + (body ? '\n\n' + body : '');
+
+                if (this.amend && this.message === '') {
+                    this.message = message;
+                } else if (!this.amend && this.message === message) {
+                    this.message = '';
+                }
             },
         },
         methods: {
@@ -122,6 +159,13 @@
                 } else if (action === 'discard') {
                     await electron.callGit('clean', 'f');
                     await electron.callGit('checkout', ['--', '.']);
+
+                } else if (action === 'commit') {
+                    await electron.callGit('commit', this.message, [...this.amend ? ['--amend'] : [], '--allow-empty']);
+
+                    this.message = '';
+                    this.amend = false;
+                    this.refreshCommitHistory();
                 }
                 this.files = Object.freeze(await getStatus());
                 this.updateSelectedFile();

@@ -8,7 +8,7 @@
         @apply h-full;
     }
     html {
-        @apply bg-gray-dark text-gray-light cursor-default;
+        @apply bg-gray-bg text-gray-light cursor-default;
     }
     *:focus {
         @apply outline-none;
@@ -16,10 +16,13 @@
     hr {
         @apply border-t border-r border-gray/40 self-stretch h-auto;
     }
-    select {
-        @apply bg-gray-dark;
+    textarea, select {
+        @apply p-1 bg-gray-dark rounded-sm;
     }
 
+    .splitpanes {
+        @apply gap-1;
+    }
     .splitpanes--vertical > .splitpanes__splitter {
         @apply w-2;
     }
@@ -55,6 +58,11 @@
         * {
             --vscode-editorLineNumber-activeForeground: var(--vscode-editorLineNumber-foreground);
         }
+    }
+
+    .vue-recycle-scroller__item-view {
+        /* https://github.com/Akryum/vue-virtual-scroller/issues/118#issuecomment-670852864 */
+        @apply !will-change-auto;
     }
 }
 

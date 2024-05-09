@@ -1,8 +1,12 @@
 
 <template>
-    <splitpanes class="h-full gap-1" @resized="main_pane_size = $event[0].size">
+    <splitpanes @resized="main_pane_size = $event[0].size">
         <pane :size="main_pane_size">
-            <CommitHistory v-if="selected_file === null" class="py-2" />
+            <CommitHistory
+                v-if="selected_file === null"
+                :key="commit_history_key"
+                class="py-2"
+            />
             <FileDiff v-else />
         </pane>
         <pane class="min-w-72">
@@ -42,6 +46,7 @@
         mixins: [
             provideReactively({
                 data: {
+                    commit_history_key: 0,
                     head: undefined,
                     commits: undefined,
                     selected_commit: undefined,
@@ -68,6 +73,9 @@
                         }
                         const file = this.files[this.selected_file.area].find(file => file.path >= this.selected_file.path);
                         this.selected_file = file ?? _.last(this.files[this.selected_file.area]) ?? null;
+                    },
+                    refreshCommitHistory() {
+                        this.commit_history_key += 1;
                     },
                 },
             }),

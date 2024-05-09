@@ -2,8 +2,7 @@
 import colors from './src/theme/colors';
 
 export default {
-    content: ['./src/**/*.vue'],
-    safelist: ['splitpanes__splitter', 'monaco-editor'],
+    content: ['./src/**/*.{vue,css}'],
     theme: {
         extend: {
             colors,
