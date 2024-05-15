@@ -10,7 +10,9 @@ import App from './App';
 import './index.css';
 import * as settings from '@/settings';
 import monaco_theme from './theme/monaco';
+
 import Btn from './widgets/btn';
+import Filepath from './widgets/filepath';
 import Icon from './widgets/icon';
 import Toggle from './widgets/toggle';
 
@@ -25,10 +27,16 @@ app.component('Pane', Pane);
 app.component('RecycleScroller', RecycleScroller);
 
 app.component('Btn', Btn);
+app.component('Filepath', Filepath);
 app.component('Icon', Icon);
 app.component('Toggle', Toggle);
 
+for (const lang of ['css', 'scss', 'less']) {
+    // https://github.com/atularen/ngx-monaco-editor/issues/61
+    monaco.languages.css[`${lang}Defaults`].setOptions({ validate: false });
+}
 monaco.editor.defineTheme('custom', monaco_theme);
+
 app.use(VueMonacoEditorPlugin, { monaco });
 
 app.config.globalProperties.$_ = _;

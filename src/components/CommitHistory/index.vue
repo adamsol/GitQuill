@@ -2,7 +2,7 @@
 <template>
     <recycle-scroller
         v-if="commits"
-        class="w-full h-full"
+        class="w-full h-full bg-gray-dark"
         :items="commits"
         :item-size="32"
         key-field="hash"

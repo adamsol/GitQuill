@@ -1,6 +1,10 @@
 
 <template>
-    <splitpanes @resized="main_pane_size = $event[0].size">
+    <splitpanes
+        tabindex="-1"
+        @keydown.esc="selected_file = null"
+        @resized="main_pane_size = $event[0].size"
+    >
         <pane :size="main_pane_size">
             <CommitHistory
                 v-if="selected_file === null"
@@ -9,8 +13,8 @@
             />
             <FileDiff v-else />
         </pane>
-        <pane class="min-w-72">
-            <CommitDetails class="py-2 pr-3" />
+        <pane class="min-w-80">
+            <CommitDetails class="pt-2 pb-4 pr-4" />
         </pane>
     </splitpanes>
 </template>

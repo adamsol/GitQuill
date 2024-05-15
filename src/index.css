@@ -13,29 +13,48 @@
     *:focus {
         @apply outline-none;
     }
-    hr {
-        @apply border-t border-r border-gray/40 self-stretch h-auto;
-    }
-    textarea, select {
-        @apply p-1 bg-gray-dark rounded-sm;
-    }
 
-    .splitpanes {
-        @apply gap-1;
-    }
-    .splitpanes--vertical > .splitpanes__splitter {
+    ::-webkit-scrollbar {
         @apply w-2;
     }
+    ::-webkit-scrollbar-track {
+        @apply bg-none;
+    }
+    ::-webkit-scrollbar-thumb {
+        @apply bg-gray rounded-full;
+    }
+
+    hr {
+        @apply border-t border-r border-gray/30 self-stretch h-auto;
+    }
+    textarea, select {
+        @apply p-1 bg-gray-dark border border-gray/30 rounded-sm;
+    }
+    input[type=checkbox] {
+        @apply opacity-80;
+    }
+
+    .splitpanes--vertical > .splitpanes__splitter {
+        @apply w-4;
+    }
     .splitpanes--horizontal > .splitpanes__splitter {
-        @apply h-2;
+        @apply h-4;
     }
 
     .monaco-editor {
         .diff-hidden-lines {
             @apply -translate-y-1.5 select-none;
 
-            * {
-                 @apply text-accent;
+            .center >:nth-child(2) {
+                /* https://github.com/microsoft/vscode/issues/186406#issuecomment-1697642614 */
+                @apply !items-stretch grow;
+
+                :nth-child(1) {
+                    @apply m-auto grow;
+                }
+                :not(:nth-child(1)) {
+                    @apply !hidden;
+                }
             }
         }
         .insert-sign, .delete-sign {
@@ -55,6 +74,10 @@
                 @apply bg-red/35;
             }
         }
+        .suggest-widget {
+            /* https://github.com/microsoft/monaco-editor/issues/1681 */
+            @apply !hidden;
+        }
         * {
             --vscode-editorLineNumber-activeForeground: var(--vscode-editorLineNumber-foreground);
         }
@@ -71,7 +94,7 @@
         @apply flex items-center gap-3 px-3 py-1;
     }
     .clickable {
-        @apply cursor-pointer hover:[&:not(.active)]:bg-accent/10;
+        @apply cursor-pointer select-none hover:[&:not(.active)]:bg-accent/10;
     }
     .active {
         @apply text-accent bg-accent/15;

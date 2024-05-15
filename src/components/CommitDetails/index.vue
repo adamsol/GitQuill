@@ -16,13 +16,14 @@
                         class="min-h-20"
                         :size="area === 'unstaged' ? unstaged_pane_size : undefined"
                     >
-                        <div class="flex flex-col max-h-full">
+                        <div class="flex flex-col h-full">
                             <div class="flex items-center gap-1">
                                 <div class="grow">
                                     {{ $_.upperFirst(area) }}
                                 </div>
                                 <btn
                                     v-for="action in area === 'unstaged' ? ['discard', 'stage'] : ['unstage']"
+                                    :disabled="files[area].length === 0"
                                     @click.stop="run(action)"
                                 >
                                     <icon :name="$settings.icons[action]" class="size-5" />
@@ -38,43 +39,47 @@
                 </splitpanes>
             </pane>
             <pane :size="commit_pane_size" class="min-h-24 flex flex-col gap-2">
-                <hr />
-                <textarea v-model.trim="message" class="grow px-2 resize-none" />
-                <div class="flex gap-1 mb-1">
-                    <btn
-                        class="grow justify-center text-accent"
-                        :disabled="message === ''"
-                        @click="run('commit')"
-                    >
-                        <icon name="mdi-source-commit" class="size-6" />
+                <div class="flex items-center justify-end gap-3">
+                    <label>
+                        <input v-model="amend" type="checkbox" />
+                        Amend
+                    </label>
+                    <btn :disabled="message === ''" @click.stop="run('commit')">
+                        <icon name="mdi-source-commit" class="size-5" />
                         Commit
                     </btn>
-                    <toggle v-model:active="amend" title="Amend">
-                        <icon name="mdi-wrench" class="size-6 p-0.5" />
-                    </toggle>
                 </div>
+                <textarea v-model.trim="message" class="grow px-2 resize-none" :spellcheck="false" />
             </pane>
         </splitpanes>
 
-        <template v-else>
-            <div class="text-lg">
-                {{ commit.subject }}
-            </div>
-            <div v-if="commit.body" class="mt-2 whitespace-pre-wrap">
-                {{ commit.body }}
-            </div>
-            <hr class="my-2" />
-
-            <div v-for="name in commit.committer_email === commit.author_email ? ['author'] : ['author', 'committer']">
-                <div class="text-xs text-gray mt-1">
-                    {{ name }}:
+        <div v-else class="flex flex-col h-full">
+            <div>
+                <div class="text-sm text-gray font-mono whitespace-nowrap">
+                    {{ commit.hash }}
                 </div>
-                <CommitterDetails :commit="commit" :prefix="name" />
+                <div class="text-xl">
+                    {{ commit.subject }}
+                </div>
+                <div v-if="commit.body" class="mt-2 whitespace-pre-wrap">
+                    {{ commit.body }}
+                </div>
             </div>
-            <hr class="my-2" />
 
-            <FileRow v-for="file in files" :key="file.path" :file />
-        </template>
+            <div class="my-2">
+                <div v-for="name in commit.committer_email === commit.author_email ? ['author'] : ['author', 'committer']">
+                    <div class="text-xs text-gray mt-1">
+                        {{ name }}:
+                    </div>
+                    <CommitterDetails :commit="commit" :prefix="name" />
+                </div>
+            </div>
+
+            <hr class="mt-2" />
+            <div class="grow overflow-auto">
+                <FileRow v-for="file in files.committed" :key="file.path" :file />
+            </div>
+        </div>
     </div>
 </template>
 
@@ -122,10 +127,11 @@
         },
         methods: {
             async load() {
-                if (this.selected_commit === undefined) {
+                const commit = this.selected_commit;
+                if (commit === undefined) {
                     return;
                 }
-                if (this.selected_commit.hash === 'WORKING_TREE') {
+                if (commit.hash === 'WORKING_TREE') {
                     this.files = Object.freeze(await getStatus());
 
                     const selected_area = this.selected_file?.area;
@@ -134,20 +140,22 @@
                         this.selected_file = null;
                     }
                 } else {
-                    let parent = this.selected_commit.parents.split(' ')[0];
+                    let parent = commit.parents.split(' ')[0];
                     if (parent === '') {
                         // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
                         parent = (await electron.callGit('raw', ['hash-object', '-t', 'tree', '/dev/null'])).trim();
                     }
-                    const summary = await electron.callGit('diffSummary', [parent, this.selected_commit.hash, '--name-status']);
+                    const summary = await electron.callGit('diffSummary', [parent, commit.hash, '--name-status']);
 
-                    this.files = Object.freeze(summary.files.map(file => ({
-                        status: file.status,
-                        path: file.file,
-                        area: 'committed',
-                    })));
+                    this.files = Object.freeze({
+                        committed: summary.files.map(file => ({
+                            status: file.status,
+                            path: file.file,
+                            area: 'committed',
+                        })),
+                    });
                 }
-                this.commit = this.selected_commit;
+                this.commit = commit;
             },
             async run(action) {
                 if (action === 'stage') {

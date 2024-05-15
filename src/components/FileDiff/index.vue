@@ -2,12 +2,10 @@
 <template>
     <div class="h-full flex flex-col">
         <div class="flex items-center gap-2 p-2">
-            <div v-if="file !== undefined" class="grow ellipsis">
-                {{ file.path }}
-                <span v-if="file.area !== 'committed'" class="text-gray">
-                    ({{ file.area }})
-                </span>
+            <div v-if="file !== undefined" class="ellipsis">
+                <filepath :file />
             </div>
+            <div class="grow" />
 
             <select v-model="language" title="Language" @change="onSelectLanguage">
                 <option v-for="lang in languages" :value="lang">
@@ -123,7 +121,6 @@
                     links: false,
                     contextmenu : false,
                     hover: { enabled: false },
-                    quickSuggestions: false,
                     noSemanticValidation: true,
                     scrollBeyondLastLine: false,
                     renderLineHighlight: 'none',

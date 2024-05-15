@@ -13,10 +13,13 @@ export default {
 		},
 	],
 	colors: {
+		'editor.background': colors.gray.dark,
 		'editor.foreground': colors.gray.light,
 		'diffEditor.insertedLineBackground': colors.green + line_opacity,
 		'diffEditor.insertedTextBackground': colors.green + text_opacity,
 		'diffEditor.removedLineBackground': colors.red + line_opacity,
 		'diffEditor.removedTextBackground': colors.red + text_opacity,
+		'diffEditor.unchangedRegionBackground': colors.gray.bg,
+		'diffEditor.unchangedCodeBackground': '#0000',
 	},
 };

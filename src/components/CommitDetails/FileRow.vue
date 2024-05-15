@@ -10,8 +10,9 @@
             {{ file.status }}
         </div>
         <div class="grow ellipsis">
-            {{ file.path }}
+            <filepath :file />
         </div>
+
         <div class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
             <btn
                 v-for="action in file.area === 'unstaged' ? ['discard', 'stage'] : file.area === 'staged' ? ['unstage'] : []"
