@@ -29,7 +29,7 @@
     export default {
         inject: [
             'selected_file',
-            'updateFileStatus', 'updateSelectedFile',
+            'updateFileStatus', 'updateSelectedFile', 'saveSelectedFile',
         ],
         props: {
             file: { type: Object, required: true },
@@ -41,6 +41,8 @@
         },
         methods: {
             async run(action) {
+                await this.saveSelectedFile();
+
                 if (action === 'stage') {
                     await electron.callGit('add', [this.file.path]);
 

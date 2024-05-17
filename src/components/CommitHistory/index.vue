@@ -13,12 +13,12 @@
 </template>
 
 <script>
-    import EventMixin from '@/mixins/EventMixin';
+    import ElectronEventMixin from '@/mixins/ElectronEventMixin';
 
     import CommitRow from './CommitRow';
 
     export default {
-        mixins: [EventMixin('window-focus', 'load')],
+        mixins: [ElectronEventMixin('window-focus', 'load')],
         components: { CommitRow },
         inject: ['head', 'commits', 'selected_commit'],
         async created() {

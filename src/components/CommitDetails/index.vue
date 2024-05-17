@@ -84,7 +84,7 @@
 </template>
 
 <script>
-    import EventMixin from '@/mixins/EventMixin';
+    import ElectronEventMixin from '@/mixins/ElectronEventMixin';
     import StoreMixin from '@/mixins/StoreMixin';
     import { getStatus } from '@/utils/git';
 
@@ -93,14 +93,14 @@
 
     export default {
         mixins: [
-            EventMixin('window-focus', 'load'),
+            ElectronEventMixin('window-focus', 'load'),
             StoreMixin('unstaged_pane_size', 50),
             StoreMixin('commit_pane_size', 15),
         ],
         components: { CommitterDetails, FileRow },
         inject: [
             'commits', 'selected_commit', 'files', 'selected_file',
-            'updateSelectedFile', 'refreshCommitHistory',
+            'updateSelectedFile', 'saveSelectedFile', 'refreshCommitHistory',
         ],
         data: () => ({
             commit: undefined,
@@ -158,6 +158,8 @@
                 this.commit = commit;
             },
             async run(action) {
+                await this.saveSelectedFile();
+
                 if (action === 'stage') {
                     await electron.callGit('add', ['-A']);
 

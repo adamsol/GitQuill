@@ -5,6 +5,9 @@
             <div v-if="file !== undefined" class="ellipsis">
                 <filepath :file />
             </div>
+            <div v-if="unsaved_changes" title="Unsaved changes">
+                *
+            </div>
             <div class="grow" />
 
             <select v-model="language" title="Language" @change="onSelectLanguage">
@@ -28,7 +31,7 @@
             </toggle>
             <hr class="mx-2" />
 
-            <btn title="Close" @click="selected_file = null">
+            <btn title="Close" @click="close">
                 <icon name="mdi-close" class="size-6" />
             </btn>
         </div>
@@ -54,8 +57,9 @@
     import monaco_metadata from 'monaco-editor/esm/metadata';
     import { createApp } from 'vue';
 
-    import EventMixin from '@/mixins/EventMixin';
+    import ElectronEventMixin from '@/mixins/ElectronEventMixin';
     import StoreMixin from '@/mixins/StoreMixin';
+    import WindowEventMixin from '@/mixins/WindowEventMixin';
     import Icon from '@/widgets/icon';
 
     // https://github.com/microsoft/vscode/blob/1.88.1/src/vs/editor/browser/widget/diffEditor/features/revertButtonsFeature.ts
@@ -63,15 +67,18 @@
     class GlyphMarginWidget {
         static counter = 0;
 
-        constructor({ diff_editor, lane, line_range_mapping, action }) {
+        constructor({ diff_editor, lane, line_range_mapping, action, callback }) {
             this.dom_node = document.createElement('button');
             this.dom_node.title = _.upperFirst(action);
             this.dom_node.addEventListener('click', () => {
                 const [source, target] = action === 'stage' ? ['modified', 'original'] : ['original', 'modified'];
-                diff_editor._editors[target].executeEdits(undefined, [{
+                const editor = diff_editor._editors[target];
+                editor.pushUndoStop();
+                editor.executeEdits(undefined, [{
                     range: line_range_mapping[target].toExclusiveRange(),
                     text: diff_editor._editors[source].getModel().getValueInRange(line_range_mapping[source].toExclusiveRange()),
                 }]);
+                callback();
             });
             this.position = { lane, range: line_range_mapping.modified.toExclusiveRange() };
             this.id = `GlyphMarginWidget${++this.constructor.counter}`;
@@ -90,8 +97,10 @@
             StoreMixin('whitespace_diff', false),
             StoreMixin('word_wrap', false),
 
-            EventMixin('window-focus', 'load'),
-            EventMixin('window-blur', 'save'),
+            ElectronEventMixin('window-focus', 'load'),
+            ElectronEventMixin('window-blur', 'save'),
+
+            WindowEventMixin('keydown', 'onKeyDown'),
         ],
         inject: [
             'selected_commit', 'files', 'selected_file', 'save_semaphore',
@@ -100,6 +109,7 @@
         data: () => ({
             file: undefined,
             loaded_contents: undefined,
+            unsaved_changes: false,
             language: undefined,
             languages: ['plaintext', ..._.map(monaco_metadata.languages, 'label')],
         }),
@@ -137,12 +147,13 @@
             },
         },
         watch: {
-            selected_file: {
-                async handler() {
-                    await this.load();
-                },
-                immediate: true,
+            async selected_file() {
+                await this.save();
+                await this.load();
             },
+        },
+        async created() {
+            await this.load();
         },
         methods: {
             onMountEditor(diff_editor) {
@@ -155,7 +166,7 @@
                 const widgets = [];
 
                 diff_editor.onDidUpdateDiff(async () => {
-                    await this.save();
+                    this.unsaved_changes = !_.isEqual(this.getEditorContents(), this.saved_contents);
 
                     const diff = diff_editor._diffModel.get().diff.get();
                     const changes = _.map(diff.mappings, 'lineRangeMapping');
@@ -182,6 +193,7 @@
                             lane: i + 1,
                             line_range_mapping,
                             action,
+                            callback: async () => await this.save(),
                         })));
                     }
                     for (const widget of widgets) {
@@ -253,11 +265,12 @@
                 this.diff_editor = undefined;
             },
             async save() {
+                await this.save_semaphore;
+
                 const contents = this.getEditorContents();
                 if (_.isEqual(contents, this.saved_contents)) {
                     return;
                 }
-                await this.save_semaphore;
                 let lift;
                 this.save_semaphore = new Promise(resolve => lift = resolve);
 
@@ -280,11 +293,24 @@
                     await electron.writeFile(this.file.path, unstaged_content);
 
                     this.saved_contents = contents;
+                    this.unsaved_changes = false;
 
                     await this.updateFileStatus(this.file.path);
 
                 } finally {
                     lift();
+                }
+            },
+            async close() {
+                await this.save();
+                this.selected_file = null;
+            },
+            async onKeyDown(event) {
+                if (event.ctrlKey && event.key === 's') {
+                    await this.save();
+                }
+                if (event.code === 'Escape') {
+                    await this.close();
                 }
             },
             onSelectLanguage() {

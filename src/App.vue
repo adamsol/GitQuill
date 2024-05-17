@@ -1,17 +1,13 @@
 
 <template>
-    <splitpanes
-        tabindex="-1"
-        @keydown.esc="selected_file = null"
-        @resized="main_pane_size = $event[0].size"
-    >
+    <splitpanes @resized="main_pane_size = $event[0].size">
         <pane :size="main_pane_size">
             <CommitHistory
                 v-if="selected_file === null"
                 :key="commit_history_key"
                 class="py-2"
             />
-            <FileDiff v-else />
+            <FileDiff v-else ref="file_diff" />
         </pane>
         <pane class="min-w-80">
             <CommitDetails class="pt-2 pb-4 pr-4" />
@@ -77,6 +73,9 @@
                         }
                         const file = this.files[this.selected_file.area].find(file => file.path >= this.selected_file.path);
                         this.selected_file = file ?? _.last(this.files[this.selected_file.area]) ?? null;
+                    },
+                    async saveSelectedFile() {
+                        await this.$refs.file_diff?.save();
                     },
                     refreshCommitHistory() {
                         this.commit_history_key += 1;

@@ -69,20 +69,35 @@ app.whenReady().then(async () => {
     });
     window.maximize();
 
-    ipcMain.handle('call-git', async (event, cmd, ...args) => {
-        const repr = `git ${cmd} ${JSON.stringify(args)}`;
+    async function log(repr, promise) {
         try {
             const t = performance.now();
-            const result = await git[cmd](...args);
+            const result = await promise;
             console.info(`RUN (${Math.round(performance.now() - t)} ms): ${repr}`);
-            return JSON.stringify(result);
+            return result;
         } catch (e) {
             console.error(`ERROR: ${repr}`);
             throw e;
         }
+    }
+    ipcMain.handle('call-git', async (event, cmd, ...args) => {
+        return JSON.stringify(await log(
+            `call-git ${cmd} ${JSON.stringify(args)}`,
+            git[cmd](...args)
+        ));
     });
-    ipcMain.handle('read-file', async (event, file_path) => await fs.promises.readFile(path.join(git._executor.cwd, file_path), { encoding: 'utf8' }));
-    ipcMain.handle('write-file', async (event, file_path, content) => await fs.promises.writeFile(path.join(git._executor.cwd, file_path), content));
+    ipcMain.handle('read-file', async (event, file_path) => {
+        return await log(
+            `read-file ${file_path}`,
+            fs.promises.readFile(path.join(git._executor.cwd, file_path), { encoding: 'utf8' }),
+        );
+    });
+    ipcMain.handle('write-file', async (event, file_path, content) => {
+        return await log(
+            `write-file ${file_path}`,
+            fs.promises.writeFile(path.join(git._executor.cwd, file_path), content)
+        );
+    });
     window.on('focus', () => window.webContents.send('window-focus'));
     window.on('blur', () => window.webContents.send('window-blur'));
 

@@ -2,7 +2,7 @@
 let counter = 0;
 
 export default (event_name, callback_name) => {
-    const id = `EventMixin${++counter}`;
+    const id = `ElectronEventMixin${++counter}`;
     return {
         created() {
             const callback = () => this[callback_name]();
