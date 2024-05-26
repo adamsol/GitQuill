@@ -20,7 +20,7 @@
     export default {
         mixins: [ElectronEventMixin('window-focus', 'load')],
         components: { CommitRow },
-        inject: ['head', 'commits', 'selected_commit'],
+        inject: ['head', 'commits', 'selected_commit', 'selected_file'],
         async created() {
             await this.load();
         },
@@ -57,6 +57,7 @@
                 const selected_hash = this.selected_commit?.hash;
                 if (this.commits.every(commit => commit.hash !== selected_hash)) {
                     this.selected_commit = this.commits[0];
+                    this.selected_file = null;
                 }
             },
         },

@@ -80,11 +80,22 @@ app.whenReady().then(async () => {
             throw e;
         }
     }
+    ipcMain.handle('set-env', async (event, vars) => {
+        for (const [key, value] of Object.entries(vars)) {
+            process.env[key] = value;
+        }
+    });
     ipcMain.handle('call-git', async (event, cmd, ...args) => {
         return JSON.stringify(await log(
             `call-git ${cmd} ${JSON.stringify(args)}`,
             git[cmd](...args)
         ));
+    });
+    ipcMain.handle('exists', async (event, file_path) => {
+        return await log(
+            `exists ${file_path}`,
+            new Promise(resolve => resolve(fs.existsSync(path.join(git._executor.cwd, file_path)))),
+        );
     });
     ipcMain.handle('read-file', async (event, file_path) => {
         return await log(

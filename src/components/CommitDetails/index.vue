@@ -39,7 +39,26 @@
                 </splitpanes>
             </pane>
             <pane :size="commit_pane_size" class="min-h-24 flex flex-col gap-2">
-                <div class="flex items-center justify-end gap-3">
+                <div v-if="rebasing" class="flex items-center mt-2">
+                    <div class="grow">
+                        Rebasing...
+                    </div>
+                    <btn
+                        :disabled="this.files.unstaged.length > 0"
+                        @click.stop="continueRebase"
+                    >
+                        <icon name="mdi-forward" class="size-5" />
+                        Continue
+                    </btn>
+                    <btn
+                        :disabled="this.files.unstaged.length > 0 || this.files.staged.length > 0"
+                        @click.stop="abortRebase"
+                    >
+                        <icon name="mdi-cancel" class="size-5" />
+                        Abort
+                    </btn>
+                </div>
+                <div v-else class="flex items-center justify-end gap-3">
                     <label>
                         <input v-model="amend" type="checkbox" />
                         Amend
@@ -54,6 +73,14 @@
         </splitpanes>
 
         <div v-else class="flex flex-col h-full">
+            <div class="flex justify-end">
+                <btn :disabled="rebasing" @click.stop="startRebase">
+                    <icon name="mdi-file-edit" class="size-5" />
+                    Edit (Rebase)
+                </btn>
+            </div>
+            <hr class="my-2" />
+
             <div>
                 <div class="text-sm text-gray font-mono whitespace-nowrap">
                     {{ commit.hash }}
@@ -104,6 +131,7 @@
         ],
         data: () => ({
             commit: undefined,
+            rebasing: false,
             message: '',
             amend: false,
         }),
@@ -131,7 +159,13 @@
                 if (commit === undefined) {
                     return;
                 }
+                // https://stackoverflow.com/questions/3921409/how-to-know-if-there-is-a-git-rebase-in-progress
+                this.rebasing = await electron.exists('.git/rebase-merge');
+
                 if (commit.hash === 'WORKING_TREE') {
+                    if (this.rebasing) {
+                        this.message = await electron.readFile('.git/rebase-merge/message');
+                    }
                     this.files = Object.freeze(await getStatus());
 
                     const selected_area = this.selected_file?.area;
@@ -171,8 +205,7 @@
                     await electron.callGit('checkout', ['--', '.']);
 
                 } else if (action === 'commit') {
-                    await electron.callGit('commit', this.message, [...this.amend ? ['--amend'] : [], '--allow-empty']);
-
+                    await this.makeCommit(...this.amend ? ['--amend'] : []);
                     this.message = '';
                     this.amend = false;
                     this.refreshCommitHistory();
@@ -180,6 +213,60 @@
                 this.files = Object.freeze(await getStatus());
                 this.updateSelectedFile();
             },
+            async makeCommit(...options) {
+                await electron.callGit('commit', this.message, [...options, '--allow-empty']);
+            },
+            async startRebase() {
+                const commit = this.commit;
+                let target = commit.parents.split(' ')[0];
+                if (target === '') {
+                    // https://stackoverflow.com/questions/22992543/how-do-i-git-rebase-the-first-commit
+                    target = '--root';
+                }
+                electron.setEnv({ GIT_SEQUENCE_EDITOR: 'sed -i 1s/^pick/edit/' });
+                await electron.callGit('rebase', ['--interactive', target]);
+                this.refreshCommitHistory();
+
+                await electron.callGit('raw', ['revert', commit.hash, '--no-commit']);
+                await electron.callGit('raw', ['restore', '-s', commit.hash, '--', '.']);
+
+                this.selected_commit = this.commits[0];
+
+                if (this.selected_file !== null) {
+                    this.selected_file = { ...this.selected_file, area: 'unstaged' };
+                }
+            },
+            async continueRebase() {
+                // https://stackoverflow.com/questions/43489971/how-to-suppress-the-editor-for-git-rebase-continue
+                // https://stackoverflow.com/questions/27641184/git-rebase-continue-but-modify-commit-message-to-document-changes-during-conf
+                // https://stackoverflow.com/questions/28267344/how-can-i-reference-the-original-of-a-currently-edited-commit-during-git-rebase
+                if (await electron.exists('.git/rebase-merge/amend')) {
+                    // Amend the commit here, to handle editing the commit message without file changes.
+                    await this.makeCommit('--amend');
+                    this.message = '';
+                    await this.finishRebase('--skip');
+                } else {
+                    // This branch is executed after a merge conflict.
+                    await electron.writeFile('.git/rebase-merge/message', this.message);
+                    this.message = '';
+                    electron.setEnv({ GIT_EDITOR: 'true' });
+                    await this.finishRebase('--continue');
+                }
+            },
+            async abortRebase() {
+                await this.finishRebase('--abort');
+            },
+            async finishRebase(cmd) {
+                await this.saveSelectedFile();
+
+                try {
+                    await electron.callGit('rebase', [cmd]);
+                } finally {
+                    this.refreshCommitHistory();
+                    this.selected_file = null;
+                    await this.load();
+                }
+            }
         },
     };
 </script>

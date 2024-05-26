@@ -3,7 +3,7 @@
     <div
         class="row clickable whitespace-nowrap"
         :class="active ? 'active' : '[&:not(:first-child)]:*:text-gray'"
-        @click="selected_commit = Object.freeze(commit)"
+        @click="selected_commit = Object.freeze(commit); selected_file = null"
     >
         <div v-if="commit.hash === 'WORKING_TREE'" class="italic">
             Uncommitted changes
@@ -27,7 +27,7 @@
 
 <script>
     export default {
-        inject: ['selected_commit'],
+        inject: ['selected_commit', 'selected_file'],
         props: {
             commit: { type: Object, default: null },
         },

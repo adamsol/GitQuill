@@ -71,8 +71,10 @@
                         if (this.selected_file === null) {
                             return;
                         }
-                        const file = this.files[this.selected_file.area].find(file => file.path >= this.selected_file.path);
-                        this.selected_file = file ?? _.last(this.files[this.selected_file.area]) ?? null;
+                        const area = this.selected_file.area;
+                        const other_area = area === 'staged' ? 'unstaged' : 'staged';
+                        const file = this.files[area].find(file => file.path >= this.selected_file.path);
+                        this.selected_file = file ?? _.last(this.files[area]) ?? this.files[other_area][0] ?? null;
                     },
                     async saveSelectedFile() {
                         await this.$refs.file_diff?.save();
@@ -84,10 +86,5 @@
             }),
             StoreMixin('main_pane_size', 70),
         ],
-        watch: {
-            selected_commit() {
-                this.selected_file = null;
-            },
-        },
     };
 </script>
