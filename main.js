@@ -86,10 +86,26 @@ app.whenReady().then(async () => {
         }
     });
     ipcMain.handle('call-git', async (event, cmd, ...args) => {
-        return JSON.stringify(await log(
+        const run = async () => JSON.stringify(await log(
             `call-git ${cmd} ${JSON.stringify(args)}`,
             git[cmd](...args)
         ));
+        let retries = 3;
+        let delay = 100;
+
+        while (true) {
+            try {
+                return await run();
+            } catch (e) {
+                if (e.message.includes(`.git/index.lock': File exists`) && retries > 0) {
+                    await new Promise(r => setTimeout(r, delay));
+                    retries -= 1;
+                    delay *= 2;
+                    continue;
+                }
+                throw e;
+            }
+        }
     });
     ipcMain.handle('exists', async (event, file_path) => {
         return await log(
