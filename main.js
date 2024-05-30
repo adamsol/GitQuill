@@ -122,7 +122,13 @@ app.whenReady().then(async () => {
     ipcMain.handle('write-file', async (event, file_path, content) => {
         return await log(
             `write-file ${file_path}`,
-            fs.promises.writeFile(path.join(git._executor.cwd, file_path), content)
+            fs.promises.writeFile(path.join(git._executor.cwd, file_path), content),
+        );
+    });
+    ipcMain.handle('delete-file', async (event, file_path) => {
+        return await log(
+            `delete-file ${file_path}`,
+            fs.promises.unlink(path.join(git._executor.cwd, file_path)),
         );
     });
     window.on('focus', () => window.webContents.send('window-focus'));
