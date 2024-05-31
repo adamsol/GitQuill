@@ -177,14 +177,14 @@
                     let parent = commit.parents.split(' ')[0];
                     if (parent === '') {
                         // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
-                        parent = (await electron.callGit('raw', ['hash-object', '-t', 'tree', '/dev/null'])).trim();
+                        parent = (await electron.callGit('hash-object', '-t', 'tree', '/dev/null')).trim();
                     }
-                    const summary = await electron.callGit('diffSummary', [parent, commit.hash, '--name-status']);
+                    const summary = await electron.callGit('diff', parent, commit.hash, '--name-status');
 
                     this.files = Object.freeze({
-                        committed: summary.files.map(file => ({
-                            status: file.status,
-                            path: file.file,
+                        committed: summary.split('\n').slice(0, -1).map(row => ({
+                            status: row[0],
+                            path: row.slice(2),
                             area: 'committed',
                         })),
                     });
@@ -195,14 +195,14 @@
                 await this.saveSelectedFile();
 
                 if (action === 'stage') {
-                    await electron.callGit('add', ['-A']);
+                    await electron.callGit('add', '--all');
 
                 } else if (action === 'unstage') {
-                    await electron.callGit('reset', 'mixed');
+                    await electron.callGit('reset');
 
                 } else if (action === 'discard') {
-                    await electron.callGit('clean', 'f');
-                    await electron.callGit('checkout', ['--', '.']);
+                    await electron.callGit('clean', '-f');
+                    await electron.callGit('checkout', '--', '.');
 
                 } else if (action === 'commit') {
                     await this.makeCommit(...this.amend ? ['--amend'] : []);
@@ -214,7 +214,7 @@
                 this.updateSelectedFile();
             },
             async makeCommit(...options) {
-                await electron.callGit('commit', this.message, [...options, '--allow-empty']);
+                await electron.callGit('commit', `--message`, this.message, ...options, '--allow-empty');
             },
             async startRebase() {
                 const commit = this.commit;
@@ -223,12 +223,11 @@
                     // https://stackoverflow.com/questions/22992543/how-do-i-git-rebase-the-first-commit
                     target = '--root';
                 }
-                electron.setEnv({ GIT_SEQUENCE_EDITOR: 'sed -i 1s/^pick/edit/' });
-                await electron.callGit('rebase', ['--interactive', target]);
+                await electron.callGit('-c', 'sequence.editor=sed -i 1s/^pick/edit/', 'rebase', '--interactive', target);
                 this.refreshCommitHistory();
 
-                await electron.callGit('raw', ['revert', commit.hash, '--no-commit']);
-                await electron.callGit('raw', ['restore', '-s', commit.hash, '--', '.']);
+                await electron.callGit('revert', commit.hash, '--no-commit');
+                await electron.callGit('restore', '-s', commit.hash, '--', '.');
 
                 this.selected_commit = this.commits[0];
 
@@ -244,23 +243,21 @@
                     // Amend the commit here, to handle editing the commit message without file changes.
                     await this.makeCommit('--amend');
                     this.message = '';
-                    await this.finishRebase('--skip');
+                    await this.finishRebase('rebase', '--skip');
                 } else {
                     // This branch is executed after a merge conflict.
                     await electron.writeFile('.git/rebase-merge/message', this.message);
                     this.message = '';
-                    electron.setEnv({ GIT_EDITOR: 'true' });
-                    await this.finishRebase('--continue');
+                    await this.finishRebase('-c', 'core.editor=true', 'rebase', '--continue');
                 }
             },
             async abortRebase() {
-                await this.finishRebase('--abort');
+                await this.finishRebase('rebase', '--abort');
             },
-            async finishRebase(cmd) {
+            async finishRebase(...cmd) {
                 await this.saveSelectedFile();
-
                 try {
-                    await electron.callGit('rebase', [cmd]);
+                    await electron.callGit(...cmd);
                 } finally {
                     this.refreshCommitHistory();
                     this.selected_file = null;

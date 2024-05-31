@@ -1,17 +1,16 @@
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
+import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-
-import { simpleGit } from 'simple-git';
 
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import initContextMenu from 'electron-context-menu';
 import Store from 'electron-store';
 
 const store = new Store();
-let git = simpleGit(store.get('repo_path'));
+let repo_path = store.get('repo_path');
 let window;
 
 async function openRepo() {
@@ -25,7 +24,7 @@ async function openRepo() {
         const git_path = path.join(folder_path, '.git');
 
         if (fs.existsSync(git_path) && fs.lstatSync(git_path).isDirectory()) {
-            git = simpleGit(folder_path);
+            repo_path = folder_path;
             store.set('repo_path', folder_path);
             await window.loadFile('index.html');
         } else {
@@ -80,16 +79,25 @@ app.whenReady().then(async () => {
             throw e;
         }
     }
-    ipcMain.handle('set-env', async (event, vars) => {
-        for (const [key, value] of Object.entries(vars)) {
-            process.env[key] = value;
-        }
-    });
-    ipcMain.handle('call-git', async (event, cmd, ...args) => {
-        const run = async () => JSON.stringify(await log(
-            `call-git ${cmd} ${JSON.stringify(args)}`,
-            git[cmd](...args)
-        ));
+    ipcMain.handle('call-git', async (event, ...args) => {
+        const run = async () => await log(
+            `call-git ${JSON.stringify(args)}`,
+            new Promise((resolve, reject) => {
+                const output = [];
+                const process = spawn('git', args, { cwd: repo_path });
+                process.stdout.setEncoding('utf8');
+                process.stdout.on('data', buffer => output.push(buffer));
+                process.stderr.setEncoding('utf8');
+                process.stderr.on('data', buffer => output.push(buffer));
+                process.on('close', code => {
+                    if (code === 0) {
+                        resolve(output.join(''));
+                    } else {
+                        reject(new Error(output.join('')));
+                    }
+                });
+            }),
+        );
         let retries = 3;
         let delay = 100;
 
@@ -110,25 +118,25 @@ app.whenReady().then(async () => {
     ipcMain.handle('exists', async (event, file_path) => {
         return await log(
             `exists ${file_path}`,
-            new Promise(resolve => resolve(fs.existsSync(path.join(git._executor.cwd, file_path)))),
+            new Promise(resolve => resolve(fs.existsSync(path.join(repo_path, file_path)))),
         );
     });
     ipcMain.handle('read-file', async (event, file_path) => {
         return await log(
             `read-file ${file_path}`,
-            fs.promises.readFile(path.join(git._executor.cwd, file_path), { encoding: 'utf8' }),
+            fs.promises.readFile(path.join(repo_path, file_path), { encoding: 'utf8' }),
         );
     });
     ipcMain.handle('write-file', async (event, file_path, content) => {
         return await log(
             `write-file ${file_path}`,
-            fs.promises.writeFile(path.join(git._executor.cwd, file_path), content),
+            fs.promises.writeFile(path.join(repo_path, file_path), content),
         );
     });
     ipcMain.handle('delete-file', async (event, file_path) => {
         return await log(
             `delete-file ${file_path}`,
-            fs.promises.unlink(path.join(git._executor.cwd, file_path)),
+            fs.promises.unlink(path.join(repo_path, file_path)),
         );
     });
     window.on('focus', () => window.webContents.send('window-focus'));

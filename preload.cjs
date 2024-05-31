@@ -5,8 +5,7 @@ const Store = require('electron-store');
 const store = new Store();
 
 contextBridge.exposeInMainWorld('electron', {
-    setEnv: async (...args) => await ipcRenderer.invoke('set-env', ...args),
-    callGit: async (...args) => JSON.parse(await ipcRenderer.invoke('call-git', ...args)),
+    callGit: async (...args) => await ipcRenderer.invoke('call-git', ...args),
     exists: async (...args) => await ipcRenderer.invoke('exists', ...args),
     readFile: async (...args) => await ipcRenderer.invoke('read-file', ...args),
     writeFile: async (...args) => await ipcRenderer.invoke('write-file', ...args),

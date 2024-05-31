@@ -17,6 +17,8 @@
 
     import CommitRow from './CommitRow';
 
+    const field_separator = '\x06';
+
     export default {
         mixins: [ElectronEventMixin('window-focus', 'load')],
         components: { CommitRow },
@@ -26,33 +28,35 @@
         },
         methods: {
             async load() {
-                const head = await electron.callGit('revparse', 'HEAD');
+                const head = await electron.callGit('rev-parse', 'HEAD');
                 if (this.head === (this.head = head)) {
                     return;
                 }
-                const log = await electron.callGit('log', {
-                    format: {
-                        hash: '%H',
-                        parents: '%P',
-                        subject: '%s',
-                        body: '%b',
-                        author_email: '%ae',
-                        author_name: '%an',
-                        author_date: '%ad',
-                        committer_email: '%ce',
-                        committer_name: '%cn',
-                        committer_date: '%cd',
-                    },
-                    // https://stackoverflow.com/questions/7853332/how-to-change-git-log-date-formats
-                    '--date=format-local:%Y-%m-%d %H:%M': null,
-                });
-                for (const commit of log.all) {
+                const format = {
+                    hash: '%H',
+                    parents: '%P',
+                    subject: '%s',
+                    body: '%b',
+                    author_email: '%ae',
+                    author_name: '%an',
+                    author_date: '%ad',
+                    committer_email: '%ce',
+                    committer_name: '%cn',
+                    committer_date: '%cd',
+                };
+                const log = await electron.callGit(
+                    'log', '-z',
+                    '--pretty=format:' + Object.values(format).join(field_separator),
+                    '--date=format-local:%Y-%m-%d %H:%M',  // https://stackoverflow.com/questions/7853332/how-to-change-git-log-date-formats
+                );
+                const commits = [{ hash: 'WORKING_TREE' }];
+
+                for (const row of log.split('\0')) {
+                    const commit = Object.fromEntries(_.zip(Object.keys(format), row.split(field_separator)));
                     commit.hash_abbr = commit.hash.slice(0, 7);
+                    commits.push(commit);
                 }
-                this.commits = Object.freeze([
-                    { hash: 'WORKING_TREE' },
-                    ...log.all,
-                ]);
+                this.commits = Object.freeze(commits);
 
                 const selected_hash = this.selected_commit?.hash;
                 if (this.commits.every(commit => commit.hash !== selected_hash)) {

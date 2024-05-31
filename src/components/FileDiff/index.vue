@@ -229,7 +229,7 @@
                             // Initial commit.
                             return '';
                         } else {
-                            return await electron.callGit('show', [`${rev}:${file.path}`]);
+                            return await electron.callGit('show', `${rev}:${file.path}`);
                         }
                     }
                 };
@@ -247,7 +247,7 @@
                             // Working tree.
                             return await electron.readFile(file.path);
                         } else {
-                            return await electron.callGit('show', [`${rev}:${file.path}`]);
+                            return await electron.callGit('show', `${rev}:${file.path}`);
                         }
                     }
                 };
@@ -288,7 +288,7 @@
                     }
                     if (staged_content !== undefined) {
                         await electron.writeFile(this.file.path, staged_content);
-                        await electron.callGit('add', [this.file.path]);
+                        await electron.callGit('add', '--', this.file.path);
                     }
                     await electron.writeFile(this.file.path, unstaged_content);
 

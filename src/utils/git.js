@@ -2,13 +2,18 @@
 export async function getStatus(file_path) {
     const args = [];
     if (file_path !== undefined) {
-        args.push(file_path);
+        args.push('--', file_path);
     }
     // https://git-scm.com/docs/git-status#_short_format
-    const summary = await electron.callGit('status', args);
-    const conflict_files = summary.files.filter(file => _.some([
-        [file.index, file.working_dir].includes('U'),
-        file.index === file.working_dir && ['A', 'D'].includes(file.index),
+    const summary = await electron.callGit('status', '--porcelain', ...args);
+    const files = summary.split('\n').slice(0, -1).map(row => ({
+        x: row[0],
+        y: row[1],
+        path: row.slice(3),
+    }));
+    const conflict_files = files.filter(file => _.some([
+        [file.x, file.y].includes('U'),
+        file.x === file.y && ['A', 'D'].includes(file.x),
     ]));
     if (conflict_files.length > 0) {
         // The special state of unresolved conflicts makes things complicated to handle,
@@ -16,10 +21,10 @@ export async function getStatus(file_path) {
         // For this reason, we automatically reset the files.
         // This still leaves the conflict markers to be manually resolved,
         // but brings the repository back to a normal state.
-        alert("Conflict:\n" + conflict_files.map(file => `${file.path} (${file.index}${file.working_dir})`).join('\n'));
-        await electron.callGit('reset', 'mixed', ['--', ..._.map(conflict_files, 'path')]);
+        alert("Conflict:\n" + conflict_files.map(file => `${file.path} (${file.x}${file.y})`).join('\n'));
+        await electron.callGit('reset', '--', ..._.map(conflict_files, 'path'));
         // Additionally handle the "deleted by them" conflict, so that it doesn't go unnoticed.
-        for (const file of conflict_files.filter(file => file.index === 'U' && file.working_dir === 'D')) {
+        for (const file of conflict_files.filter(file => file.x === 'U' && file.y === 'D')) {
             await electron.deleteFile(file.path);
         }
         return await getStatus(file_path);
@@ -27,13 +32,13 @@ export async function getStatus(file_path) {
     const processFiles = files => _.sortBy(files.filter(file => file.status !== ' '), 'path');
 
     return {
-        unstaged: processFiles(summary.files.map(file => ({
-            status: file.working_dir === '?' ? 'A' : file.working_dir,
+        unstaged: processFiles(files.map(file => ({
+            status: file.y === '?' ? 'A' : file.y,
             path: file.path,
             area: 'unstaged',
         }))),
-        staged: processFiles(summary.files.map(file => ({
-            status: file.index === '?' ? ' ' : file.index,
+        staged: processFiles(files.map(file => ({
+            status: file.x === '?' ? ' ' : file.x,
             path: file.path,
             area: 'staged',
         }))),
