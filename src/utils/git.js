@@ -5,7 +5,8 @@ export async function getStatus(file_path) {
         args.push('--', file_path);
     }
     // https://git-scm.com/docs/git-status#_short_format
-    const summary = await electron.callGit('status', '--porcelain', ...args);
+    // https://stackoverflow.com/questions/28222633/git-status-not-showing-contents-of-newly-added-folder
+    const summary = await electron.callGit('status', '--porcelain', '--untracked-files=all', ...args);
     const files = summary.split('\n').slice(0, -1).map(row => ({
         x: row[0],
         y: row[1],

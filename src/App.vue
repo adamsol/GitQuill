@@ -10,7 +10,10 @@
             <FileDiff v-else ref="file_diff" />
         </pane>
         <pane class="min-w-80">
-            <CommitDetails class="pt-2 pb-4 pr-4" />
+            <CommitDetails
+                v-if="selected_commit !== undefined"
+                class="pt-2 pb-4 pr-4"
+            />
         </pane>
     </splitpanes>
 </template>
@@ -72,9 +75,8 @@
                             return;
                         }
                         const area = this.selected_file.area;
-                        const other_area = area === 'staged' ? 'unstaged' : 'staged';
                         const file = this.files[area].find(file => file.path >= this.selected_file.path);
-                        this.selected_file = file ?? _.last(this.files[area]) ?? this.files[other_area][0] ?? null;
+                        this.selected_file = file ?? _.last(this.files[area]) ?? null;
                     },
                     async saveSelectedFile() {
                         await this.$refs.file_diff?.save();

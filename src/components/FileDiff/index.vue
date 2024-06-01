@@ -166,13 +166,14 @@
                 const widgets = [];
 
                 diff_editor.onDidUpdateDiff(async () => {
-                    this.unsaved_changes = !_.isEqual(this.getEditorContents(), this.saved_contents);
+                    const contents = this.getEditorContents();
+                    this.unsaved_changes = !_.isEqual(contents, this.saved_contents);
 
                     const diff = diff_editor._diffModel.get().diff.get();
                     const changes = _.map(diff.mappings, 'lineRangeMapping');
 
                     if (changes.length === 0) {
-                        if (!this.files[this.file.area].some(file => file.path === this.file.path)) {
+                        if (contents[0] === contents[1]) {
                             this.updateSelectedFile();
                         } else {
                             this.whitespace_diff = true;
@@ -252,6 +253,9 @@
                     }
                 };
                 let contents = await Promise.all([loadOriginal(), loadModified()]);
+                if (file !== this.selected_file) {
+                    return;
+                }
                 // Use only \n as the newline character, for simplicity and consistency between the working tree and the index.
                 // Monaco Editor doesn't handle mixed line endings anyway.
                 // https://github.com/microsoft/vscode/issues/127

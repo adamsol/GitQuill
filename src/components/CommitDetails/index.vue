@@ -146,7 +146,7 @@
                 const { subject, body } = this.commits[1];
                 const message = subject + (body ? '\n\n' + body : '');
 
-                if (this.amend && this.message === '') {
+                if (this.amend) {
                     this.message = message;
                 } else if (!this.amend && this.message === message) {
                     this.message = '';
@@ -156,9 +156,7 @@
         methods: {
             async load() {
                 const commit = this.selected_commit;
-                if (commit === undefined) {
-                    return;
-                }
+
                 // https://stackoverflow.com/questions/3921409/how-to-know-if-there-is-a-git-rebase-in-progress
                 this.rebasing = await electron.exists('.git/rebase-merge');
 
@@ -166,12 +164,14 @@
                     if (this.rebasing) {
                         this.message = await electron.readFile('.git/rebase-merge/message');
                     }
-                    this.files = Object.freeze(await getStatus());
+                    const files = await getStatus();
+                    if (commit !== this.selected_commit) {
+                        return;
+                    }
+                    this.files = Object.freeze(files);
 
-                    const selected_area = this.selected_file?.area;
-                    const selected_path = this.selected_file?.path;
-                    if (this.files[selected_area]?.every(file => file.path !== selected_path)) {
-                        this.selected_file = null;
+                    if (!_.some(this.files[this.selected_file?.area], { path: this.selected_file?.path })) {
+                        this.updateSelectedFile();
                     }
                 } else {
                     let parent = commit.parents.split(' ')[0];
@@ -181,13 +181,17 @@
                     }
                     const summary = await electron.callGit('diff', parent, commit.hash, '--name-status');
 
-                    this.files = Object.freeze({
+                    const files = {
                         committed: summary.split('\n').slice(0, -1).map(row => ({
                             status: row[0],
                             path: row.slice(2),
                             area: 'committed',
                         })),
-                    });
+                    };
+                    if (commit !== this.selected_commit) {
+                        return;
+                    }
+                    this.files = Object.freeze(files);
                 }
                 this.commit = commit;
             },
@@ -205,7 +209,7 @@
                     await electron.callGit('checkout', '--', '.');
 
                 } else if (action === 'commit') {
-                    await this.makeCommit(...this.amend ? ['--amend'] : []);
+                    await this.makeCommit(`--message`, this.message, ...this.amend ? ['--amend'] : []);
                     this.message = '';
                     this.amend = false;
                     this.refreshCommitHistory();
@@ -214,7 +218,7 @@
                 this.updateSelectedFile();
             },
             async makeCommit(...options) {
-                await electron.callGit('commit', `--message`, this.message, ...options, '--allow-empty');
+                await electron.callGit('commit', ...options, '--allow-empty');
             },
             async startRebase() {
                 const commit = this.commit;
@@ -236,28 +240,29 @@
                 }
             },
             async continueRebase() {
+                // Properly handle editing the commit message during rebase, even without file changes.
                 // https://stackoverflow.com/questions/43489971/how-to-suppress-the-editor-for-git-rebase-continue
                 // https://stackoverflow.com/questions/27641184/git-rebase-continue-but-modify-commit-message-to-document-changes-during-conf
                 // https://stackoverflow.com/questions/28267344/how-can-i-reference-the-original-of-a-currently-edited-commit-during-git-rebase
-                if (await electron.exists('.git/rebase-merge/amend')) {
-                    // Amend the commit here, to handle editing the commit message without file changes.
-                    await this.makeCommit('--amend');
-                    this.message = '';
-                    await this.finishRebase('rebase', '--skip');
-                } else {
-                    // This branch is executed after a merge conflict.
-                    await electron.writeFile('.git/rebase-merge/message', this.message);
-                    this.message = '';
-                    await this.finishRebase('-c', 'core.editor=true', 'rebase', '--continue');
+                const rev = (await electron.readFile('.git/rebase-merge/stopped-sha')).trim();
+                if (rev !== this.commits[1].hash) {
+                    // We were in a merge conflict. Recreate the commit with its author.
+                    await this.makeCommit('--reuse-message', rev);
                 }
+                await this.makeCommit('--message', this.message, '--amend');
+                this.message = '';
+                this.amend = false;
+                await this.finishRebase('--skip');
             },
             async abortRebase() {
-                await this.finishRebase('rebase', '--abort');
+                this.message = '';
+                this.amend = false;
+                await this.finishRebase('--abort');
             },
-            async finishRebase(...cmd) {
+            async finishRebase(cmd) {
                 await this.saveSelectedFile();
                 try {
-                    await electron.callGit(...cmd);
+                    await electron.callGit('rebase', cmd);
                 } finally {
                     this.refreshCommitHistory();
                     this.selected_file = null;
