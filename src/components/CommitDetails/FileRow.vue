@@ -3,14 +3,14 @@
     <div
         class="row clickable group"
         :class="{ active }"
-        :title="file.path"
+        :title="(['R', 'C'].includes(file.status) ? `${file.old_path} -> ` : '') + file.path"
         @click="selected_file = file"
     >
         <div class="w-3 shrink-0">
             {{ file.status }}
         </div>
         <div class="grow ellipsis">
-            <filepath :file />
+            <filepath :path="file.path" />
         </div>
 
         <div class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
@@ -47,7 +47,7 @@
                     await electron.callGit('add', '--', this.file.path);
 
                 } else if (action === 'unstage') {
-                    await electron.callGit('reset', '--', this.file.path);
+                    await electron.callGit('reset', '--', this.file.path, ..._.filter([this.file.old_path]));
 
                 } else if (action === 'discard') {
                     if (this.file.status === 'A') {
@@ -56,7 +56,7 @@
                         await electron.callGit('checkout', '--', this.file.path);
                     }
                 }
-                await this.updateFileStatus(this.file.path);
+                await this.updateFileStatus(this.file);
                 if (this.file.path === this.selected_file?.path) {
                     this.updateSelectedFile();
                 }

@@ -11,12 +11,12 @@
 <script>
     export default {
         props: {
-            file: { type: Object, required: true },
+            path: { type: String, required: true },
         },
         computed: {
             parts() {
-                const index = this.file.path.lastIndexOf('/') + 1;
-                return [this.file.path.slice(0, index), this.file.path.slice(index)];
+                const index = this.path.lastIndexOf('/') + 1;
+                return [this.path.slice(0, index), this.path.slice(index)];
             },
         },
     };

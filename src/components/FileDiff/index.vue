@@ -3,7 +3,11 @@
     <div class="h-full flex flex-col">
         <div class="flex items-center gap-2 p-2">
             <div v-if="file !== undefined" class="ellipsis">
-                <filepath :file />
+                <template v-if="['R', 'C'].includes(file.status)">
+                    <filepath :path="file.old_path" />
+                    ->
+                </template>
+                <filepath :path="file.path" />
             </div>
             <div v-if="unsaved_changes" title="Unsaved changes">
                 *
@@ -211,7 +215,6 @@
             async load() {
                 await this.save_semaphore;
 
-                // TODO: handle renamed files
                 const commit = this.selected_commit;
                 const file = this.selected_file;
 
@@ -230,7 +233,8 @@
                             // Initial commit.
                             return '';
                         } else {
-                            return await electron.callGit('show', `${rev}:${file.path}`);
+                            const file_path = ['R', 'C'].includes(file.status) ? file.old_path : file.path;
+                            return await electron.callGit('show', `${rev}:${file_path}`);
                         }
                     }
                 };
@@ -299,7 +303,7 @@
                     this.saved_contents = contents;
                     this.unsaved_changes = false;
 
-                    await this.updateFileStatus(this.file.path);
+                    await this.updateFileStatus(this.file);
 
                 } finally {
                     lift();

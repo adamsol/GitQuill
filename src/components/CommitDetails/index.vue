@@ -179,19 +179,27 @@
                         // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
                         parent = (await electron.callGit('hash-object', '-t', 'tree', '/dev/null')).trim();
                     }
-                    const summary = await electron.callGit('diff', parent, commit.hash, '--name-status');
-
-                    const files = {
-                        committed: summary.split('\n').slice(0, -1).map(row => ({
-                            status: row[0],
-                            path: row.slice(2),
-                            area: 'committed',
-                        })),
-                    };
+                    const status = await electron.callGit('diff', parent, commit.hash, '--name-status', '-z');
                     if (commit !== this.selected_commit) {
                         return;
                     }
-                    this.files = Object.freeze(files);
+                    const tokens = status.split('\0');
+                    const files = [];
+
+                    for (let i = 0; i < tokens.length - 1; ++i) {
+                        const file = {
+                            status: tokens[i][0],
+                            path: tokens[++i],
+                            area: 'committed',
+                        };
+                        if (['R', 'C'].includes(file.status)) {
+                            // Note: the order is different to that of `git status -z`.
+                            file.old_path = file.path;
+                            file.path = tokens[++i];
+                        }
+                        files.push(file);
+                    }
+                    this.files = Object.freeze({ committed: files });
                 }
                 this.commit = commit;
             },
@@ -231,13 +239,9 @@
                 this.refreshCommitHistory();
 
                 await electron.callGit('revert', commit.hash, '--no-commit');
-                await electron.callGit('restore', '-s', commit.hash, '--', '.');
+                await electron.callGit('restore', '--source', commit.hash, '--', '.');
 
                 this.selected_commit = this.commits[0];
-
-                if (this.selected_file !== null) {
-                    this.selected_file = { ...this.selected_file, area: 'unstaged' };
-                }
             },
             async continueRebase() {
                 // Properly handle editing the commit message during rebase, even without file changes.

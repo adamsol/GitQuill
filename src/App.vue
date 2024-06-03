@@ -58,15 +58,14 @@
                     save_semaphore: Promise.resolve(),
                 },
                 methods: {
-                    async updateFileStatus(file_path) {
-                        const status = await getStatus(file_path);
+                    async updateFileStatus(file) {
+                        // https://stackoverflow.com/questions/71268388/show-renamed-moved-status-with-git-diff-on-single-file
+                        const status = await getStatus('--', file.path, ..._.filter([file.old_path]));
                         const files = _.cloneDeep(this.files);
 
                         for (const area of ['unstaged', 'staged']) {
-                            files[area] = files[area].filter(file => file.path !== file_path);
-                            if (status[area].length === 1) {
-                                files[area] = _.sortBy([...files[area], ...status[area]], 'path');
-                            }
+                            files[area] = _.reject(files[area], { path: file.path });
+                            files[area] = _.sortBy([...files[area], ...status[area]], 'path');
                         }
                         this.files = Object.freeze(files);
                     },
@@ -74,7 +73,11 @@
                         if (this.selected_file === null) {
                             return;
                         }
-                        const area = this.selected_file.area;
+                        let area = this.selected_file.area;
+                        // For rebasing.
+                        if (area === 'committed') {
+                            area = 'unstaged';
+                        }
                         const file = this.files[area].find(file => file.path >= this.selected_file.path);
                         this.selected_file = file ?? _.last(this.files[area]) ?? null;
                     },
