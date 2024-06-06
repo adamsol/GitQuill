@@ -27,7 +27,7 @@
     hr {
         @apply border-t border-r border-gray/30 self-stretch h-auto;
     }
-    textarea, select {
+    input, textarea, select {
         @apply p-1 bg-gray-dark border border-gray/30 rounded-sm;
     }
     input[type=checkbox] {

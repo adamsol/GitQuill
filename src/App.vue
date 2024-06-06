@@ -2,12 +2,8 @@
 <template>
     <splitpanes @resized="main_pane_size = $event[0].size">
         <pane :size="main_pane_size">
-            <CommitHistory
-                v-if="selected_file === null"
-                :key="commit_history_key"
-                class="py-2"
-            />
-            <FileDiff v-else ref="file_diff" />
+            <CommitHistory v-show="selected_file === null" class="py-2" />
+            <FileDiff v-if="selected_file !== null" ref="file_diff" />
         </pane>
         <pane class="min-w-80">
             <CommitDetails
