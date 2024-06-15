@@ -5,6 +5,7 @@ const Store = require('electron-store');
 const store = new Store();
 
 contextBridge.exposeInMainWorld('electron', {
+    openRepo: async (...args) => await ipcRenderer.invoke('open-repo', ...args),
     callGit: async (...args) => await ipcRenderer.invoke('call-git', ...args),
     exists: async (...args) => await ipcRenderer.invoke('exists', ...args),
     readFile: async (...args) => await ipcRenderer.invoke('read-file', ...args),

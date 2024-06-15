@@ -44,16 +44,16 @@
                 await this.saveSelectedFile();
 
                 if (action === 'stage') {
-                    await electron.callGit('add', '--', this.file.path);
+                    await repo.callGit('add', '--', this.file.path);
 
                 } else if (action === 'unstage') {
-                    await electron.callGit('reset', '--', this.file.path, ..._.filter([this.file.old_path]));
+                    await repo.callGit('reset', '--', this.file.path, ..._.filter([this.file.old_path]));
 
                 } else if (action === 'discard') {
                     if (this.file.status === 'A') {
-                        await electron.callGit('clean', '-f', '--', this.file.path);
+                        await repo.callGit('clean', '-f', '--', this.file.path);
                     } else {
-                        await electron.callGit('checkout', '--', this.file.path);
+                        await repo.callGit('checkout', '--', this.file.path);
                     }
                 }
                 await this.updateFileStatus(this.file);

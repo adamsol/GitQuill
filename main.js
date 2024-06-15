@@ -9,8 +9,6 @@ import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import initContextMenu from 'electron-context-menu';
 import Store from 'electron-store';
 
-const store = new Store();
-let repo_path = store.get('repo_path');
 let window;
 
 async function openRepo() {
@@ -24,25 +22,17 @@ async function openRepo() {
         const git_path = path.join(folder_path, '.git');
 
         if (fs.existsSync(git_path) && fs.lstatSync(git_path).isDirectory()) {
-            repo_path = folder_path;
-            store.set('repo_path', folder_path);
-            await window.loadFile('index.html');
+            return folder_path;
         } else {
             await dialog.showMessageBox(window, {
                 message: "Not a Git repository!",
             });
-            await openRepo();
+            return await openRepo();
         }
     }
 }
 
 const app_menu_template = [
-    {
-        label: 'Repo',
-        submenu: [
-            { label: "Open", click: openRepo, accelerator: 'CmdOrCtrl+O' },
-        ],
-    },
     {
         label: 'View',
         submenu: [
@@ -79,9 +69,12 @@ app.whenReady().then(async () => {
             throw e;
         }
     }
-    ipcMain.handle('call-git', async (event, ...args) => {
+    ipcMain.handle('open-repo', async () => {
+        return await openRepo();
+    });
+    ipcMain.handle('call-git', async (event, repo_path, args) => {
         const run = async () => await log(
-            `call-git ${JSON.stringify(args)}`,
+            `call-git [${repo_path}] ${JSON.stringify(args)}`,
             new Promise((resolve, reject) => {
                 const output = [];
                 const process = spawn('git', args, { cwd: repo_path });
@@ -116,27 +109,39 @@ app.whenReady().then(async () => {
         }
     });
     ipcMain.handle('exists', async (event, file_path) => {
+        if (Array.isArray(file_path)) {
+            file_path = path.join(...file_path);
+        }
         return await log(
             `exists ${file_path}`,
-            new Promise(resolve => resolve(fs.existsSync(path.join(repo_path, file_path)))),
+            new Promise(resolve => resolve(fs.existsSync(file_path))),
         );
     });
     ipcMain.handle('read-file', async (event, file_path) => {
+        if (Array.isArray(file_path)) {
+            file_path = path.join(...file_path);
+        }
         return await log(
             `read-file ${file_path}`,
-            fs.promises.readFile(path.join(repo_path, file_path), { encoding: 'utf8' }),
+            fs.promises.readFile(file_path, { encoding: 'utf8' }),
         );
     });
     ipcMain.handle('write-file', async (event, file_path, content) => {
+        if (Array.isArray(file_path)) {
+            file_path = path.join(...file_path);
+        }
         return await log(
             `write-file ${file_path}`,
-            fs.promises.writeFile(path.join(repo_path, file_path), content),
+            fs.promises.writeFile(file_path, content),
         );
     });
     ipcMain.handle('delete-file', async (event, file_path) => {
+        if (Array.isArray(file_path)) {
+            file_path = path.join(...file_path);
+        }
         return await log(
             `delete-file ${file_path}`,
-            fs.promises.unlink(path.join(repo_path, file_path)),
+            fs.promises.unlink(file_path),
         );
     });
     window.on('focus', () => window.webContents.send('window-focus'));

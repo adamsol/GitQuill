@@ -1,19 +1,17 @@
 
 export default (name, default_value) => {
-    const internal_name = `internal_${name}`;
     return {
         data: () => ({
-            [internal_name]: electron.store.get(name, default_value),
+            [name]: electron.store.get(name, default_value),
         }),
-        computed: {
+        watch: {
             [name]: {
-                get() {
-                    return this[internal_name];
-                },
-                set(value) {
-                    this[internal_name] = value;
+                handler() {
+                    // https://github.com/electron/electron/issues/26338
+                    const value = JSON.parse(JSON.stringify(this[name]));
                     electron.store.set(name, value);
                 },
+                deep: true,
             },
         },
     };

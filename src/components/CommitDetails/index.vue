@@ -136,11 +136,8 @@
             amend: false,
         }),
         watch: {
-            selected_commit: {
-                async handler() {
-                    await this.load();
-                },
-                immediate: true,
+            async selected_commit() {
+                await this.load();
             },
             amend() {
                 const { subject, body } = this.commits[1];
@@ -153,16 +150,22 @@
                 }
             },
         },
+        async created() {
+            await this.load();
+        },
+        async activated() {
+            await this.load();
+        },
         methods: {
             async load() {
                 const commit = this.selected_commit;
 
                 // https://stackoverflow.com/questions/3921409/how-to-know-if-there-is-a-git-rebase-in-progress
-                this.rebasing = await electron.exists('.git/rebase-merge');
+                this.rebasing = await repo.exists('.git/rebase-merge');
 
                 if (commit.hash === 'WORKING_TREE') {
                     if (this.rebasing) {
-                        this.message = await electron.readFile('.git/rebase-merge/message');
+                        this.message = await repo.readFile('.git/rebase-merge/message');
                     }
                     const files = await getStatus();
                     if (commit !== this.selected_commit) {
@@ -177,9 +180,9 @@
                     let parent = commit.parents.split(' ')[0];
                     if (parent === '') {
                         // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
-                        parent = (await electron.callGit('hash-object', '-t', 'tree', '/dev/null')).trim();
+                        parent = (await repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim();
                     }
-                    const status = await electron.callGit('diff', parent, commit.hash, '--name-status', '-z');
+                    const status = await repo.callGit('diff', parent, commit.hash, '--name-status', '-z');
                     if (commit !== this.selected_commit) {
                         return;
                     }
@@ -207,14 +210,14 @@
                 await this.saveSelectedFile();
 
                 if (action === 'stage') {
-                    await electron.callGit('add', '--all');
+                    await repo.callGit('add', '--all');
 
                 } else if (action === 'unstage') {
-                    await electron.callGit('reset');
+                    await repo.callGit('reset');
 
                 } else if (action === 'discard') {
-                    await electron.callGit('clean', '-f');
-                    await electron.callGit('checkout', '--', '.');
+                    await repo.callGit('clean', '-f');
+                    await repo.callGit('checkout', '--', '.');
 
                 } else if (action === 'commit') {
                     await this.makeCommit(`--message`, this.message, ...this.amend ? ['--amend'] : []);
@@ -226,7 +229,7 @@
                 this.updateSelectedFile();
             },
             async makeCommit(...options) {
-                await electron.callGit('commit', ...options, '--allow-empty');
+                await repo.callGit('commit', ...options, '--allow-empty');
             },
             async startRebase() {
                 const commit = this.commit;
@@ -235,11 +238,11 @@
                     // https://stackoverflow.com/questions/22992543/how-do-i-git-rebase-the-first-commit
                     target = '--root';
                 }
-                await electron.callGit('-c', 'sequence.editor=sed -i 1s/^pick/edit/', 'rebase', '--interactive', target);
+                await repo.callGit('-c', 'sequence.editor=sed -i 1s/^pick/edit/', 'rebase', '--interactive', target);
                 this.refreshCommitHistory();
 
-                await electron.callGit('revert', commit.hash, '--no-commit');
-                await electron.callGit('restore', '--source', commit.hash, '--', '.');
+                await repo.callGit('revert', commit.hash, '--no-commit');
+                await repo.callGit('restore', '--source', commit.hash, '--', '.');
 
                 this.selected_commit = this.commits[0];
             },
@@ -248,7 +251,7 @@
                 // https://stackoverflow.com/questions/43489971/how-to-suppress-the-editor-for-git-rebase-continue
                 // https://stackoverflow.com/questions/27641184/git-rebase-continue-but-modify-commit-message-to-document-changes-during-conf
                 // https://stackoverflow.com/questions/28267344/how-can-i-reference-the-original-of-a-currently-edited-commit-during-git-rebase
-                const rev = (await electron.readFile('.git/rebase-merge/stopped-sha')).trim();
+                const rev = (await repo.readFile('.git/rebase-merge/stopped-sha')).trim();
                 if (rev !== this.commits[1].hash) {
                     // We were in a merge conflict. Recreate the commit with its author.
                     await this.makeCommit('--reuse-message', rev);
@@ -266,7 +269,7 @@
             async finishRebase(cmd) {
                 await this.saveSelectedFile();
                 try {
-                    await electron.callGit('rebase', cmd);
+                    await repo.callGit('rebase', cmd);
                 } finally {
                     this.refreshCommitHistory();
                     this.selected_file = null;

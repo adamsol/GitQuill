@@ -2,7 +2,7 @@
 export async function getStatus(...args) {
     // https://git-scm.com/docs/git-status#_short_format
     // https://stackoverflow.com/questions/28222633/git-status-not-showing-contents-of-newly-added-folder
-    const status = await electron.callGit('status', '--porcelain', '-z', '--untracked-files=all', ...args);
+    const status = await repo.callGit('status', '--porcelain', '-z', '--untracked-files=all', ...args);
     const tokens = status.split('\0');
     const files = [];
 
@@ -30,10 +30,10 @@ export async function getStatus(...args) {
         // This still leaves the conflict markers to be manually resolved,
         // but brings the repository back to a normal state.
         alert("Conflict:\n" + conflict_files.map(file => `${file.path} (${file.x}${file.y})`).join('\n'));
-        await electron.callGit('reset', '--', ..._.map(conflict_files, 'path'));
+        await repo.callGit('reset', '--', ..._.map(conflict_files, 'path'));
         // Additionally handle the "deleted by them" conflict, so that it doesn't go unnoticed.
         for (const file of _.filter(conflict_files, { x: 'U', y: 'D' })) {
-            await electron.deleteFile(file.path);
+            await repo.deleteFile(file.path);
         }
         return await getStatus(...args);
     }

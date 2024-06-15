@@ -4,9 +4,10 @@ import * as monaco from 'monaco-editor';
 import { Splitpanes, Pane } from 'splitpanes';
 import { createApp } from 'vue/dist/vue.esm-bundler';
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
+import Draggable from 'vuedraggable';
 import { RecycleScroller } from 'vue-virtual-scroller';
 
-import App from './App';
+import AppRoot from './AppRoot';
 import './index.css';
 import * as settings from '@/settings';
 import monaco_theme from './theme/monaco';
@@ -19,11 +20,12 @@ import Toggle from './widgets/toggle';
 window._ = _;
 window.settings = settings;
 
-const app = createApp(App);
+const app = createApp(AppRoot);
 
 app.component('Splitpanes', Splitpanes);
 app.component('Pane', Pane);
 
+app.component('Draggable', Draggable);
 app.component('RecycleScroller', RecycleScroller);
 
 app.component('Btn', Btn);

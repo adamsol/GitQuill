@@ -159,6 +159,9 @@
         async created() {
             await this.load();
         },
+        async activated() {
+            await this.load();
+        },
         methods: {
             onMountEditor(diff_editor) {
                 this.diff_editor = diff_editor;
@@ -234,7 +237,7 @@
                             return '';
                         } else {
                             const file_path = ['R', 'C'].includes(file.status) ? file.old_path : file.path;
-                            return await electron.callGit('show', `${rev}:${file_path}`);
+                            return await repo.callGit('show', `${rev}:${file_path}`);
                         }
                     }
                 };
@@ -250,9 +253,9 @@
                         }
                         if (rev === '') {
                             // Working tree.
-                            return await electron.readFile(file.path);
+                            return await repo.readFile(file.path);
                         } else {
-                            return await electron.callGit('show', `${rev}:${file.path}`);
+                            return await repo.callGit('show', `${rev}:${file.path}`);
                         }
                     }
                 };
@@ -291,14 +294,14 @@
                             staged_content = contents[0];
                         }
                     } else if (this.file.area === 'staged') {
-                        unstaged_content = await electron.readFile(this.file.path);
+                        unstaged_content = await repo.readFile(this.file.path);
                         staged_content = contents[1];
                     }
                     if (staged_content !== undefined) {
-                        await electron.writeFile(this.file.path, staged_content);
-                        await electron.callGit('add', '--', this.file.path);
+                        await repo.writeFile(this.file.path, staged_content);
+                        await repo.callGit('add', '--', this.file.path);
                     }
-                    await electron.writeFile(this.file.path, unstaged_content);
+                    await repo.writeFile(this.file.path, unstaged_content);
 
                     this.saved_contents = contents;
                     this.unsaved_changes = false;

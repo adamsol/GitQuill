@@ -55,7 +55,6 @@
     export default {
         mixins: [
             ElectronEventMixin('window-focus', 'load'),
-
             WindowEventMixin('keydown', 'onKeyDown'),
         ],
         components: { CommitRow },
@@ -66,11 +65,8 @@
             search_index: null,
         }),
         watch: {
-            commit_history_key: {
-                async handler() {
-                    await this.load();
-                },
-                immediate: true,
+            async commit_history_key() {
+                await this.load();
             },
             async selected_file() {
                 if (this.selected_file === null) {
@@ -78,9 +74,15 @@
                 }
             },
         },
+        async created() {
+            await this.load();
+        },
+        async activated() {
+            await this.load();
+        },
         methods: {
             async load() {
-                const head = await electron.callGit('rev-parse', 'HEAD');
+                const head = await repo.callGit('rev-parse', 'HEAD');
                 if (this.head === (this.head = head)) {
                     return;
                 }
@@ -96,7 +98,7 @@
                     committer_name: '%cn',
                     committer_date: '%cd',
                 };
-                const log = await electron.callGit(
+                const log = await repo.callGit(
                     'log', '-z',
                     '--pretty=format:' + Object.values(format).join(field_separator),
                     '--date=format-local:%Y-%m-%d %H:%M',  // https://stackoverflow.com/questions/7853332/how-to-change-git-log-date-formats
