@@ -76,17 +76,17 @@ app.whenReady().then(async () => {
         const run = async () => await log(
             `call-git [${repo_path}] ${JSON.stringify(args)}`,
             new Promise((resolve, reject) => {
-                const output = [];
+                const stdout = [], stderr = [];
                 const process = spawn('git', args, { cwd: repo_path });
                 process.stdout.setEncoding('utf8');
-                process.stdout.on('data', buffer => output.push(buffer));
+                process.stdout.on('data', buffer => stdout.push(buffer));
                 process.stderr.setEncoding('utf8');
-                process.stderr.on('data', buffer => output.push(buffer));
+                process.stderr.on('data', buffer => stderr.push(buffer));
                 process.on('close', code => {
                     if (code === 0) {
-                        resolve(output.join(''));
+                        resolve(stdout.join(''));
                     } else {
-                        reject(new Error(output.join('')));
+                        reject(new Error([...stdout, ...stderr].join('')));
                     }
                 });
             }),

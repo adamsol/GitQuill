@@ -216,7 +216,7 @@
                     await repo.callGit('reset');
 
                 } else if (action === 'discard') {
-                    await repo.callGit('clean', '-f');
+                    await repo.callGit('clean', '-f', '-d');
                     await repo.callGit('checkout', '--', '.');
 
                 } else if (action === 'commit') {

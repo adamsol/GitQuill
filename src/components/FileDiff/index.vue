@@ -179,12 +179,8 @@
                     const diff = diff_editor._diffModel.get().diff.get();
                     const changes = _.map(diff.mappings, 'lineRangeMapping');
 
-                    if (changes.length === 0) {
-                        if (contents[0] === contents[1]) {
-                            this.updateSelectedFile();
-                        } else {
-                            this.whitespace_diff = true;
-                        }
+                    if (changes.length === 0 && contents[0] !== contents[1]) {
+                        this.whitespace_diff = true;
                     }
                     for (const widget of widgets) {
                         diff_editor._editors.modified.removeGlyphMarginWidget(widget);
@@ -276,6 +272,9 @@
                 this.diff_editor = undefined;
             },
             async save() {
+                if (this.diff_editor === undefined) {
+                    return;
+                }
                 await this.save_semaphore;
 
                 const contents = this.getEditorContents();
@@ -308,6 +307,9 @@
 
                     await this.updateFileStatus(this.file);
 
+                    if (!_.some(this.files[this.file.area], { path: this.file.path })) {
+                        this.updateSelectedFile();
+                    }
                 } finally {
                     lift();
                 }
