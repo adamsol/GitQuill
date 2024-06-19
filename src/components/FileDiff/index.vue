@@ -4,10 +4,10 @@
         <div class="flex items-center gap-2 p-2">
             <div v-if="file !== undefined" class="ellipsis">
                 <template v-if="['R', 'C'].includes(file.status)">
-                    <filepath :path="file.old_path" />
+                    <file-path :path="file.old_path" />
                     ->
                 </template>
-                <filepath :path="file.path" />
+                <file-path :path="file.path" />
             </div>
             <div v-if="unsaved_changes" title="Unsaved changes">
                 *

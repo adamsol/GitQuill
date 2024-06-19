@@ -5,7 +5,7 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
 import initContextMenu from 'electron-context-menu';
 import Store from 'electron-store';
 
@@ -147,5 +147,10 @@ app.whenReady().then(async () => {
     window.on('focus', () => window.webContents.send('window-focus'));
     window.on('blur', () => window.webContents.send('window-blur'));
 
+    // https://stackoverflow.com/questions/32402327/how-can-i-force-external-links-from-browser-window-to-open-in-a-default-browser
+    window.webContents.setWindowOpenHandler(({ url }) => {
+        shell.openExternal(url);
+        return { action: 'deny' };
+    });
     await window.loadFile('index.html');
 });

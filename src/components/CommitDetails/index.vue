@@ -86,10 +86,10 @@
                     {{ commit.hash }}
                 </div>
                 <div class="text-xl">
-                    {{ commit.subject }}
+                    <commit-message :content="commit.subject" />
                 </div>
                 <div v-if="commit.body" class="mt-2 whitespace-pre-wrap">
-                    {{ commit.body }}
+                    <commit-message :content="commit.body" />
                 </div>
             </div>
 

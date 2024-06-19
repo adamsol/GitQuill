@@ -10,7 +10,7 @@
             {{ file.status }}
         </div>
         <div class="grow ellipsis">
-            <filepath :path="file.path" />
+            <file-path :path="file.path" />
         </div>
 
         <div class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
