@@ -102,4 +102,7 @@
     .ellipsis {
         @apply whitespace-nowrap overflow-hidden text-ellipsis;
     }
+    .scrollbar-hidden::-webkit-scrollbar {
+        @apply hidden;
+    }
 }

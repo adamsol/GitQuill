@@ -60,6 +60,11 @@
                     selected_file: null,
                     save_semaphore: Promise.resolve(),
                 }),
+                computed: {
+                    commits_by_hash() {
+                        return _.keyBy(this.commits, 'hash');
+                    },
+                },
                 methods: {
                     async updateFileStatus(file) {
                         // https://stackoverflow.com/questions/71268388/show-renamed-moved-status-with-git-diff-on-single-file

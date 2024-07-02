@@ -226,9 +226,9 @@
                             // https://stackoverflow.com/questions/60853992/how-to-git-show-a-staged-file
                             rev = { unstaged: ':0', staged: 'HEAD' }[file.area];
                         } else {
-                            rev = commit.parents.split(' ')[0];
+                            rev = commit.parents[0];
                         }
-                        if (rev === '') {
+                        if (rev === undefined) {
                             // Initial commit.
                             return '';
                         } else {

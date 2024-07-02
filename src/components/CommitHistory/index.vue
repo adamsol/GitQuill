@@ -2,7 +2,7 @@
 <template>
     <div class="h-full flex flex-col gap-3">
         <div class="flex items-center gap-1">
-            <icon name="mdi-magnify" class="size-5 ml-2" />
+            <icon name="mdi-magnify" class="size-5 ml-2 shrink-0" />
             <input
                 v-model.trim="search_query"
                 ref="search_input"
@@ -30,40 +30,95 @@
                 </btn>
             </template>
         </div>
-        <recycle-scroller
-            v-if="commits !== undefined"
-            ref="scroller"
-            class="grow bg-gray-dark"
-            :items="commits"
-            :item-size="32"
-            key-field="hash"
-            v-slot="{ item }"
+
+        <splitpanes
+            class="py-1 bg-gray-dark overflow-hidden"
+            @resized="commit_history_column_sizes = $_.map($event, 'size')"
         >
-            <CommitRow :commit="item" />
-        </recycle-scroller>
+            <pane :size="commit_history_column_sizes[0]" class="flex flex-col overflow-x-auto min-w-12">
+                <!-- `list-class="static"` is necessary for horizontal scroll. -->
+                <recycle-scroller
+                    v-if="commits !== undefined"
+                    ref="refs_scroller"
+                    class="scrollbar-hidden"
+                    :items="commits"
+                    :item-size="row_height"
+                    key-field="hash"
+                    list-class="static"
+                    v-slot="{ item }"
+                    @scroll="onScroll"
+                >
+                    <CommitRefsRow :commit="item" />
+                </recycle-scroller>
+            </pane>
+            <pane
+                :size="commit_history_column_sizes[1]"
+                ref="graph_pane"
+                class="relative overflow-auto scrollbar-hidden min-w-8"
+                @scroll="onScroll"
+            >
+                <div
+                    v-if="commits !== undefined"
+                    class="absolute w-full"
+                    :style="{ 'height': `${commits.length * row_height}px` }"
+                />
+                <CommitGraph
+                    v-if="commits !== undefined"
+                    class="sticky top-0"
+                    :row_height
+                    :scroll_position
+                />
+            </pane>
+            <pane class="flex flex-col min-w-96">
+                <recycle-scroller
+                    v-if="commits !== undefined"
+                    ref="main_scroller"
+                    emit-update
+                    :items="commits"
+                    item-class="pt-1"
+                    :item-size="row_height"
+                    key-field="hash"
+                    v-slot="{ item }"
+                    @scroll="onScroll"
+                >
+                    <CommitRow :commit="item" />
+                </recycle-scroller>
+            </pane>
+        </splitpanes>
     </div>
 </template>
 
 <script>
     import ElectronEventMixin from '@/mixins/ElectronEventMixin';
+    import StoreMixin from '@/mixins/StoreMixin';
     import WindowEventMixin from '@/mixins/WindowEventMixin';
 
+    import CommitGraph from './CommitGraph';
+    import CommitRefsRow from './CommitRefsRow';
     import CommitRow from './CommitRow';
 
     const field_separator = '\x06';
+    const ref_type_order = ['head', 'tag', 'local_branch', 'remote_branch'];
 
     export default {
         mixins: [
             ElectronEventMixin('window-focus', 'load'),
             WindowEventMixin('keydown', 'onKeyDown'),
+            StoreMixin('commit_history_column_sizes', [10, 10]),
         ],
-        components: { CommitRow },
+        components: { CommitGraph, CommitRefsRow, CommitRow },
         inject: ['commit_history_key', 'head', 'commits', 'selected_commit', 'selected_file'],
         data: () => ({
+            scroll_position: 0,
             search_query: '',
             search_items: [],
             search_index: null,
         }),
+        computed: {
+            row_height() {
+                return 40;
+            },
+        },
         watch: {
             async commit_history_key() {
                 await this.load();
@@ -82,10 +137,35 @@
         },
         methods: {
             async load() {
-                const head = await repo.callGit('rev-parse', 'HEAD');
-                if (this.head === (this.head = head)) {
+                const summary = await repo.callGit('show-ref', '--dereference', '--head');
+                const refs = {};
+                let head;
+
+                for (const line of _.filter(summary.split('\n'))) {
+                    let [hash, name] = line.split(' ');
+                    let ref;
+
+                    if (name === 'HEAD') {
+                        head = hash;
+                        ref = { type: 'head', name };
+                    } else if (name.startsWith('refs/tags/')) {
+                        ref = { type: 'tag', name: name.split('/').slice(2).join('/').replace(/\^\{}$/, '') };
+                    } else if (name.startsWith('refs/heads/')) {
+                        ref = { type: 'local_branch', name: name.split('/').slice(2).join('/') };
+                    } else if (name.startsWith('refs/remotes/') && !name.endsWith('/HEAD')) {
+                        ref = { type: 'remote_branch', name: name.split('/').slice(2).join('/') };
+                    } else {
+                        continue;
+                    }
+                    refs[hash] ??= [];
+                    refs[hash].push(ref);
+                }
+                if (_.isEqual(this.prev_refs, refs)) {
                     return;
                 }
+                this.prev_refs = refs;
+
+                // https://git-scm.com/docs/git-log#_pretty_formats
                 const format = {
                     hash: '%H',
                     parents: '%P',
@@ -99,16 +179,56 @@
                     committer_date: '%cd',
                 };
                 const log = await repo.callGit(
-                    'log', '-z',
+                    'log', 'HEAD', '--branches', '--tags', '--remotes', '--date-order', '-z',
                     '--pretty=format:' + Object.values(format).join(field_separator),
                     '--date=format-local:%Y-%m-%d %H:%M',  // https://stackoverflow.com/questions/7853332/how-to-change-git-log-date-formats
                 );
-                const commits = [{ hash: 'WORKING_TREE' }];
+                const commits = [
+                    { hash: 'WORKING_TREE', parents: head },
+                    ...log.split('\0').map(row => Object.fromEntries(_.zip(Object.keys(format), row.split(field_separator)))),
+                ];
+                const occupied_levels = {}
+                const running_commits = new Set();
+                const remaining_parents = {};
+                const children = {};
 
-                for (const row of log.split('\0')) {
-                    const commit = Object.fromEntries(_.zip(Object.keys(format), row.split(field_separator)));
+                for (const [i, commit] of commits.entries()) {
+                    commit.index = i;
                     commit.hash_abbr = commit.hash.slice(0, 7);
-                    commits.push(commit);
+                    commit.refs = _.sortBy(refs[commit.hash], ref => ref_type_order.indexOf(ref.type));
+                    commit.parents = commit.parents ? commit.parents.split(' ') : [];
+                    for (const parent_hash of commit.parents) {
+                        children[parent_hash] ??= [];
+                        children[parent_hash].push(commit);
+                        remaining_parents[commit.hash] = new Set(commit.parents);
+                    }
+                    for (const child of _.sortBy(children[commit.hash], 'level')) {
+                        if (occupied_levels[child.level] === child) {
+                            commit.level = child.level;
+                            break;
+                        }
+                    }
+                    if (commit.level === undefined) {
+                        for (let level = 0; ; ++level) {
+                            if (occupied_levels[level] === undefined) {
+                                commit.level = level;
+                                break;
+                            }
+                        }
+                    }
+                    occupied_levels[commit.level] = commit;
+                    running_commits.add(commit);
+
+                    for (const child of children[commit.hash] ?? []) {
+                        remaining_parents[child.hash].delete(commit.hash);
+                        if (remaining_parents[child.hash].size === 0) {
+                            if (child.level > commit.level) {
+                                delete occupied_levels[child.level];
+                            }
+                            running_commits.delete(child);
+                        }
+                    }
+                    commit.running_commits = [...running_commits];
                 }
                 this.commits = Object.freeze(commits);
 
@@ -153,11 +273,11 @@
                 this.search_index = index;
                 this.selected_commit = this.commits[this.search_items[this.search_index]];
 
-                const scroller = this.$refs.scroller;
+                const scroller = this.$refs.main_scroller;
                 const state = scroller.getScroll();
                 const pos = this.search_items[this.search_index] * scroller.itemSize;
                 if (pos < state.start || pos + scroller.itemSize > state.end) {
-                    this.$refs.scroller.scrollToPosition(pos - (state.end - state.start) / 5);
+                    this.$refs.main_scroller.scrollToPosition(pos - (state.end - state.start) / 5);
                 }
             },
             resetSearch() {
@@ -173,6 +293,12 @@
                 if (event.ctrlKey && event.key === 'f') {
                     this.$refs.search_input.focus();
                 }
+            },
+            onScroll(event) {
+                this.scroll_position = event.target.scrollTop;
+                this.$refs.main_scroller.scrollToPosition(this.scroll_position);
+                this.$refs.refs_scroller.scrollToPosition(this.scroll_position);
+                this.$refs.graph_pane.$el.scrollTop = this.scroll_position;
             },
         },
     };

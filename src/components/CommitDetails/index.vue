@@ -126,7 +126,7 @@
         ],
         components: { CommitterDetails, FileRow },
         inject: [
-            'commits', 'selected_commit', 'files', 'selected_file',
+            'commits', 'commits_by_hash', 'selected_commit', 'files', 'selected_file',
             'updateSelectedFile', 'saveSelectedFile', 'refreshCommitHistory',
         ],
         data: () => ({
@@ -140,7 +140,7 @@
                 await this.load();
             },
             amend() {
-                const { subject, body } = this.commits[1];
+                const { subject, body } = this.commits_by_hash[this.commits[0].parents[0]];
                 const message = subject + (body ? '\n\n' + body : '');
 
                 if (this.amend) {
@@ -177,8 +177,8 @@
                         this.updateSelectedFile();
                     }
                 } else {
-                    let parent = commit.parents.split(' ')[0];
-                    if (parent === '') {
+                    let parent = commit.parents[0];
+                    if (parent === undefined) {
                         // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
                         parent = (await repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim();
                     }
@@ -233,8 +233,8 @@
             },
             async startRebase() {
                 const commit = this.commit;
-                let target = commit.parents.split(' ')[0];
-                if (target === '') {
+                let target = commit.parents[0];
+                if (target === undefined) {
                     // https://stackoverflow.com/questions/22992543/how-do-i-git-rebase-the-first-commit
                     target = '--root';
                 }
@@ -252,7 +252,7 @@
                 // https://stackoverflow.com/questions/27641184/git-rebase-continue-but-modify-commit-message-to-document-changes-during-conf
                 // https://stackoverflow.com/questions/28267344/how-can-i-reference-the-original-of-a-currently-edited-commit-during-git-rebase
                 const rev = (await repo.readFile('.git/rebase-merge/stopped-sha')).trim();
-                if (rev !== this.commits[1].hash) {
+                if (rev !== this.commits[0].parents[0]) {
                     // We were in a merge conflict. Recreate the commit with its author.
                     await this.makeCommit('--reuse-message', rev);
                 }
