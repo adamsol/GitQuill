@@ -9,7 +9,7 @@
     </div>
     <splitpanes v-else-if="show" @resized="main_pane_size = $event[0].size">
         <pane :size="main_pane_size">
-            <CommitHistory v-show="selected_file === null" class="py-2" />
+            <CommitHistory v-show="selected_file === null" ref="commit_history" class="py-2" />
             <FileDiff v-if="selected_file !== null" ref="file_diff" />
         </pane>
         <pane class="min-w-80">
@@ -52,11 +52,10 @@
         mixins: [
             provideReactively({
                 data: () => ({
-                    commit_history_key: 0,
-                    head: undefined,
                     commits: undefined,
                     selected_commit: undefined,
-                    files: undefined,
+                    rebasing: false,
+                    working_tree_files: undefined,
                     selected_file: null,
                     save_semaphore: Promise.resolve(),
                 }),
@@ -64,21 +63,27 @@
                     commits_by_hash() {
                         return _.keyBy(this.commits, 'hash');
                     },
+                    uncommitted_changes_count() {
+                        if (this.working_tree_files !== undefined) {
+                            const unique_file_paths = new Set(_.map([...this.working_tree_files.unstaged, ...this.working_tree_files.staged], 'path'));
+                            return unique_file_paths.size;
+                        }
+                    },
                 },
                 methods: {
                     async updateFileStatus(file) {
                         // https://stackoverflow.com/questions/71268388/show-renamed-moved-status-with-git-diff-on-single-file
                         const status = await getStatus('--', file.path, ..._.filter([file.old_path]));
-                        const files = _.cloneDeep(this.files);
+                        const files = _.cloneDeep(this.working_tree_files);
 
                         for (const area of ['unstaged', 'staged']) {
                             files[area] = _.reject(files[area], { path: file.path });
                             files[area] = _.sortBy([...files[area], ...status[area]], 'path');
                         }
-                        this.files = Object.freeze(files);
+                        this.working_tree_files = Object.freeze(files);
                     },
                     updateSelectedFile() {
-                        if (this.selected_file === null) {
+                        if (this.selected_file === null || this.selected_commit?.hash !== 'WORKING_TREE' ) {
                             return;
                         }
                         let area = this.selected_file.area;
@@ -86,14 +91,17 @@
                         if (area === 'committed') {
                             area = 'unstaged';
                         }
-                        const file = this.files[area].find(file => file.path >= this.selected_file.path);
-                        this.selected_file = file ?? _.last(this.files[area]) ?? null;
+                        const file = this.working_tree_files[area].find(file => file.path >= this.selected_file.path);
+                        this.selected_file = file ?? _.last(this.working_tree_files[area]) ?? null;
                     },
                     async saveSelectedFile() {
                         await this.$refs.file_diff?.save();
                     },
-                    refreshCommitHistory() {
-                        this.commit_history_key += 1;
+                    async refreshHistory() {
+                        await this.$refs.commit_history.loadHistory();
+                    },
+                    async refreshStatus() {
+                        await this.$refs.commit_history.loadStatus();
                     },
                 },
             }),

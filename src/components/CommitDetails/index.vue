@@ -44,14 +44,14 @@
                         Rebasing...
                     </div>
                     <btn
-                        :disabled="this.files.unstaged.length > 0"
+                        :disabled="files.unstaged.length > 0"
                         @click.stop="continueRebase"
                     >
                         <icon name="mdi-forward" class="size-5" />
                         Continue
                     </btn>
                     <btn
-                        :disabled="this.files.unstaged.length > 0 || this.files.staged.length > 0"
+                        :disabled="files.unstaged.length > 0 || files.staged.length > 0"
                         @click.stop="abortRebase"
                     >
                         <icon name="mdi-cancel" class="size-5" />
@@ -74,7 +74,7 @@
 
         <div v-else class="flex flex-col h-full">
             <div class="flex justify-end">
-                <btn :disabled="rebasing" @click.stop="startRebase">
+                <btn :disabled="rebasing || uncommitted_changes_count > 0" @click.stop="startRebase">
                     <icon name="mdi-file-edit" class="size-5" />
                     Edit (Rebase)
                 </btn>
@@ -111,33 +111,36 @@
 </template>
 
 <script>
-    import ElectronEventMixin from '@/mixins/ElectronEventMixin';
     import StoreMixin from '@/mixins/StoreMixin';
-    import { getStatus } from '@/utils/git';
 
     import CommitterDetails from './CommitterDetails';
     import FileRow from './FileRow';
 
     export default {
         mixins: [
-            ElectronEventMixin('window-focus', 'load'),
             StoreMixin('unstaged_pane_size', 50),
             StoreMixin('commit_pane_size', 15),
         ],
         components: { CommitterDetails, FileRow },
         inject: [
-            'commits', 'commits_by_hash', 'selected_commit', 'files', 'selected_file',
-            'updateSelectedFile', 'saveSelectedFile', 'refreshCommitHistory',
+            'commits', 'commits_by_hash', 'selected_commit',
+            'rebasing', 'working_tree_files', 'uncommitted_changes_count', 'selected_file',
+            'updateSelectedFile', 'saveSelectedFile', 'refreshStatus', 'refreshHistory',
         ],
         data: () => ({
             commit: undefined,
-            rebasing: false,
+            files: undefined,
             message: '',
             amend: false,
         }),
         watch: {
             async selected_commit() {
                 await this.load();
+            },
+            async working_tree_files() {
+                if (this.selected_commit.hash === 'WORKING_TREE') {
+                    await this.load();
+                }
             },
             amend() {
                 const { subject, body } = this.commits_by_hash[this.commits[0].parents[0]];
@@ -151,6 +154,8 @@
             },
         },
         async created() {
+            // Prevent strange unfolding effect when the application starts.
+            await this.$nextTick();
             await this.load();
         },
         async activated() {
@@ -160,22 +165,12 @@
             async load() {
                 const commit = this.selected_commit;
 
-                // https://stackoverflow.com/questions/3921409/how-to-know-if-there-is-a-git-rebase-in-progress
-                this.rebasing = await repo.exists('.git/rebase-merge');
-
                 if (commit.hash === 'WORKING_TREE') {
-                    if (this.rebasing) {
+                    if (this.rebasing && this.message === '') {
                         this.message = await repo.readFile('.git/rebase-merge/message');
                     }
-                    const files = await getStatus();
-                    if (commit !== this.selected_commit) {
-                        return;
-                    }
-                    this.files = Object.freeze(files);
+                    this.files = this.working_tree_files;
 
-                    if (!_.some(this.files[this.selected_file?.area], { path: this.selected_file?.path })) {
-                        this.updateSelectedFile();
-                    }
                 } else {
                     let parent = commit.parents[0];
                     if (parent === undefined) {
@@ -223,10 +218,9 @@
                     await this.makeCommit(`--message`, this.message, ...this.amend ? ['--amend'] : []);
                     this.message = '';
                     this.amend = false;
-                    this.refreshCommitHistory();
+                    this.refreshHistory();
                 }
-                this.files = Object.freeze(await getStatus());
-                this.updateSelectedFile();
+                this.refreshStatus();
             },
             async makeCommit(...options) {
                 await repo.callGit('commit', ...options, '--allow-empty');
@@ -239,11 +233,11 @@
                     target = '--root';
                 }
                 await repo.callGit('-c', 'sequence.editor=sed -i 1s/^pick/edit/', 'rebase', '--interactive', target);
-                this.refreshCommitHistory();
+                this.refreshHistory();
 
                 await repo.callGit('revert', commit.hash, '--no-commit');
                 await repo.callGit('restore', '--source', commit.hash, '--', '.');
-
+                this.refreshStatus();
                 this.selected_commit = this.commits[0];
             },
             async continueRebase() {
@@ -271,9 +265,9 @@
                 try {
                     await repo.callGit('rebase', cmd);
                 } finally {
-                    this.refreshCommitHistory();
+                    this.refreshHistory();
+                    this.refreshStatus();
                     this.selected_file = null;
-                    await this.load();
                 }
             }
         },

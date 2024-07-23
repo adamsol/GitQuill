@@ -6,7 +6,16 @@
         @click="selected_commit = Object.freeze(commit); selected_file = null"
     >
         <div v-if="commit.hash === 'WORKING_TREE'" class="italic">
-            Uncommitted changes
+            <template v-if="rebasing">
+                [Rebasing]
+            </template>
+            <template v-if="uncommitted_changes_count === 0">
+                Working tree clean
+            </template>
+            <template v-else>
+                Uncommitted changes
+                ({{ uncommitted_changes_count }})
+            </template>
         </div>
         <template v-else>
             <div class="grow ellipsis" :title="commit.subject">
@@ -27,7 +36,7 @@
 
 <script>
     export default {
-        inject: ['selected_commit', 'selected_file'],
+        inject: ['selected_commit', 'uncommitted_changes_count', 'rebasing', 'selected_file'],
         props: {
             commit: { type: Object, default: null },
         },

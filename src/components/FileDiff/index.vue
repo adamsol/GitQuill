@@ -101,13 +101,12 @@
             StoreMixin('whitespace_diff', false),
             StoreMixin('word_wrap', false),
 
-            ElectronEventMixin('window-focus', 'load'),
             ElectronEventMixin('window-blur', 'save'),
 
             WindowEventMixin('keydown', 'onKeyDown'),
         ],
         inject: [
-            'selected_commit', 'files', 'selected_file', 'save_semaphore',
+            'selected_commit', 'working_tree_files', 'selected_file', 'save_semaphore',
             'updateFileStatus', 'updateSelectedFile',
         ],
         data: () => ({
@@ -307,7 +306,7 @@
 
                     await this.updateFileStatus(this.file);
 
-                    if (!_.some(this.files[this.file.area], { path: this.file.path })) {
+                    if (!_.some(this.working_tree_files[this.file.area], { path: this.file.path })) {
                         this.updateSelectedFile();
                     }
                 } finally {

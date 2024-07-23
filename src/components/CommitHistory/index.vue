@@ -92,6 +92,7 @@
     import ElectronEventMixin from '@/mixins/ElectronEventMixin';
     import StoreMixin from '@/mixins/StoreMixin';
     import WindowEventMixin from '@/mixins/WindowEventMixin';
+    import { getStatus } from '@/utils/git';
 
     import CommitGraph from './CommitGraph';
     import CommitRefsRow from './CommitRefsRow';
@@ -107,7 +108,10 @@
             StoreMixin('commit_history_column_sizes', [10, 10]),
         ],
         components: { CommitGraph, CommitRefsRow, CommitRow },
-        inject: ['commit_history_key', 'head', 'commits', 'selected_commit', 'selected_file'],
+        inject: [
+            'commits', 'selected_commit', 'rebasing', 'working_tree_files', 'selected_file',
+            'updateSelectedFile',
+        ],
         data: () => ({
             scroll_position: 0,
             search_query: '',
@@ -119,16 +123,6 @@
                 return 40;
             },
         },
-        watch: {
-            async commit_history_key() {
-                await this.load();
-            },
-            async selected_file() {
-                if (this.selected_file === null) {
-                    await this.load();
-                }
-            },
-        },
         async created() {
             await this.load();
         },
@@ -137,6 +131,12 @@
         },
         methods: {
             async load() {
+                await Promise.all([
+                    this.loadHistory(),
+                    this.loadStatus(),
+                ]);
+            },
+            async loadHistory() {
                 const summary = await repo.callGit('show-ref', '--dereference', '--head');
                 const refs = {};
                 let head;
@@ -238,6 +238,15 @@
                     this.selected_file = null;
                 }
                 await this.search();
+            },
+            async loadStatus() {
+                // https://stackoverflow.com/questions/3921409/how-to-know-if-there-is-a-git-rebase-in-progress
+                this.rebasing = await repo.exists('.git/rebase-merge');
+
+                this.working_tree_files = Object.freeze(await getStatus());
+                if (this.selected_commit?.hash === 'WORKING_TREE') {
+                    this.updateSelectedFile();
+                }
             },
             async search() {
                 // https://stackoverflow.com/questions/48368799/vue-vuex-paste-event-triggered-before-input-binded-value-is-updated
