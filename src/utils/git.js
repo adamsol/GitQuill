@@ -4,6 +4,9 @@ export async function getStatus(...args) {
     // https://stackoverflow.com/questions/28222633/git-status-not-showing-contents-of-newly-added-folder
     const status = await repo.callGit('status', '--porcelain', '-z', '--untracked-files=all', ...args);
     const tokens = status.split('\0');
+    // https://stackoverflow.com/questions/6245570/how-do-i-get-the-current-branch-name-in-git/#49418399
+    const branch = args.includes('--branch') ? tokens.shift().split(' ')[1].split('...')[0] : undefined;
+
     const files = [];
 
     for (let i = 0; i < tokens.length - 1; ++i) {
@@ -52,5 +55,6 @@ export async function getStatus(...args) {
             old_path: file.old_path,
             area: 'staged',
         }))),
+        branch,
     };
 }

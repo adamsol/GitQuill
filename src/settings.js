@@ -4,7 +4,6 @@ export const icons = {
     unstage: 'mdi-arrow-u-left-top',
     discard: 'mdi-delete',
 
-    head: 'mdi-check',
     tag: 'mdi-tag-outline',
     local_branch: 'mdi-laptop',
     remote_branch: 'mdi-cloud-outline',

@@ -109,7 +109,7 @@
         ],
         components: { CommitGraph, CommitRefsRow, CommitRow },
         inject: [
-            'commits', 'selected_commit', 'rebasing', 'working_tree_files', 'selected_file',
+            'commits', 'selected_commit', 'rebasing', 'current_branch', 'working_tree_files', 'selected_file',
             'updateSelectedFile',
         ],
         data: () => ({
@@ -243,7 +243,10 @@
                 // https://stackoverflow.com/questions/3921409/how-to-know-if-there-is-a-git-rebase-in-progress
                 this.rebasing = await repo.exists('.git/rebase-merge');
 
-                this.working_tree_files = Object.freeze(await getStatus());
+                const { branch, ...files } = Object.freeze(await getStatus('--branch'));
+                this.current_branch = branch;
+                this.working_tree_files = files;
+
                 if (this.selected_commit?.hash === 'WORKING_TREE') {
                     this.updateSelectedFile();
                 }

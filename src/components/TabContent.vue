@@ -55,6 +55,7 @@
                     commits: undefined,
                     selected_commit: undefined,
                     rebasing: false,
+                    current_branch: undefined,
                     working_tree_files: undefined,
                     selected_file: null,
                     save_semaphore: Promise.resolve(),
