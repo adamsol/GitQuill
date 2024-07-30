@@ -109,7 +109,7 @@
         ],
         components: { CommitGraph, CommitRefsRow, CommitRow },
         inject: [
-            'commits', 'selected_commit', 'rebasing', 'current_branch', 'working_tree_files', 'selected_file',
+            'commits', 'selected_commit', 'second_selected_commit', 'rebasing', 'current_branch', 'working_tree_files', 'selected_file',
             'updateSelectedFile',
         ],
         data: () => ({
@@ -234,7 +234,13 @@
 
                 const selected_hash = this.selected_commit?.hash;
                 if (this.commits.every(commit => commit.hash !== selected_hash)) {
-                    this.selected_commit = this.commits[0];
+                    this.selected_commit = Object.freeze(this.commits[0]);
+                    this.second_selected_commit = null;
+                    this.selected_file = null;
+                }
+                const second_selected_hash = this.second_selected_commit?.hash;
+                if (this.commits.every(commit => commit.hash !== second_selected_hash)) {
+                    this.second_selected_commit = null;
                     this.selected_file = null;
                 }
                 await this.search();
@@ -283,7 +289,8 @@
             },
             setSearchIndex(index) {
                 this.search_index = index;
-                this.selected_commit = this.commits[this.search_items[this.search_index]];
+                this.selected_commit = Object.freeze(this.commits[this.search_items[this.search_index]]);
+                this.second_selected_commit = null;
 
                 const scroller = this.$refs.main_scroller;
                 const state = scroller.getScroll();

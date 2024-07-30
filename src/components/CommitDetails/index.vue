@@ -2,7 +2,7 @@
 <template>
     <div v-if="files !== undefined" class="h-full break-words">
         <splitpanes
-            v-if="commit.hash === 'WORKING_TREE'"
+            v-if="commit.hash === 'WORKING_TREE' && second_commit === null"
             horizontal
             @resized="commit_pane_size = $event[1].size"
         >
@@ -73,36 +73,46 @@
         </splitpanes>
 
         <div v-else class="flex flex-col h-full">
-            <div class="flex justify-end">
+            <div v-if="second_commit === null" class="flex justify-end">
                 <btn :disabled="rebasing || uncommitted_changes_count > 0" @click.stop="startRebase">
                     <icon name="mdi-file-edit" class="size-5" />
                     Edit (Rebase)
                 </btn>
             </div>
-            <hr class="my-2" />
-
-            <div>
-                <div class="text-sm text-gray font-mono whitespace-nowrap">
-                    {{ commit.hash }}
-                </div>
-                <div class="text-xl">
-                    <commit-message :content="commit.subject" />
-                </div>
-                <div v-if="commit.body" class="mt-2 whitespace-pre-wrap">
-                    <commit-message :content="commit.body" />
-                </div>
+            <div v-else>
+                Diff between...
             </div>
 
-            <div class="my-2">
+            <template v-for="c in second_commit === null ? [commit] : ordered_commits">
+                <hr class="my-2" />
+
+                <div v-if="c.hash === 'WORKING_TREE'" class="text-xl italic">
+                    Working tree
+                </div>
+
+                <div v-else>
+                    <div class="text-sm text-gray font-mono whitespace-nowrap">
+                        {{ c.hash }}
+                    </div>
+                    <div class="text-xl">
+                        <commit-message :content="c.subject" />
+                    </div>
+                    <div v-if="c.body" class="mt-2 whitespace-pre-wrap">
+                        <commit-message :content="c.body" />
+                    </div>
+                </div>
+            </template>
+
+            <div v-if="second_commit === null" class="mt-2">
                 <div v-for="name in commit.committer_email === commit.author_email ? ['author'] : ['author', 'committer']">
                     <div class="text-xs text-gray mt-1">
                         {{ name }}:
                     </div>
-                    <CommitterDetails :commit="commit" :prefix="name" />
+                    <CommitterDetails :commit :prefix="name" />
                 </div>
             </div>
 
-            <hr class="mt-2" />
+            <hr class="my-2" />
             <div class="grow overflow-auto">
                 <FileRow v-for="file in files.committed" :key="file.path" :file />
             </div>
@@ -123,12 +133,14 @@
         ],
         components: { CommitterDetails, FileRow },
         inject: [
-            'commits', 'commits_by_hash', 'selected_commit',
+            'commits', 'commits_by_hash', 'selected_commit', 'second_selected_commit', 'ordered_commits_to_diff',
             'rebasing', 'working_tree_files', 'uncommitted_changes_count', 'selected_file',
             'updateSelectedFile', 'saveSelectedFile', 'refreshStatus', 'refreshHistory',
         ],
         data: () => ({
             commit: undefined,
+            second_commit: undefined,
+            ordered_commits: undefined,
             files: undefined,
             message: '',
             amend: false,
@@ -137,8 +149,11 @@
             async selected_commit() {
                 await this.load();
             },
+            async second_selected_commit() {
+                await this.load();
+            },
             async working_tree_files() {
-                if (this.selected_commit.hash === 'WORKING_TREE') {
+                if (_.some([this.commit, this.second_commit], { hash: 'WORKING_TREE' })) {
                     await this.load();
                 }
             },
@@ -164,21 +179,29 @@
         methods: {
             async load() {
                 const commit = this.selected_commit;
+                const second_commit = this.second_selected_commit;
+                const ordered_commits = this.ordered_commits_to_diff;
 
-                if (commit.hash === 'WORKING_TREE') {
+                if (commit.hash === 'WORKING_TREE' && second_commit === null) {
                     if (this.rebasing && this.message === '') {
                         this.message = await repo.readFile('.git/rebase-merge/message');
                     }
                     this.files = this.working_tree_files;
 
                 } else {
-                    let parent = commit.parents[0];
-                    if (parent === undefined) {
-                        // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
-                        parent = (await repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim();
+                    const hashes = [];
+                    for (const commit of ordered_commits) {
+                        if (commit.hash === 'WORKING_TREE') {
+                            continue;
+                        } else if (commit.hash === 'EMPTY_ROOT') {
+                            // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
+                            hashes.push((await repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim());
+                        } else {
+                            hashes.push(commit.hash);
+                        }
                     }
-                    const status = await repo.callGit('diff', parent, commit.hash, '--name-status', '-z');
-                    if (commit !== this.selected_commit) {
+                    const status = await repo.callGit('diff', ...hashes.reverse(), '--name-status', '-z');
+                    if (!_.isEqual(ordered_commits, this.ordered_commits_to_diff)) {
                         return;
                     }
                     const tokens = status.split('\0');
@@ -200,6 +223,8 @@
                     this.files = Object.freeze({ committed: files });
                 }
                 this.commit = commit;
+                this.second_commit = second_commit;
+                this.ordered_commits = ordered_commits;
             },
             async run(action) {
                 await this.saveSelectedFile();
@@ -238,7 +263,7 @@
                 await repo.callGit('revert', commit.hash, '--no-commit');
                 await repo.callGit('restore', '--source', commit.hash, '--', '.');
                 this.refreshStatus();
-                this.selected_commit = this.commits[0];
+                this.selected_commit = Object.freeze(this.commits[0]);
             },
             async continueRebase() {
                 // Properly handle editing the commit message during rebase, even without file changes.

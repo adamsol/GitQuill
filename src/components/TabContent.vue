@@ -54,6 +54,7 @@
                 data: () => ({
                     commits: undefined,
                     selected_commit: undefined,
+                    second_selected_commit: null,
                     rebasing: false,
                     current_branch: undefined,
                     working_tree_files: undefined,
@@ -69,6 +70,14 @@
                             const unique_file_paths = new Set(_.map([...this.working_tree_files.unstaged, ...this.working_tree_files.staged], 'path'));
                             return unique_file_paths.size;
                         }
+                    },
+                    ordered_commits_to_diff() {
+                        const second_commit_or_parent =
+                            this.second_selected_commit ??
+                            this.commits_by_hash[this.selected_commit.parents[0]] ??
+                            { hash: 'EMPTY_ROOT', index: Infinity }
+                        ;
+                        return _.sortBy([this.selected_commit, second_commit_or_parent], 'index');
                     },
                 },
                 methods: {

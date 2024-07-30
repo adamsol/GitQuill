@@ -3,7 +3,8 @@
     <div
         class="row clickable whitespace-nowrap"
         :class="active ? 'active' : '[&:not(:first-child)]:*:text-gray'"
-        @click="selected_commit = Object.freeze(commit); selected_file = null"
+        @click.exact="selected_commit = Object.freeze(commit); second_selected_commit = null"
+        @click.ctrl="second_selected_commit = commit.hash === second_selected_commit?.hash ? null : Object.freeze(commit)"
     >
         <div v-if="commit.hash === 'WORKING_TREE'" class="italic">
             <template v-if="rebasing">
@@ -36,13 +37,13 @@
 
 <script>
     export default {
-        inject: ['selected_commit', 'uncommitted_changes_count', 'rebasing', 'selected_file'],
+        inject: ['selected_commit', 'second_selected_commit', 'uncommitted_changes_count', 'rebasing', 'selected_file'],
         props: {
             commit: { type: Object, default: null },
         },
         computed: {
             active() {
-                return this.commit.hash === this.selected_commit.hash;
+                return [this.selected_commit.hash, this.second_selected_commit?.hash].includes(this.commit.hash);
             },
         },
     };

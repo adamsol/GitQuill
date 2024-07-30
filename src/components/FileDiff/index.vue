@@ -106,7 +106,7 @@
             WindowEventMixin('keydown', 'onKeyDown'),
         ],
         inject: [
-            'selected_commit', 'working_tree_files', 'selected_file', 'save_semaphore',
+            'selected_commit', 'ordered_commits_to_diff', 'working_tree_files', 'selected_file', 'save_semaphore',
             'updateFileStatus', 'updateSelectedFile',
         ],
         data: () => ({
@@ -213,22 +213,17 @@
             async load() {
                 await this.save_semaphore;
 
-                const commit = this.selected_commit;
+                const ordered_commits = this.ordered_commits_to_diff;
                 const file = this.selected_file;
 
                 const loadOriginal = async () => {
                     if (file.status === 'A') {
                         return '';
                     } else {
-                        let rev;
-                        if (commit.hash === 'WORKING_TREE') {
-                            // https://stackoverflow.com/questions/60853992/how-to-git-show-a-staged-file
-                            rev = { unstaged: ':0', staged: 'HEAD' }[file.area];
-                        } else {
-                            rev = commit.parents[0];
-                        }
-                        if (rev === undefined) {
-                            // Initial commit.
+                        // https://stackoverflow.com/questions/60853992/how-to-git-show-a-staged-file
+                        const rev = file.area === 'unstaged' ? ':0' : ordered_commits[1].hash;
+
+                        if (rev === 'EMPTY_ROOT') {
                             return '';
                         } else {
                             const file_path = ['R', 'C'].includes(file.status) ? file.old_path : file.path;
@@ -240,14 +235,9 @@
                     if (file.status === 'D') {
                         return '';
                     } else {
-                        let rev;
-                        if (commit.hash === 'WORKING_TREE') {
-                            rev = { unstaged: '', staged: ':0' }[file.area];
-                        } else {
-                            rev = commit.hash;
-                        }
-                        if (rev === '') {
-                            // Working tree.
+                        const rev = file.area === 'staged' ? ':0' : ordered_commits[0].hash;
+
+                        if (rev === 'WORKING_TREE') {
                             return await repo.readFile(file.path);
                         } else {
                             return await repo.callGit('show', `${rev}:${file.path}`);
