@@ -243,9 +243,11 @@
                     await this.makeCommit(`--message`, this.message, ...this.amend ? ['--amend'] : []);
                     this.message = '';
                     this.amend = false;
-                    this.refreshHistory();
                 }
-                this.refreshStatus();
+                await Promise.all([
+                    ...action === 'commit' ? [this.refreshHistory()] : [],
+                    this.refreshStatus(),
+                ]);
             },
             async makeCommit(...options) {
                 await repo.callGit('commit', ...options, '--allow-empty');
@@ -258,12 +260,15 @@
                     target = '--root';
                 }
                 await repo.callGit('-c', 'sequence.editor=sed -i 1s/^pick/edit/', 'rebase', '--interactive', target);
-                this.refreshHistory();
-
                 await repo.callGit('revert', commit.hash, '--no-commit');
                 await repo.callGit('restore', '--source', commit.hash, '--', '.');
-                this.refreshStatus();
+
+                await Promise.all([
+                    this.refreshHistory(),
+                    this.refreshStatus(),
+                ]);
                 this.selected_commit = Object.freeze(this.commits[0]);
+                this.updateSelectedFile();
             },
             async continueRebase() {
                 // Properly handle editing the commit message during rebase, even without file changes.
@@ -290,8 +295,11 @@
                 try {
                     await repo.callGit('rebase', cmd);
                 } finally {
-                    this.refreshHistory();
-                    this.refreshStatus();
+                    await Promise.all([
+                        this.refreshHistory(),
+                        this.refreshStatus(),
+                    ]);
+                    this.selected_commit = Object.freeze(this.commits[0]);
                     this.selected_file = null;
                 }
             }
