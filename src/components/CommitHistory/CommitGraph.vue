@@ -9,7 +9,7 @@
     import colors from '@/theme/colors';
 
     export default {
-        inject: ['commits', 'commits_by_hash'],
+        inject: ['commits', 'commit_by_hash'],
         props: {
             row_height: { type: Number, required: true },
             scroll_position: { type: Number, required: true },
@@ -46,7 +46,7 @@
                     for (const commit of this.commits[index].running_commits) {
                         commits_to_draw.add(commit);
                         for (const parent_hash of commit.parents) {
-                            commits_to_draw.add(this.commits_by_hash[parent_hash]);
+                            commits_to_draw.add(this.commit_by_hash[parent_hash]);
                         }
                     }
                     index += 1;

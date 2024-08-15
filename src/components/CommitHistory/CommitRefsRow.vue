@@ -1,16 +1,17 @@
 
 <template>
     <div class="row !gap-1 whitespace-nowrap">
-        <template v-for="ref in commit.refs">
+        <template v-for="reference in commit.references">
             <div
-                v-if="ref.type !== 'head' || ref.name === current_branch"
-                class="px-1.5 text-white rounded-md flex items-center gap-1.5"
+                v-if="reference.type !== 'head' || reference.name === current_branch"
+                class="px-1.5 text-white rounded-md flex items-center gap-1.5 cursor-pointer"
                 :style="{ 'background-color': $settings.colors[commit.level % $settings.colors.length] }"
-                :title="$_.upperFirst(ref.type.replace('_', ' ')) + (ref.name === current_branch ? ' (current)' : '')"
+                :title="$_.title(reference.type) + (reference.name === current_branch ? ' (current)' : '')"
+                @click="selected_reference = Object.freeze(reference)"
             >
-                <icon v-if="ref.name === current_branch" name="mdi-target" class="size-4" />
-                {{ ref.name }}
-                <icon v-if="ref.type !== 'head'" :name="$settings.icons[ref.type]" class="size-4" />
+                <icon v-if="reference.name === current_branch" name="mdi-target" class="size-4" />
+                {{ reference.name }}
+                <icon v-if="reference.type !== 'head'" :name="$settings.icons[reference.type]" class="size-4" />
             </div>
         </template>
     </div>
@@ -18,7 +19,7 @@
 
 <script>
     export default {
-        inject: ['current_branch'],
+        inject: ['selected_reference', 'current_branch'],
         props: {
             commit: { type: Object, default: null },
         },

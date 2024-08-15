@@ -3,7 +3,7 @@
     <div
         class="row clickable whitespace-nowrap"
         :class="active ? 'active' : '[&:not(:first-child)]:*:text-gray'"
-        @click.exact="selected_commit = Object.freeze(commit); second_selected_commit = null"
+        @click.exact="selected_commit = Object.freeze(commit)"
         @click.ctrl="second_selected_commit = commit.hash === second_selected_commit?.hash ? null : Object.freeze(commit)"
     >
         <div v-if="commit.hash === 'WORKING_TREE'" class="italic">
@@ -43,7 +43,7 @@
         },
         computed: {
             active() {
-                return [this.selected_commit.hash, this.second_selected_commit?.hash].includes(this.commit.hash);
+                return [this.selected_commit?.hash, this.second_selected_commit?.hash].includes(this.commit.hash);
             },
         },
     };

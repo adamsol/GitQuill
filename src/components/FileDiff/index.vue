@@ -73,7 +73,7 @@
 
         constructor({ diff_editor, lane, line_range_mapping, action, callback }) {
             this.dom_node = document.createElement('button');
-            this.dom_node.title = _.upperFirst(action);
+            this.dom_node.title = _.title(action);
             this.dom_node.addEventListener('click', () => {
                 const [source, target] = action === 'stage' ? ['modified', 'original'] : ['original', 'modified'];
                 const editor = diff_editor._editors[target];

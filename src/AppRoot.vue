@@ -10,13 +10,13 @@
                         @click="selected_tab_id = tab.id"
                     >
                         {{ tab.label ?? "New tab" }}
-                        <btn title="Close" @click.stop="closeTab(tab)">
+                        <btn title="Close" @click="closeTab(tab)">
                             <icon name="mdi-close" class="size-4" />
                         </btn>
                     </div>
                 </template>
             </draggable>
-            <btn title="Add tab" @click.stop="addTab()">
+            <btn title="Add tab" @click="addTab">
                 <icon name="mdi-plus" class="size-6" />
             </btn>
         </div>

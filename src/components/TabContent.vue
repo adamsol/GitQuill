@@ -9,12 +9,23 @@
     </div>
     <splitpanes v-else-if="show" @resized="main_pane_size = $event[0].size">
         <pane :size="main_pane_size">
-            <CommitHistory v-show="selected_file === null" ref="commit_history" class="py-2" />
+            <splitpanes v-show="selected_file === null" @resized="references_pane_size = $event[0].size">
+                <pane class="min-w-48" :size="references_pane_size">
+                    <ReferenceList class="pt-2 pb-4 pl-4" />
+                </pane>
+                <pane>
+                    <CommitHistory ref="commit_history" class="py-2" />
+                </pane>
+            </splitpanes>
             <FileDiff v-if="selected_file !== null" ref="file_diff" />
         </pane>
-        <pane class="min-w-80">
+        <pane class="min-w-96">
             <CommitDetails
-                v-if="selected_commit !== undefined"
+                v-if="selected_commit !== null"
+                class="pt-2 pb-4 pr-4"
+            />
+            <ReferenceDetails
+                v-else-if="selected_reference !== null"
                 class="pt-2 pb-4 pr-4"
             />
         </pane>
@@ -30,6 +41,8 @@
     import CommitDetails from './CommitDetails';
     import CommitHistory from './CommitHistory';
     import FileDiff from './FileDiff';
+    import ReferenceDetails from './ReferenceDetails';
+    import ReferenceList from './ReferenceList';
 
     function provideReactively({ data = () => ({}), computed = {}, methods = {} }) {
         return {
@@ -48,12 +61,14 @@
     }
 
     export default {
-        components: { CommitDetails, CommitHistory, FileDiff },
+        components: { CommitDetails, CommitHistory, FileDiff, ReferenceDetails, ReferenceList },
         mixins: [
             provideReactively({
                 data: () => ({
+                    references: undefined,
+                    selected_reference: null,
                     commits: undefined,
-                    selected_commit: undefined,
+                    selected_commit: null,
                     second_selected_commit: null,
                     rebasing: false,
                     current_branch: undefined,
@@ -62,7 +77,13 @@
                     save_semaphore: Promise.resolve(),
                 }),
                 computed: {
-                    commits_by_hash() {
+                    references_by_hash() {
+                        return _.groupBy(this.references, 'hash');
+                    },
+                    references_by_type() {
+                        return _.groupBy(this.references, 'type');
+                    },
+                    commit_by_hash() {
                         return _.keyBy(this.commits, 'hash');
                     },
                     uncommitted_changes_count() {
@@ -74,7 +95,7 @@
                     ordered_commits_to_diff() {
                         const second_commit_or_parent =
                             this.second_selected_commit ??
-                            this.commits_by_hash[this.selected_commit.parents[0]] ??
+                            this.commit_by_hash[this.selected_commit.parents[0]] ??
                             { hash: 'EMPTY_ROOT', index: Infinity }
                         ;
                         return _.sortBy([this.selected_commit, second_commit_or_parent], 'index');
@@ -116,6 +137,7 @@
                 },
             }),
             StoreMixin('main_pane_size', 70),
+            StoreMixin('references_pane_size', 15),
         ],
         props: {
             repo_details: { type: Object, required: true },
@@ -123,6 +145,19 @@
         data: () => ({
             show: false,
         }),
+        watch: {
+            selected_reference() {
+                if (this.selected_reference !== null) {
+                    this.selected_commit = null;
+                }
+            },
+            selected_commit() {
+                if (this.selected_commit !== null) {
+                    this.selected_reference = null;
+                    this.second_selected_commit = null;
+                }
+            },
+        },
         async created() {
             // Prevent running the `activated` hook when components are created,
             // in order to avoid loading data twice.

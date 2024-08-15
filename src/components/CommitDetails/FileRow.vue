@@ -16,7 +16,7 @@
         <div class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
             <btn
                 v-for="action in file.area === 'unstaged' ? ['discard', 'stage'] : file.area === 'staged' ? ['unstage'] : []"
-                :title="$_.upperFirst(action)"
+                :title="$_.title(action)"
                 @click.stop="run(action)"
             >
                 <icon :name="$settings.icons[action]" class="size-5" />

@@ -12,25 +12,25 @@
                     @resized="unstaged_pane_size = $event[0].size"
                 >
                     <pane
-                        v-for="area in ['unstaged', 'staged']"
+                        v-for="(area, i) in ['unstaged', 'staged']"
                         class="min-h-20"
                         :size="area === 'unstaged' ? unstaged_pane_size : undefined"
                     >
                         <div class="flex flex-col h-full">
-                            <div class="flex items-center gap-1">
+                            <hr v-if="i > 0" class="mb-2" />
+                            <div class="flex items-center gap-1 mb-2">
                                 <div class="grow">
-                                    {{ $_.upperFirst(area) }}
+                                    {{ $_.title(area) }} files
                                 </div>
                                 <btn
                                     v-for="action in area === 'unstaged' ? ['discard', 'stage'] : ['unstage']"
                                     :disabled="files[area].length === 0"
-                                    @click.stop="run(action)"
+                                    @click="run(action)"
                                 >
                                     <icon :name="$settings.icons[action]" class="size-5" />
-                                    {{ $_.upperFirst(action) }} all
+                                    {{ $_.title(action) }} all
                                 </btn>
                             </div>
-                            <hr class="mt-2" />
                             <div class="grow overflow-auto">
                                 <FileRow v-for="file in files[area]" :key="file.path" :file />
                             </div>
@@ -45,14 +45,14 @@
                     </div>
                     <btn
                         :disabled="files.unstaged.length > 0"
-                        @click.stop="continueRebase"
+                        @click="continueRebase"
                     >
                         <icon name="mdi-forward" class="size-5" />
                         Continue
                     </btn>
                     <btn
                         :disabled="files.unstaged.length > 0 || files.staged.length > 0"
-                        @click.stop="abortRebase"
+                        @click="abortRebase"
                     >
                         <icon name="mdi-cancel" class="size-5" />
                         Abort
@@ -63,7 +63,7 @@
                         <input v-model="amend" type="checkbox" />
                         Amend
                     </label>
-                    <btn :disabled="message === ''" @click.stop="run('commit')">
+                    <btn :disabled="message === ''" @click="run('commit')">
                         <icon name="mdi-source-commit" class="size-5" />
                         Commit
                     </btn>
@@ -73,27 +73,40 @@
         </splitpanes>
 
         <div v-else class="flex flex-col h-full">
-            <div v-if="second_commit === null" class="flex justify-end">
-                <btn :disabled="rebasing || uncommitted_changes_count > 0" @click.stop="startRebase">
+            <div v-if="second_commit === null" class="flex justify-end gap-1 flex-wrap mb-2">
+                <btn @click="run('checkout')">
+                    <icon name="mdi-target" class="size-5" />
+                    Checkout
+                </btn>
+                <btn @click="show_branch_modal = true">
+                    <icon name="mdi-source-branch" class="size-5" />
+                    Create branch
+                </btn>
+                <btn @click="show_tag_modal = true">
+                    <icon name="mdi-tag-outline" class="size-5" />
+                    Create tag
+                </btn>
+                <btn :disabled="rebasing || uncommitted_changes_count > 0" @click="startRebase">
                     <icon name="mdi-file-edit" class="size-5" />
                     Edit (Rebase)
                 </btn>
+
+                <BranchModal v-if="show_branch_modal" :commit @close="show_branch_modal = false" />
+                <TagModal v-if="show_tag_modal" :commit @close="show_tag_modal = false" />
             </div>
             <div v-else>
                 Diff between...
             </div>
 
             <template v-for="c in second_commit === null ? [commit] : ordered_commits">
-                <hr class="my-2" />
+                <hr v-if="second_commit !== null" class="my-2" />
 
                 <div v-if="c.hash === 'WORKING_TREE'" class="text-xl italic">
                     Working tree
                 </div>
 
                 <div v-else>
-                    <div class="text-sm text-gray font-mono whitespace-nowrap">
-                        {{ c.hash }}
-                    </div>
+                    <commit-hash :hash="c.hash" />
                     <div class="text-xl">
                         <commit-message :content="c.subject" />
                     </div>
@@ -123,17 +136,19 @@
 <script>
     import StoreMixin from '@/mixins/StoreMixin';
 
+    import BranchModal from './BranchModal';
     import CommitterDetails from './CommitterDetails';
     import FileRow from './FileRow';
+    import TagModal from './TagModal';
 
     export default {
         mixins: [
             StoreMixin('unstaged_pane_size', 50),
             StoreMixin('commit_pane_size', 15),
         ],
-        components: { CommitterDetails, FileRow },
+        components: { BranchModal, CommitterDetails, FileRow, TagModal },
         inject: [
-            'commits', 'commits_by_hash', 'selected_commit', 'second_selected_commit', 'ordered_commits_to_diff',
+            'commits', 'commit_by_hash', 'selected_commit', 'second_selected_commit', 'ordered_commits_to_diff',
             'rebasing', 'working_tree_files', 'uncommitted_changes_count', 'selected_file',
             'updateSelectedFile', 'saveSelectedFile', 'refreshStatus', 'refreshHistory',
         ],
@@ -144,6 +159,8 @@
             files: undefined,
             message: '',
             amend: false,
+            show_branch_modal: false,
+            show_tag_modal: false,
         }),
         watch: {
             async selected_commit() {
@@ -158,7 +175,7 @@
                 }
             },
             amend() {
-                const { subject, body } = this.commits_by_hash[this.commits[0].parents[0]];
+                const { subject, body } = this.commit_by_hash[this.commits[0].parents[0]];
                 const message = subject + (body ? '\n\n' + body : '');
 
                 if (this.amend) {
@@ -236,16 +253,19 @@
                     await repo.callGit('reset');
 
                 } else if (action === 'discard') {
-                    await repo.callGit('clean', '-f', '-d');
+                    await repo.callGit('clean', '--force', '-d');
                     await repo.callGit('checkout', '--', '.');
 
                 } else if (action === 'commit') {
-                    await this.makeCommit(`--message`, this.message, ...this.amend ? ['--amend'] : []);
+                    await this.makeCommit('--message', this.message, ...this.amend ? ['--amend'] : []);
                     this.message = '';
                     this.amend = false;
+
+                } else if (action === 'checkout') {
+                    await repo.callGit('checkout', this.commit.hash);
                 }
                 await Promise.all([
-                    ...action === 'commit' ? [this.refreshHistory()] : [],
+                    ['checkout', 'commit'].includes(action) ? [this.refreshHistory()] : [],
                     this.refreshStatus(),
                 ]);
             },

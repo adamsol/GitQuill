@@ -39,7 +39,7 @@
                 <!-- `list-class="static"` is necessary for horizontal scroll. -->
                 <recycle-scroller
                     v-if="commits !== undefined"
-                    ref="refs_scroller"
+                    ref="references_scroller"
                     class="scrollbar-hidden"
                     :items="commits"
                     :item-size="row_height"
@@ -99,7 +99,7 @@
     import CommitRow from './CommitRow';
 
     const field_separator = '\x06';
-    const ref_type_order = ['head', 'tag', 'local_branch', 'remote_branch'];
+    const reference_type_order = ['head', 'tag', 'local_branch', 'remote_branch'];
 
     export default {
         mixins: [
@@ -109,7 +109,8 @@
         ],
         components: { CommitGraph, CommitRefsRow, CommitRow },
         inject: [
-            'commits', 'selected_commit', 'second_selected_commit', 'rebasing', 'current_branch', 'working_tree_files', 'selected_file',
+            'references', 'references_by_hash', 'selected_reference', 'commits', 'selected_commit', 'second_selected_commit',
+            'rebasing', 'current_branch', 'working_tree_files', 'selected_file',
             'updateSelectedFile',
         ],
         data: () => ({
@@ -121,6 +122,19 @@
         computed: {
             row_height() {
                 return 40;
+            },
+        },
+        watch: {
+            selected_commit() {
+                const scroller = this.$refs.main_scroller;
+
+                if (this.selected_commit !== null && scroller !== undefined) {
+                    const state = scroller.getScroll();
+                    const pos = this.selected_commit.index * scroller.itemSize;
+                    if (pos < state.start || pos + scroller.itemSize > state.end) {
+                        this.$refs.main_scroller.scrollToPosition(pos - (state.end - state.start) / 5);
+                    }
+                }
             },
         },
         async created() {
@@ -138,32 +152,45 @@
             },
             async loadHistory() {
                 const summary = await repo.callGit('show-ref', '--dereference', '--head');
-                const refs = {};
+                let references = [];
+                const tags = {};
                 let head;
 
                 for (const line of _.filter(summary.split('\n'))) {
                     let [hash, name] = line.split(' ');
-                    let ref;
+                    let reference;
 
                     if (name === 'HEAD') {
                         head = hash;
-                        ref = { type: 'head', name };
+                        reference = { type: 'head', name, hash };
                     } else if (name.startsWith('refs/tags/')) {
-                        ref = { type: 'tag', name: name.split('/').slice(2).join('/').replace(/\^\{}$/, '') };
+                        // Handle both lightweight and annotated tags. Annotated tags appear twice.
+                        reference = { type: 'tag', name: name.split('/').slice(2).join('/').replace(/\^\{}$/, ''), hash };
+                        if (tags[reference.name] === undefined) {
+                            tags[reference.name] = reference;
+                        } else {
+                            tags[reference.name].hash = hash;
+                            continue;
+                        }
                     } else if (name.startsWith('refs/heads/')) {
-                        ref = { type: 'local_branch', name: name.split('/').slice(2).join('/') };
+                        reference = { type: 'local_branch', name: name.split('/').slice(2).join('/'), hash };
                     } else if (name.startsWith('refs/remotes/') && !name.endsWith('/HEAD')) {
-                        ref = { type: 'remote_branch', name: name.split('/').slice(2).join('/') };
+                        reference = { type: 'remote_branch', name: name.split('/').slice(2).join('/'), hash };
                     } else {
                         continue;
                     }
-                    refs[hash] ??= [];
-                    refs[hash].push(ref);
+                    references.push(reference);
                 }
-                if (_.isEqual(this.prev_refs, refs)) {
+                references = _.sortBy(references, 'name');
+
+                if (_.isEqual(this.references, references)) {
                     return;
                 }
-                this.prev_refs = refs;
+                this.references = Object.freeze(references);
+
+                if (this.selected_reference !== null && !_.some(this.references, _.pick(this.selected_reference, 'type', 'name'))) {
+                    this.selected_reference = null;
+                }
 
                 // https://git-scm.com/docs/git-log#_pretty_formats
                 const format = {
@@ -195,7 +222,7 @@
                 for (const [i, commit] of commits.entries()) {
                     commit.index = i;
                     commit.hash_abbr = commit.hash.slice(0, 7);
-                    commit.refs = _.sortBy(refs[commit.hash], ref => ref_type_order.indexOf(ref.type));
+                    commit.references = _.sortBy(this.references_by_hash[commit.hash], ref => reference_type_order.indexOf(ref.type));
                     commit.parents = commit.parents ? commit.parents.split(' ') : [];
                     for (const parent_hash of commit.parents) {
                         children[parent_hash] ??= [];
@@ -230,16 +257,16 @@
                     }
                     commit.running_commits = [...running_commits];
                 }
+                if (this.commits === undefined) {
+                    this.selected_commit = Object.freeze(commits[0]);
+                }
                 this.commits = Object.freeze(commits);
 
-                const selected_hash = this.selected_commit?.hash;
-                if (this.commits.every(commit => commit.hash !== selected_hash)) {
-                    this.selected_commit = Object.freeze(this.commits[0]);
-                    this.second_selected_commit = null;
+                if (this.selected_commit !== null && !_.some(this.commits, _.pick(this.selected_commit, 'hash'))) {
+                    this.selected_commit = null;
                     this.selected_file = null;
                 }
-                const second_selected_hash = this.second_selected_commit?.hash;
-                if (this.commits.every(commit => commit.hash !== second_selected_hash)) {
+                if (this.second_selected_commit !== null && !_.some(this.commits, _.pick(this.second_selected_commit, 'hash'))) {
                     this.second_selected_commit = null;
                     this.selected_file = null;
                 }
@@ -290,14 +317,6 @@
             setSearchIndex(index) {
                 this.search_index = index;
                 this.selected_commit = Object.freeze(this.commits[this.search_items[this.search_index]]);
-                this.second_selected_commit = null;
-
-                const scroller = this.$refs.main_scroller;
-                const state = scroller.getScroll();
-                const pos = this.search_items[this.search_index] * scroller.itemSize;
-                if (pos < state.start || pos + scroller.itemSize > state.end) {
-                    this.$refs.main_scroller.scrollToPosition(pos - (state.end - state.start) / 5);
-                }
             },
             resetSearch() {
                 this.search_index = null;
@@ -316,7 +335,7 @@
             onScroll(event) {
                 this.scroll_position = event.target.scrollTop;
                 this.$refs.main_scroller.scrollToPosition(this.scroll_position);
-                this.$refs.refs_scroller.scrollToPosition(this.scroll_position);
+                this.$refs.references_scroller.scrollToPosition(this.scroll_position);
                 this.$refs.graph_pane.$el.scrollTop = this.scroll_position;
             },
         },
