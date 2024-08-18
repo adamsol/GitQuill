@@ -51,7 +51,7 @@
 
                 } else if (action === 'discard') {
                     if (this.file.status === 'A') {
-                        await repo.callGit('clean', '-f', '--', this.file.path);
+                        await repo.callGit('clean', '--force', '--', this.file.path);
                     } else {
                         await repo.callGit('checkout', '--', this.file.path);
                     }

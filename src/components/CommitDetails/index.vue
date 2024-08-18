@@ -63,7 +63,7 @@
                         <input v-model="amend" type="checkbox" />
                         Amend
                     </label>
-                    <btn :disabled="message === ''" @click="run('commit')">
+                    <btn :disabled="message === ''" @click="doCommit">
                         <icon name="mdi-source-commit" class="size-5" />
                         Commit
                     </btn>
@@ -74,7 +74,7 @@
 
         <div v-else class="flex flex-col h-full">
             <div v-if="second_commit === null" class="flex justify-end gap-1 flex-wrap mb-2">
-                <btn @click="run('checkout')">
+                <btn @click="checkoutCommit">
                     <icon name="mdi-target" class="size-5" />
                     Checkout
                 </btn>
@@ -86,7 +86,7 @@
                     <icon name="mdi-tag-outline" class="size-5" />
                     Create tag
                 </btn>
-                <btn :disabled="rebasing || uncommitted_changes_count > 0" @click="startRebase">
+                <btn :disabled="rebasing" @click="startRebase">
                     <icon name="mdi-file-edit" class="size-5" />
                     Edit (Rebase)
                 </btn>
@@ -253,24 +253,32 @@
                     await repo.callGit('reset');
 
                 } else if (action === 'discard') {
-                    await repo.callGit('clean', '--force', '-d');
-                    await repo.callGit('checkout', '--', '.');
-
-                } else if (action === 'commit') {
-                    await this.makeCommit('--message', this.message, ...this.amend ? ['--amend'] : []);
-                    this.message = '';
-                    this.amend = false;
-
-                } else if (action === 'checkout') {
-                    await repo.callGit('checkout', this.commit.hash);
+                    await Promise.all([
+                        repo.callGit('clean', '--force', '--', '.'),
+                        repo.callGit('checkout', '--', '.'),
+                    ]);
                 }
+                await this.refreshStatus();
+            },
+            async doCommit() {
+                await this.saveSelectedFile();
+
+                await repo.callGit('commit', ...this.amend ? ['--amend'] : [], '--message', this.message, '--allow-empty');
+                this.message = '';
+                this.amend = false;
+
                 await Promise.all([
-                    ['checkout', 'commit'].includes(action) ? [this.refreshHistory()] : [],
+                    this.refreshHistory(),
                     this.refreshStatus(),
                 ]);
             },
-            async makeCommit(...options) {
-                await repo.callGit('commit', ...options, '--allow-empty');
+            async checkoutCommit() {
+                await repo.callGit('checkout', this.commit.hash);
+
+                await Promise.all([
+                    this.refreshHistory(),
+                    this.refreshStatus(),
+                ]);
             },
             async startRebase() {
                 const commit = this.commit;
@@ -280,9 +288,10 @@
                     target = '--root';
                 }
                 await repo.callGit('-c', 'sequence.editor=sed -i 1s/^pick/edit/', 'rebase', '--interactive', target);
-                await repo.callGit('revert', commit.hash, '--no-commit');
-                await repo.callGit('restore', '--source', commit.hash, '--', '.');
-
+                if (this.selected_file !== null) {
+                    await repo.callGit('revert', commit.hash, '--no-commit');
+                    await repo.callGit('restore', '--source', commit.hash, '--', '.');
+                }
                 this.selected_commit = Object.freeze(this.commits[0]);
                 await Promise.all([
                     this.refreshHistory(),
@@ -297,9 +306,9 @@
                 const rev = (await repo.readFile('.git/rebase-merge/stopped-sha')).trim();
                 if (rev !== this.commits[0].parents[0]) {
                     // We were in a merge conflict. Recreate the commit with its author.
-                    await this.makeCommit('--reuse-message', rev);
+                    await repo.callGit('commit', '--reuse-message', rev, '--allow-empty');
                 }
-                await this.makeCommit('--message', this.message, '--amend');
+                await repo.callGit('commit', '--amend', '--message', this.message, '--allow-empty');
                 this.message = '';
                 this.amend = false;
                 await this.finishRebase('--skip');

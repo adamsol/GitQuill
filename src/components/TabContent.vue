@@ -7,29 +7,34 @@
             Open repository
         </btn>
     </div>
-    <splitpanes v-else-if="show" @resized="main_pane_size = $event[0].size">
-        <pane :size="main_pane_size">
-            <splitpanes v-show="selected_file === null" @resized="references_pane_size = $event[0].size">
-                <pane class="min-w-48" :size="references_pane_size">
-                    <ReferenceList class="pt-2 pb-4 pl-4" />
+    <div v-else-if="show" class="h-full flex flex-col">
+        <ActionBar />
+        <div class="grow overflow-hidden">
+            <splitpanes @resized="main_pane_size = $event[0].size">
+                <pane :size="main_pane_size">
+                    <splitpanes v-show="selected_file === null" @resized="references_pane_size = $event[0].size">
+                        <pane class="min-w-48" :size="references_pane_size">
+                            <ReferenceList class="pt-2 pb-4 pl-4" />
+                        </pane>
+                        <pane>
+                            <CommitHistory ref="commit_history" class="py-2" />
+                        </pane>
+                    </splitpanes>
+                    <FileDiff v-if="selected_file !== null" ref="file_diff" />
                 </pane>
-                <pane>
-                    <CommitHistory ref="commit_history" class="py-2" />
+                <pane class="min-w-96">
+                    <CommitDetails
+                        v-if="selected_commit !== null"
+                        class="pt-2 pb-4 pr-4"
+                    />
+                    <ReferenceDetails
+                        v-else-if="selected_reference !== null"
+                        class="pt-2 pb-4 pr-4"
+                    />
                 </pane>
             </splitpanes>
-            <FileDiff v-if="selected_file !== null" ref="file_diff" />
-        </pane>
-        <pane class="min-w-96">
-            <CommitDetails
-                v-if="selected_commit !== null"
-                class="pt-2 pb-4 pr-4"
-            />
-            <ReferenceDetails
-                v-else-if="selected_reference !== null"
-                class="pt-2 pb-4 pr-4"
-            />
-        </pane>
-    </splitpanes>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -38,6 +43,7 @@
     import StoreMixin from '@/mixins/StoreMixin';
     import { getStatus } from '@/utils/git';
 
+    import ActionBar from './ActionBar';
     import CommitDetails from './CommitDetails';
     import CommitHistory from './CommitHistory';
     import FileDiff from './FileDiff';
@@ -61,7 +67,7 @@
     }
 
     export default {
-        components: { CommitDetails, CommitHistory, FileDiff, ReferenceDetails, ReferenceList },
+        components: { ActionBar, CommitDetails, CommitHistory, FileDiff, ReferenceDetails, ReferenceList },
         mixins: [
             provideReactively({
                 data: () => ({
@@ -71,7 +77,7 @@
                     selected_commit: null,
                     second_selected_commit: null,
                     rebasing: false,
-                    current_branch: undefined,
+                    current_branch_name: null,
                     working_tree_files: undefined,
                     selected_file: null,
                     save_semaphore: Promise.resolve(),
@@ -102,6 +108,9 @@
                     },
                 },
                 methods: {
+                    isCurrentBranch(reference) {
+                        return reference.type === 'local_branch' && reference.name === this.current_branch_name;
+                    },
                     async updateFileStatus(file) {
                         // https://stackoverflow.com/questions/71268388/show-renamed-moved-status-with-git-diff-on-single-file
                         const status = await getStatus('--', file.path, ..._.filter([file.old_path]));

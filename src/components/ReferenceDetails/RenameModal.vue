@@ -16,8 +16,7 @@
 <script>
     export default {
         inject: [
-            'current_branch',
-            'refreshHistory', 'refreshStatus',
+            'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         props: {
             reference: { type: Object, required: true },
@@ -34,7 +33,7 @@
 
                 await Promise.all([
                     this.refreshHistory(),
-                    ...this.reference.name === this.current_branch ? [this.refreshStatus()] : [],
+                    ...this.isCurrentBranch(this.reference) ? [this.refreshStatus()] : [],
                 ]);
             },
         },

@@ -2,7 +2,7 @@
 <template>
     <div v-if="reference !== undefined" class="break-words">
         <div class="flex justify-end gap-1 flex-wrap mb-2">
-            <btn v-if="reference.type === 'local_branch'" :disabled="is_current_branch" @click="run('checkout')">
+            <btn v-if="reference.type === 'local_branch'" :disabled="isCurrentBranch(reference)" @click="checkoutBranch">
                 <icon name="mdi-target" class="size-5" />
                 Checkout
             </btn>
@@ -10,7 +10,7 @@
                 <icon name="mdi-pencil" class="size-5" />
                 Rename
             </btn>
-            <btn :disabled="is_current_branch" @click="run('delete')">
+            <btn :disabled="isCurrentBranch(reference)" @click="deleteReference">
                 <icon name="mdi-delete" class="size-5" />
                 Delete
             </btn>
@@ -40,8 +40,8 @@
     export default {
         components: { RenameModal },
         inject: [
-            'selected_reference', 'current_branch',
-            'refreshHistory', 'refreshStatus',
+            'selected_reference',
+            'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
             show_rename_modal: false,
@@ -50,30 +50,27 @@
             reference() {
                 return this.selected_reference;
             },
-            is_current_branch() {
-                return this.reference.type === 'local_branch' && this.reference.name === this.current_branch;
-            },
         },
         methods: {
-            async run(action) {
-                if (action === 'checkout') {
-                    await repo.callGit('checkout', this.reference.name);
+            async checkoutBranch() {
+                await repo.callGit('checkout', this.reference.name);
 
-                } else if (action === 'delete') {
-                    if (this.reference.type === 'local_branch') {
-                        await repo.callGit('branch', '--delete', this.reference.name, '--force');
-                    } else if (this.reference.type === 'remote_branch') {
-                        // Delete only the local remote-tracking branch.
-                        // https://stackoverflow.com/questions/2003505/how-do-i-delete-a-git-branch-locally-and-remotely
-                        await repo.callGit('branch', '--delete', this.reference.name, '--remotes');
-                    } else if (this.reference.type === 'tag') {
-                        await repo.callGit('tag', '--delete', this.reference.name);
-                    }
-                }
                 await Promise.all([
                     this.refreshHistory(),
                     this.refreshStatus(),
                 ]);
+            },
+            async deleteReference() {
+                if (this.reference.type === 'local_branch') {
+                    await repo.callGit('branch', '--delete', this.reference.name, '--force');
+                } else if (this.reference.type === 'remote_branch') {
+                    // Delete only the local remote-tracking branch.
+                    // https://stackoverflow.com/questions/2003505/how-do-i-delete-a-git-branch-locally-and-remotely
+                    await repo.callGit('branch', '--delete', this.reference.name, '--remotes');
+                } else if (this.reference.type === 'tag') {
+                    await repo.callGit('tag', '--delete', this.reference.name);
+                }
+                await this.refreshHistory();
             },
         },
     };

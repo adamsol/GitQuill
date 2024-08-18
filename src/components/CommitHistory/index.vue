@@ -110,7 +110,7 @@
         components: { CommitGraph, CommitRefsRow, CommitRow },
         inject: [
             'references', 'references_by_hash', 'selected_reference', 'commits', 'selected_commit', 'second_selected_commit',
-            'rebasing', 'current_branch', 'working_tree_files', 'selected_file',
+            'rebasing', 'current_branch_name', 'working_tree_files', 'selected_file',
             'updateSelectedFile',
         ],
         data: () => ({
@@ -278,7 +278,7 @@
                 this.rebasing = await repo.exists('.git/rebase-merge');
 
                 const { branch, ...files } = Object.freeze(await getStatus('--branch'));
-                this.current_branch = branch;
+                this.current_branch_name = branch === 'HEAD' ? null : branch;
                 this.working_tree_files = files;
 
                 if (this.selected_commit?.hash === 'WORKING_TREE') {
