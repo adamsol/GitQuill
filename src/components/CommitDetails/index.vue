@@ -283,12 +283,11 @@
                 await repo.callGit('revert', commit.hash, '--no-commit');
                 await repo.callGit('restore', '--source', commit.hash, '--', '.');
 
+                this.selected_commit = Object.freeze(this.commits[0]);
                 await Promise.all([
                     this.refreshHistory(),
                     this.refreshStatus(),
                 ]);
-                this.selected_commit = Object.freeze(this.commits[0]);
-                this.updateSelectedFile();
             },
             async continueRebase() {
                 // Properly handle editing the commit message during rebase, even without file changes.
@@ -319,8 +318,6 @@
                         this.refreshHistory(),
                         this.refreshStatus(),
                     ]);
-                    this.selected_commit = Object.freeze(this.commits[0]);
-                    this.selected_file = null;
                 }
             }
         },

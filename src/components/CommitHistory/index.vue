@@ -214,7 +214,7 @@
                     { hash: 'WORKING_TREE', parents: head },
                     ...log.split('\0').map(row => Object.fromEntries(_.zip(Object.keys(format), row.split(field_separator)))),
                 ];
-                const occupied_levels = {}
+                const occupied_levels = {};
                 const running_commits = new Set();
                 const remaining_parents = {};
                 const children = {};
@@ -230,7 +230,7 @@
                         remaining_parents[commit.hash] = new Set(commit.parents);
                     }
                     for (const child of _.sortBy(children[commit.hash], 'level')) {
-                        if (occupied_levels[child.level] === child) {
+                        if (occupied_levels[child.level] === child && commit.hash === child.parents[0]) {
                             commit.level = child.level;
                             break;
                         }
@@ -243,9 +243,10 @@
                             }
                         }
                     }
-                    occupied_levels[commit.level] = commit;
-                    running_commits.add(commit);
-
+                    if (commit.parents.length > 0) {
+                        occupied_levels[commit.level] = commit;
+                        running_commits.add(commit);
+                    }
                     for (const child of children[commit.hash] ?? []) {
                         remaining_parents[child.hash].delete(commit.hash);
                         if (remaining_parents[child.hash].size === 0) {
@@ -257,7 +258,7 @@
                     }
                     commit.running_commits = [...running_commits];
                 }
-                if (this.commits === undefined) {
+                if (this.commits === undefined || this.selected_commit?.hash === 'WORKING_TREE') {
                     this.selected_commit = Object.freeze(commits[0]);
                 }
                 this.commits = Object.freeze(commits);
