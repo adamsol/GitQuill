@@ -39,26 +39,7 @@
                 </splitpanes>
             </pane>
             <pane :size="commit_pane_size" class="min-h-24 flex flex-col gap-2">
-                <div v-if="rebasing" class="flex items-center mt-2">
-                    <div class="grow">
-                        Rebasing...
-                    </div>
-                    <btn
-                        :disabled="files.unstaged.length > 0"
-                        @click="continueRebase"
-                    >
-                        <icon name="mdi-forward" class="size-5" />
-                        Continue
-                    </btn>
-                    <btn
-                        :disabled="files.unstaged.length > 0 || files.staged.length > 0"
-                        @click="abortRebase"
-                    >
-                        <icon name="mdi-cancel" class="size-5" />
-                        Abort
-                    </btn>
-                </div>
-                <div v-else class="flex items-center justify-end gap-3">
+                <div v-if="current_operation === null" class="flex items-center justify-end gap-3">
                     <label>
                         <input v-model="amend" type="checkbox" />
                         Amend
@@ -68,31 +49,72 @@
                         Commit
                     </btn>
                 </div>
-                <textarea v-model.trim="message" class="grow px-2 resize-none" :spellcheck="false" />
+                <div v-else class="flex items-center">
+                    <div class="grow">
+                        {{ current_operation_label }}...
+                    </div>
+                    <btn
+                        :disabled="files.unstaged.length > 0"
+                        @click="continueCurrentOperation"
+                    >
+                        <icon name="mdi-forward" class="size-5" />
+                        Continue
+                    </btn>
+                    <btn
+                        :disabled="files.unstaged.length > 0 || files.staged.length > 0"
+                        @click="abortCurrentOperation"
+                    >
+                        <icon name="mdi-cancel" class="size-5" />
+                        Abort
+                    </btn>
+                </div>
+                <textarea
+                    v-model.trim="message"
+                    class="grow px-2 resize-none"
+                    :disabled="current_operation_in_conflict"
+                    :spellcheck="false"
+                    :title="current_operation_in_conflict ? `Editing the commit message during ${this.current_operation.type} conflict is unsupported.` : ''"
+                />
             </pane>
         </splitpanes>
 
         <div v-else class="flex flex-col h-full">
-            <div v-if="second_commit === null" class="flex justify-end gap-1 flex-wrap mb-2">
-                <btn @click="checkoutCommit">
-                    <icon name="mdi-target" class="size-5" />
-                    Checkout
-                </btn>
-                <btn @click="show_branch_modal = true">
-                    <icon name="mdi-source-branch" class="size-5" />
-                    Create branch
-                </btn>
-                <btn @click="show_tag_modal = true">
-                    <icon name="mdi-tag-outline" class="size-5" />
-                    Create tag
-                </btn>
-                <btn :disabled="rebasing" @click="startRebase">
-                    <icon name="mdi-file-edit" class="size-5" />
-                    Edit (Rebase)
-                </btn>
-
-                <BranchModal v-if="show_branch_modal" :commit @close="show_branch_modal = false" />
-                <TagModal v-if="show_tag_modal" :commit @close="show_tag_modal = false" />
+            <div v-if="second_commit === null" class="flex justify-end gap-1 flex-wrap mb-3">
+                <template v-if="current_operation === null">
+                    <btn :disabled="current_branch_name === null && current_head === commit.hash" @click="checkoutCommit">
+                        <icon name="mdi-target" class="size-5" />
+                        Checkout commit
+                    </btn>
+                    <btn @click="show_branch_modal = true">
+                        <icon name="mdi-source-branch" class="size-5" />
+                        Branch
+                    </btn>
+                    <btn @click="show_tag_modal = true">
+                        <icon name="mdi-tag-outline" class="size-5" />
+                        Tag
+                    </btn>
+                    <btn :disabled="current_head === commit.hash" @click="resetToCommit">
+                        <icon name="mdi-undo" class="size-5" />
+                        Reset to commit
+                    </btn>
+                    <btn @click="cherrypickCommit">
+                        <icon name="mdi-checkbox-marked-outline" class="size-5" />
+                        Cherry-pick
+                    </btn>
+                    <btn @click="revertCommit">
+                        <icon name="mdi-backup-restore" class="size-5" />
+                        Revert
+                    </btn>
+                    <btn @click="startRebase">
+                        <icon name="mdi-file-edit-outline" class="size-5" />
+                        Edit (Rebase)
+                    </btn>
+                    <BranchModal v-if="show_branch_modal" :commit @close="show_branch_modal = false" />
+                    <TagModal v-if="show_tag_modal" :commit @close="show_tag_modal = false" />
+                </template>
+                <div v-else class="italic">
+                    Functionality limited during {{ current_operation.type }}
+                </div>
             </div>
             <div v-else>
                 Diff between...
@@ -149,7 +171,8 @@
         components: { BranchModal, CommitterDetails, FileRow, TagModal },
         inject: [
             'commits', 'commit_by_hash', 'selected_commit', 'second_selected_commit', 'ordered_commits_to_diff',
-            'rebasing', 'working_tree_files', 'uncommitted_changes_count', 'selected_file',
+            'current_branch_name', 'current_head', 'current_operation', 'current_operation_label',
+            'working_tree_files', 'uncommitted_changes_count', 'selected_file',
             'updateSelectedFile', 'saveSelectedFile', 'refreshStatus', 'refreshHistory',
         ],
         data: () => ({
@@ -162,6 +185,11 @@
             show_branch_modal: false,
             show_tag_modal: false,
         }),
+        computed: {
+            current_operation_in_conflict() {
+                return this.current_operation !== null && (this.current_operation.type !== 'rebase' || this.current_operation.hash !== this.commits[0].parents[0]);
+            },
+        },
         watch: {
             async selected_commit() {
                 await this.load();
@@ -200,8 +228,13 @@
                 const ordered_commits = this.ordered_commits_to_diff;
 
                 if (commit.hash === 'WORKING_TREE' && second_commit === null) {
-                    if (this.rebasing && this.message === '') {
-                        this.message = await repo.readFile('.git/rebase-merge/message');
+                    if (this.message === '') {
+                        if (this.current_operation?.type === 'rebase') {
+                            this.message = await repo.readFile('.git/rebase-merge/message');
+                        } else if (['cherry-pick', 'revert'].includes(this.current_operation?.type)) {
+                            const message = await repo.readFile('.git/MERGE_MSG');
+                            this.message = message.split('\n').filter(line => !line.startsWith('#')).join('\n');
+                        }
                     }
                     this.files = this.working_tree_files;
 
@@ -250,7 +283,7 @@
                     await repo.callGit('add', '--all');
 
                 } else if (action === 'unstage') {
-                    await repo.callGit('reset');
+                    await repo.callGit('restore', '--staged', '--', '.');
 
                 } else if (action === 'discard') {
                     await Promise.all([
@@ -263,7 +296,7 @@
             async doCommit() {
                 await this.saveSelectedFile();
 
-                await repo.callGit('commit', ...this.amend ? ['--amend'] : [], '--message', this.message, '--allow-empty');
+                await repo.callGit('commit', ...this.amend ? ['--amend'] : [], '--message', this.message);
                 this.message = '';
                 this.amend = false;
 
@@ -279,6 +312,34 @@
                     this.refreshHistory(),
                     this.refreshStatus(),
                 ]);
+            },
+            async resetToCommit() {
+                await repo.callGit('reset', this.commit.hash);
+
+                await Promise.all([
+                    this.refreshHistory(),
+                    this.refreshStatus(),
+                ]);
+            },
+            async cherrypickCommit() {
+                try {
+                    await repo.callGit('cherry-pick', this.commit.hash);
+                } finally {
+                    await Promise.all([
+                        this.refreshHistory(),
+                        this.refreshStatus(),
+                    ]);
+                }
+            },
+            async revertCommit() {
+                try {
+                    await repo.callGit('revert', this.commit.hash);
+                } finally {
+                    await Promise.all([
+                        this.refreshHistory(),
+                        this.refreshStatus(),
+                    ]);
+                }
             },
             async startRebase() {
                 const commit = this.commit;
@@ -298,37 +359,45 @@
                     this.refreshStatus(),
                 ]);
             },
-            async continueRebase() {
-                // Properly handle editing the commit message during rebase, even without file changes.
-                // https://stackoverflow.com/questions/43489971/how-to-suppress-the-editor-for-git-rebase-continue
-                // https://stackoverflow.com/questions/27641184/git-rebase-continue-but-modify-commit-message-to-document-changes-during-conf
-                // https://stackoverflow.com/questions/28267344/how-can-i-reference-the-original-of-a-currently-edited-commit-during-git-rebase
-                const rev = (await repo.readFile('.git/rebase-merge/stopped-sha')).trim();
-                if (rev !== this.commits[0].parents[0]) {
-                    // We were in a merge conflict. Recreate the commit with its author.
-                    await repo.callGit('commit', '--reuse-message', rev, '--allow-empty');
+            async continueCurrentOperation() {
+                if (await this.saveSelectedFile()) {
+                    return;
                 }
-                await repo.callGit('commit', '--amend', '--message', this.message, '--allow-empty');
-                this.message = '';
-                this.amend = false;
-                await this.finishRebase('--skip');
-            },
-            async abortRebase() {
-                this.message = '';
-                this.amend = false;
-                await this.finishRebase('--abort');
-            },
-            async finishRebase(cmd) {
-                await this.saveSelectedFile();
+                // No conflict means that we've just started rebasing.
+                // Edit the commit message in this case.
+                if (!this.current_operation_in_conflict) {
+                    await repo.callGit('commit', '--amend', '--message', this.message);
+                }
                 try {
-                    await repo.callGit('rebase', cmd);
+                    if (this.current_operation_in_conflict) {
+                        await repo.callGit('-c', `core.editor=true`, this.current_operation.type, '--continue');
+                    } else {
+                        await repo.callGit(this.current_operation.type, '--skip');
+                    }
                 } finally {
+                    this.message = '';
+                    this.amend = false;
+
                     await Promise.all([
                         this.refreshHistory(),
                         this.refreshStatus(),
                     ]);
                 }
-            }
+            },
+            async abortCurrentOperation() {
+                if (await this.saveSelectedFile()) {
+                    return;
+                }
+                await repo.callGit(this.current_operation.type, '--abort');
+
+                this.message = '';
+                this.amend = false;
+
+                await Promise.all([
+                    this.refreshHistory(),
+                    this.refreshStatus(),
+                ]);
+            },
         },
     };
 </script>

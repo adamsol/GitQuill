@@ -25,7 +25,7 @@
         },
         data: () => ({
             name: '',
-            checkout: false,
+            checkout: true,
         }),
         methods: {
             async submit() {

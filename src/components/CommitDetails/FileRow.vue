@@ -47,7 +47,7 @@
                     await repo.callGit('add', '--', this.file.path);
 
                 } else if (action === 'unstage') {
-                    await repo.callGit('reset', '--', this.file.path, ..._.filter([this.file.old_path]));
+                    await repo.callGit('restore', '--staged', '--', this.file.path, ..._.filter([this.file.old_path]));
 
                 } else if (action === 'discard') {
                     if (this.file.status === 'A') {

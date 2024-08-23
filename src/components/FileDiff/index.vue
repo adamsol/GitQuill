@@ -262,13 +262,13 @@
             },
             async save() {
                 if (this.diff_editor === undefined) {
-                    return;
+                    return false;
                 }
                 await this.save_semaphore;
 
                 const contents = this.getEditorContents();
                 if (_.isEqual(contents, this.saved_contents)) {
-                    return;
+                    return false;
                 }
                 let lift;
                 this.save_semaphore = new Promise(resolve => lift = resolve);
@@ -302,6 +302,7 @@
                 } finally {
                     lift();
                 }
+                return true;
             },
             async close() {
                 await this.save();

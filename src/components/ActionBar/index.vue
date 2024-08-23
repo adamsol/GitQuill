@@ -15,7 +15,7 @@
 <script>
     export default {
         inject: [
-            'references_by_type', 'uncommitted_changes_count', 'current_branch_name',
+            'references_by_type', 'uncommitted_changes_count', 'current_branch_name', 'current_head',
             'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         computed: {
@@ -35,7 +35,7 @@
                     repo.callGit('add', '--all'),
                 ]);
                 await repo.callGit('commit', '--message', 'WIP', '--no-verify');
-                await repo.callGit('checkout', this.current_branch_name ?? this.references_by_type.head[0].hash);
+                await repo.callGit('checkout', this.current_branch_name ?? this.current_head);
 
                 await Promise.all([
                     this.refreshHistory(),

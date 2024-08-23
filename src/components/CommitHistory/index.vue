@@ -110,7 +110,7 @@
         components: { CommitGraph, CommitRefsRow, CommitRow },
         inject: [
             'references', 'references_by_hash', 'selected_reference', 'commits', 'selected_commit', 'second_selected_commit',
-            'rebasing', 'current_branch_name', 'working_tree_files', 'selected_file',
+            'current_branch_name', 'current_head', 'current_operation', 'working_tree_files', 'selected_file',
             'updateSelectedFile',
         ],
         data: () => ({
@@ -154,14 +154,12 @@
                 const summary = await repo.callGit('show-ref', '--dereference', '--head');
                 let references = [];
                 const tags = {};
-                let head;
 
                 for (const line of _.filter(summary.split('\n'))) {
                     let [hash, name] = line.split(' ');
                     let reference;
 
                     if (name === 'HEAD') {
-                        head = hash;
                         reference = { type: 'head', name, hash };
                     } else if (name.startsWith('refs/tags/')) {
                         // Handle both lightweight and annotated tags. Annotated tags appear twice.
@@ -211,7 +209,7 @@
                     '--date=format-local:%Y-%m-%d %H:%M',  // https://stackoverflow.com/questions/7853332/how-to-change-git-log-date-formats
                 );
                 const commits = [
-                    { hash: 'WORKING_TREE', parents: head },
+                    { hash: 'WORKING_TREE', parents: this.current_head },
                     ...log.split('\0').map(row => Object.fromEntries(_.zip(Object.keys(format), row.split(field_separator)))),
                 ];
                 const occupied_levels = {};
@@ -274,8 +272,20 @@
                 await this.search();
             },
             async loadStatus() {
-                // https://stackoverflow.com/questions/3921409/how-to-know-if-there-is-a-git-rebase-in-progress
-                this.rebasing = await repo.exists('.git/rebase-merge');
+                let operation = null;
+
+                for (const [type, path] of [
+                    ['rebase', '.git/rebase-merge/stopped-sha'],
+                    ['cherry-pick', '.git/CHERRY_PICK_HEAD'],
+                    ['revert', '.git/REVERT_HEAD'],
+                ]) {
+                    const hash = await repo.readFile(path, true);
+                    if (hash !== null) {
+                        operation = { type, hash: hash.trim() };
+                        break;
+                    }
+                }
+                this.current_operation = operation;
 
                 const { branch, ...files } = Object.freeze(await getStatus('--branch'));
                 this.current_branch_name = branch === 'HEAD' ? null : branch;

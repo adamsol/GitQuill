@@ -117,13 +117,22 @@ app.whenReady().then(async () => {
             new Promise(resolve => resolve(fs.existsSync(file_path))),
         );
     });
-    ipcMain.handle('read-file', async (event, file_path) => {
+    ipcMain.handle('read-file', async (event, file_path, null_if_not_exists = false) => {
         if (Array.isArray(file_path)) {
             file_path = path.join(...file_path);
         }
         return await log(
             `read-file ${file_path}`,
-            fs.promises.readFile(file_path, { encoding: 'utf8' }),
+            (async () => {
+                try {
+                    return await fs.promises.readFile(file_path, { encoding: 'utf8' });
+                } catch (e) {
+                    if (null_if_not_exists && e.code === 'ENOENT') {
+                        return null;
+                    }
+                    throw e;
+                }
+            })(),
         );
     });
     ipcMain.handle('write-file', async (event, file_path, content) => {

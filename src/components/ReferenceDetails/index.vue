@@ -1,21 +1,25 @@
 
 <template>
     <div v-if="reference !== undefined" class="break-words">
-        <div class="flex justify-end gap-1 flex-wrap mb-2">
-            <btn v-if="reference.type === 'local_branch'" :disabled="isCurrentBranch(reference)" @click="checkoutBranch">
-                <icon name="mdi-target" class="size-5" />
-                Checkout
-            </btn>
-            <btn v-if="reference.type === 'local_branch'" @click="show_rename_modal = true">
-                <icon name="mdi-pencil" class="size-5" />
-                Rename
-            </btn>
-            <btn :disabled="isCurrentBranch(reference)" @click="deleteReference">
-                <icon name="mdi-delete" class="size-5" />
-                Delete
-            </btn>
-
-            <RenameModal v-if="show_rename_modal" :reference @close="show_rename_modal = false" />
+        <div class="flex justify-end gap-1 flex-wrap mb-3">
+            <template v-if="current_operation === null">
+                <btn v-if="reference.type === 'local_branch'" :disabled="isCurrentBranch(reference)" @click="checkoutBranch">
+                    <icon name="mdi-target" class="size-5" />
+                    Checkout branch
+                </btn>
+                <btn v-if="reference.type === 'local_branch'" @click="show_rename_modal = true">
+                    <icon name="mdi-pencil" class="size-5" />
+                    Rename
+                </btn>
+                <btn :disabled="isCurrentBranch(reference)" @click="deleteReference">
+                    <icon name="mdi-delete" class="size-5" />
+                    Delete
+                </btn>
+                <RenameModal v-if="show_rename_modal" :reference @close="show_rename_modal = false" />
+            </template>
+            <div v-else class="italic">
+                Functionality limited during {{ current_operation.type }}
+            </div>
         </div>
 
         <div class="text-sm text-gray">
@@ -40,7 +44,7 @@
     export default {
         components: { RenameModal },
         inject: [
-            'selected_reference',
+            'selected_reference', 'commit_by_hash', 'selected_commit', 'current_operation',
             'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({

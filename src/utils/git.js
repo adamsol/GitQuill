@@ -42,7 +42,7 @@ export async function getStatus(...args) {
     }
     const processFiles = files => _.sortBy(_.reject(files, { status: ' ' }), 'path');
 
-    return {
+    const result = {
         unstaged: processFiles(files.map(file => ({
             status: file.y === '?' ? 'A' : file.y,
             path: file.path,
@@ -55,6 +55,9 @@ export async function getStatus(...args) {
             old_path: file.old_path,
             area: 'staged',
         }))),
-        branch,
     };
+    if (branch !== undefined) {
+        Object.assign(result, { branch });
+    }
+    return result;
 }

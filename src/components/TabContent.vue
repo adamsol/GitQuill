@@ -76,8 +76,8 @@
                     commits: undefined,
                     selected_commit: null,
                     second_selected_commit: null,
-                    rebasing: false,
                     current_branch_name: null,
+                    current_operation: null,
                     working_tree_files: undefined,
                     selected_file: null,
                     save_semaphore: Promise.resolve(),
@@ -105,6 +105,16 @@
                             { hash: 'EMPTY_ROOT', index: Infinity }
                         ;
                         return _.sortBy([this.selected_commit, second_commit_or_parent], 'index');
+                    },
+                    current_head() {
+                        return this.references_by_type.head[0].hash;
+                    },
+                    current_operation_label() {
+                        return {
+                            'rebase': 'Rebasing',
+                            'cherry-pick': 'Cherry-picking',
+                            'revert': 'Reverting',
+                        }[this.current_operation?.type];
                     },
                 },
                 methods: {
@@ -135,7 +145,7 @@
                         this.selected_file = file ?? _.last(this.working_tree_files[area]) ?? null;
                     },
                     async saveSelectedFile() {
-                        await this.$refs.file_diff?.save();
+                        return await this.$refs.file_diff?.save();
                     },
                     async refreshHistory() {
                         await this.$refs.commit_history.loadHistory();

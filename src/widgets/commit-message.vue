@@ -28,13 +28,8 @@
             autolinks: undefined,
         }),
         async created() {
-            const path = '.git/autolinks.json5';
-
-            if (await repo.exists(path)) {
-                this.autolinks = JSON5.parse(await repo.readFile(path));
-            } else {
-                this.autolinks = [];
-            }
+            const content = await repo.readFile('.git/autolinks.json5', true);
+            this.autolinks = JSON5.parse(content ?? '[]');
         },
         computed: {
             parts() {

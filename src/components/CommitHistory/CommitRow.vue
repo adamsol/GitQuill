@@ -7,8 +7,8 @@
         @click.ctrl="second_selected_commit = commit.hash === second_selected_commit?.hash ? null : Object.freeze(commit)"
     >
         <div v-if="commit.hash === 'WORKING_TREE'" class="italic">
-            <template v-if="rebasing">
-                [Rebasing]
+            <template v-if="current_operation_label !== undefined">
+                [{{ current_operation_label }}]
             </template>
             <template v-if="uncommitted_changes_count === 0">
                 Working tree clean
@@ -37,7 +37,7 @@
 
 <script>
     export default {
-        inject: ['selected_commit', 'second_selected_commit', 'uncommitted_changes_count', 'rebasing', 'selected_file'],
+        inject: ['selected_commit', 'second_selected_commit', 'uncommitted_changes_count', 'current_operation_label', 'selected_file'],
         props: {
             commit: { type: Object, default: null },
         },
