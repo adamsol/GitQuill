@@ -1,6 +1,6 @@
 {
-  "name": "git-diff",
-  "productName": "GitDiff",
+  "name": "git-quill",
+  "productName": "GitQuill",
   "version": "0.1.0",
   "description": "GUI for Git.",
   "keywords": [
@@ -8,7 +8,7 @@
     "diff",
     "gui"
   ],
-  "repository": "https://github.com/adamsol/GitDiff",
+  "repository": "https://github.com/adamsol/GitQuill",
   "license": "MIT",
   "author": {
     "name": "Adam Sołtysik",

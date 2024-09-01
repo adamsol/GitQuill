@@ -4,10 +4,13 @@ process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
 import initContextMenu from 'electron-context-menu';
 import Store from 'electron-store';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let window;
 
@@ -55,6 +58,7 @@ app.whenReady().then(async () => {
             preload: path.join(app.getAppPath(), 'preload.cjs'),
             sandbox: false,  // https://github.com/sindresorhus/electron-store/issues/268#issuecomment-1809555869
         },
+        icon: path.join(__dirname, 'img/logo.jpg'),
     });
     window.maximize();
 
