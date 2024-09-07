@@ -32,7 +32,6 @@ export async function getStatus(...args) {
         // For this reason, we automatically reset the files.
         // This still leaves the conflict markers to be manually resolved,
         // but brings the repository back to a normal state.
-        alert("Conflict:\n" + conflict_files.map(file => `${file.path} (${file.x}${file.y})`).join('\n'));
         await repo.callGit('reset', '--', ..._.map(conflict_files, 'path'));
         // Additionally handle the "deleted by them" conflict, so that it doesn't go unnoticed.
         for (const file of _.filter(conflict_files, { x: 'U', y: 'D' })) {

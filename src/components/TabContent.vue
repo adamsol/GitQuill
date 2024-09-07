@@ -35,12 +35,19 @@
             </splitpanes>
         </div>
     </div>
+
+    <modal v-if="error_messages.length > 0" @close="error_messages.shift()">
+        <div class="whitespace-pre font-mono">
+            {{ error_messages[0] }}
+        </div>
+    </modal>
 </template>
 
 <script>
     import { computed as vue_computed } from 'vue/dist/vue.esm-bundler';
 
     import StoreMixin from '@/mixins/StoreMixin';
+    import WindowEventMixin from '@/mixins/WindowEventMixin';
     import { getStatus } from '@/utils/git';
 
     import ActionBar from './ActionBar';
@@ -157,12 +164,14 @@
             }),
             StoreMixin('main_pane_size', 70),
             StoreMixin('references_pane_size', 15),
+            WindowEventMixin('unhandledrejection', 'onUnhandledRejection'),
         ],
         props: {
             repo_details: { type: Object, required: true },
         },
         data: () => ({
             show: false,
+            error_messages: [],
         }),
         watch: {
             selected_reference() {
@@ -192,6 +201,10 @@
                     this.repo_details.path = path;
                     this.repo_details.label ??= path.slice(path.lastIndexOf('/') + 1);
                 }
+            },
+            onUnhandledRejection(event) {
+                const message = event.reason.message.replace(/^Error invoking remote method '[\w-]+': Error: /, '');
+                this.error_messages.push(message);
             },
         },
     };
