@@ -1,7 +1,7 @@
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
-import { spawn } from 'child_process';
+import { exec, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -76,6 +76,9 @@ app.whenReady().then(async () => {
     ipcMain.handle('open-repo', async () => {
         return await openRepo();
     });
+    ipcMain.handle('open-terminal', async (event, repo_path) => {
+        exec('start cmd.exe', { cwd: repo_path });
+    });
     ipcMain.handle('call-git', async (event, repo_path, args) => {
         const run = async () => await log(
             `call-git [${repo_path}] ${JSON.stringify(args)}`,
@@ -111,15 +114,6 @@ app.whenReady().then(async () => {
                 throw e;
             }
         }
-    });
-    ipcMain.handle('exists', async (event, file_path) => {
-        if (Array.isArray(file_path)) {
-            file_path = path.join(...file_path);
-        }
-        return await log(
-            `exists ${file_path}`,
-            new Promise(resolve => resolve(fs.existsSync(file_path))),
-        );
     });
     ipcMain.handle('read-file', async (event, file_path, null_if_not_exists = false) => {
         if (Array.isArray(file_path)) {

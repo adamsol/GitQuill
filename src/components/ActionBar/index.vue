@@ -9,6 +9,10 @@
             <icon name="mdi-archive-arrow-up-outline" class="size-6" />
             Restore WIP
         </btn>
+        <btn @click="openTerminal">
+            <icon name="mdi-console" class="size-6" />
+            Open terminal
+        </btn>
     </div>
 </template>
 
@@ -53,6 +57,9 @@
                         this.refreshStatus(),
                     ]);
                 }
+            },
+            async openTerminal() {
+                await repo.openTerminal();
             },
         },
     };
