@@ -30,7 +30,15 @@
         </div>
 
         <div class="flex justify-end mt-2">
-            <btn class="font-mono" title="View commit" @click="selected_commit = Object.freeze(commit_by_hash[reference.hash])">
+            <div v-if="hidden_references.has(reference.id)" class="italic">
+                Reference is hidden in the graph
+            </div>
+            <btn
+                v-else
+                class="font-mono"
+                title="View commit"
+                @click="selected_commit = Object.freeze(commit_by_hash[reference.hash])"
+            >
                 <icon name="mdi-source-commit" class="size-5"></icon>
                 {{ reference.hash.slice(0, 7) }}
             </btn>
@@ -44,7 +52,7 @@
     export default {
         components: { RenameModal },
         inject: [
-            'selected_reference', 'commit_by_hash', 'selected_commit', 'current_operation',
+            'selected_reference', 'hidden_references', 'commit_by_hash', 'selected_commit', 'current_operation',
             'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
@@ -74,6 +82,7 @@
                 } else if (this.reference.type === 'tag') {
                     await repo.callGit('tag', '--delete', this.reference.name);
                 }
+                this.hidden_references.delete(this.reference.id);
                 await this.refreshHistory();
             },
         },

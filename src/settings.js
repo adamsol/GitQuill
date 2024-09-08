@@ -5,7 +5,7 @@ export const icons = {
     discard: 'mdi-delete',
 
     tag: 'mdi-tag-outline',
-    local_branch: 'mdi-laptop',
+    local_branch: 'mdi-source-branch',
     remote_branch: 'mdi-cloud-outline',
 };
 

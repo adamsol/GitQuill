@@ -80,6 +80,7 @@
                 data: () => ({
                     references: undefined,
                     selected_reference: null,
+                    hidden_references: new Set(),
                     commits: undefined,
                     selected_commit: null,
                     second_selected_commit: null,
@@ -154,8 +155,8 @@
                     async saveSelectedFile() {
                         return await this.$refs.file_diff?.save();
                     },
-                    async refreshHistory() {
-                        await this.$refs.commit_history.loadHistory();
+                    async refreshHistory(...args) {
+                        await this.$refs.commit_history.loadHistory(...args);
                     },
                     async refreshStatus() {
                         await this.$refs.commit_history.loadStatus();
@@ -174,10 +175,26 @@
             error_messages: [],
         }),
         watch: {
+            repo_details: {
+                async handler() {
+                    if (this.repo_details.path !== undefined) {
+                        const hidden_references_content = await repo.readFile('.git/.quill/hidden-refs.txt', { null_if_not_exists: true });
+                        this.hidden_references = new Set(hidden_references_content?.split('\n') ?? []);
+                    }
+                },
+                deep: true,
+                immediate: true,
+            },
             selected_reference() {
                 if (this.selected_reference !== null) {
                     this.selected_commit = null;
                 }
+            },
+            hidden_references: {
+                async handler() {
+                    await repo.writeFile('.git/.quill/hidden-refs.txt', [...this.hidden_references].join('\n'));
+                },
+                deep: true,
             },
             selected_commit() {
                 if (this.selected_commit !== null) {

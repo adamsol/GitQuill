@@ -13,7 +13,7 @@
                 <hr v-if="i > 0" class="mb-2" />
                 <div class="flex mb-2">
                     <div class="grow flex items-center gap-1.5">
-                        <icon :name="$settings.icons[type]" class="size-4" />
+                        <icon :name="$settings.icons[type]" class="size-5" />
                         {{ $_.pluralize($_.title(type)) }}
                         <div class="text-gray">
                             ({{ references_by_type[type]?.length ?? 0 }})

@@ -115,7 +115,7 @@ app.whenReady().then(async () => {
             }
         }
     });
-    ipcMain.handle('read-file', async (event, file_path, null_if_not_exists = false) => {
+    ipcMain.handle('read-file', async (event, file_path, { null_if_not_exists = false } = {}) => {
         if (Array.isArray(file_path)) {
             file_path = path.join(...file_path);
         }
@@ -133,13 +133,18 @@ app.whenReady().then(async () => {
             })(),
         );
     });
-    ipcMain.handle('write-file', async (event, file_path, content) => {
+    ipcMain.handle('write-file', async (event, file_path, content, { make_directory = true } = {}) => {
         if (Array.isArray(file_path)) {
             file_path = path.join(...file_path);
         }
         return await log(
             `write-file ${file_path}`,
-            fs.promises.writeFile(file_path, content),
+            (async () => {
+                if (make_directory) {
+                    await fs.promises.mkdir(path.dirname(file_path), { recursive: true });
+                }
+                await fs.promises.writeFile(file_path, content);
+            })(),
         );
     });
     ipcMain.handle('delete-file', async (event, file_path) => {

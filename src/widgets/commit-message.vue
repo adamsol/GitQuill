@@ -28,7 +28,7 @@
             autolinks: undefined,
         }),
         async created() {
-            const content = await repo.readFile('.git/autolinks.json5', true);
+            const content = await repo.readFile('.git/.quill/autolinks.json5', { null_if_not_exists: true });
             this.autolinks = JSON5.parse(content ?? '[]');
         },
         computed: {

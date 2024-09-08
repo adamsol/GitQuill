@@ -109,7 +109,8 @@
         ],
         components: { CommitGraph, CommitRefsRow, CommitRow },
         inject: [
-            'references', 'references_by_hash', 'selected_reference', 'commits', 'selected_commit', 'second_selected_commit',
+            'references', 'references_by_hash', 'selected_reference', 'hidden_references',
+            'commits', 'selected_commit', 'second_selected_commit',
             'current_branch_name', 'current_head', 'current_operation', 'working_tree_files', 'selected_file',
             'updateSelectedFile',
         ],
@@ -150,46 +151,49 @@
                     this.loadStatus(),
                 ]);
             },
-            async loadHistory() {
-                const summary = await repo.callGit('show-ref', '--dereference', '--head');
-                let references = [];
-                const tags = {};
+            async loadHistory({ skip_references = false} = {}) {
+                if (!skip_references) {
+                    const summary = await repo.callGit('show-ref', '--dereference', '--head');
+                    let references = [];
+                    const tags = {};
 
-                for (const line of _.filter(summary.split('\n'))) {
-                    let [hash, name] = line.split(' ');
-                    let reference;
+                    for (const line of _.filter(summary.split('\n'))) {
+                        let [hash, id] = line.split(' ');
+                        let reference;
 
-                    if (name === 'HEAD') {
-                        reference = { type: 'head', name, hash };
-                    } else if (name.startsWith('refs/tags/')) {
-                        // Handle both lightweight and annotated tags. Annotated tags appear twice.
-                        reference = { type: 'tag', name: name.split('/').slice(2).join('/').replace(/\^\{}$/, ''), hash };
-                        if (tags[reference.name] === undefined) {
-                            tags[reference.name] = reference;
+                        if (id === 'HEAD') {
+                            reference = { type: 'head', name: id };
+                        } else if (id.startsWith('refs/tags/')) {
+                            // Handle both lightweight and annotated tags. Annotated tags appear twice.
+                            id = id.replace(/\^\{}$/, '');
+                            reference = { type: 'tag', name: id.split('/').slice(2).join('/') };
+                            if (tags[reference.name] === undefined) {
+                                tags[reference.name] = reference;
+                            } else {
+                                tags[reference.name].hash = hash;
+                                continue;
+                            }
+                        } else if (id.startsWith('refs/heads/')) {
+                            reference = { type: 'local_branch', name: id.split('/').slice(2).join('/') };
+                        } else if (id.startsWith('refs/remotes/') && !id.endsWith('/HEAD')) {
+                            reference = { type: 'remote_branch', name: id.split('/').slice(2).join('/') };
                         } else {
-                            tags[reference.name].hash = hash;
                             continue;
                         }
-                    } else if (name.startsWith('refs/heads/')) {
-                        reference = { type: 'local_branch', name: name.split('/').slice(2).join('/'), hash };
-                    } else if (name.startsWith('refs/remotes/') && !name.endsWith('/HEAD')) {
-                        reference = { type: 'remote_branch', name: name.split('/').slice(2).join('/'), hash };
-                    } else {
-                        continue;
+                        Object.assign(reference, { hash, id });
+                        references.push(reference);
                     }
-                    references.push(reference);
-                }
-                references = _.sortBy(references, 'name');
+                    references = _.sortBy(references, 'name');
 
-                if (_.isEqual(this.references, references)) {
-                    return;
-                }
-                this.references = Object.freeze(references);
+                    if (_.isEqual(this.references, references)) {
+                        return;
+                    }
+                    this.references = Object.freeze(references);
 
-                if (this.selected_reference !== null && !_.some(this.references, _.pick(this.selected_reference, 'type', 'name'))) {
-                    this.selected_reference = null;
+                    if (!_.some(this.references, { id: this.selected_reference?.id })) {
+                        this.selected_reference = null;
+                    }
                 }
-
                 // https://git-scm.com/docs/git-log#_pretty_formats
                 const format = {
                     hash: '%H',
@@ -203,8 +207,9 @@
                     committer_name: '%cn',
                     committer_date: '%cd',
                 };
+                const excluded_references = [...this.hidden_references, 'refs/stash'];
                 const log = await repo.callGit(
-                    'log', 'HEAD', '--branches', '--tags', '--remotes', '--date-order', '-z',
+                    'log', ..._.map(excluded_references, id => `--exclude=${id}`), '--all', '--date-order', '-z',
                     '--pretty=format:' + Object.values(format).join(field_separator),
                     '--date=format-local:%Y-%m-%d %H:%M',  // https://stackoverflow.com/questions/7853332/how-to-change-git-log-date-formats
                 );
@@ -279,7 +284,7 @@
                     ['cherry-pick', '.git/CHERRY_PICK_HEAD'],
                     ['revert', '.git/REVERT_HEAD'],
                 ]) {
-                    const hash = await repo.readFile(path, true);
+                    const hash = await repo.readFile(path, { null_if_not_exists: true });
                     if (hash !== null) {
                         operation = { type, hash: hash.trim() };
                         break;
