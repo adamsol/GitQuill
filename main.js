@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
 import initContextMenu from 'electron-context-menu';
+import logging from 'electron-log';
 import Store from 'electron-store';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -62,14 +63,16 @@ app.whenReady().then(async () => {
     });
     window.maximize();
 
-    async function log(repr, promise) {
+    async function log(repo_path, repr, promise) {
+        logging.transports.file.resolvePathFn = () => path.join(repo_path, '.git/.quill/app.log');
         try {
             const t = performance.now();
             const result = await promise;
-            console.info(`RUN (${Math.round(performance.now() - t)} ms): ${repr}`);
+            const ms = `${Math.round(performance.now() - t)}`.padStart(3, ' ');
+            logging.info(`[${ms} ms] ${repr}`);
             return result;
         } catch (e) {
-            console.error(`ERROR: ${repr}`);
+            logging.error(`${repr}\n${e}`);
             throw e;
         }
     }
@@ -81,7 +84,8 @@ app.whenReady().then(async () => {
     });
     ipcMain.handle('call-git', async (event, repo_path, args) => {
         const run = async () => await log(
-            `call-git [${repo_path}] ${JSON.stringify(args)}`,
+            repo_path,
+            `call-git ${JSON.stringify(args)}`,
             new Promise((resolve, reject) => {
                 const stdout = [], stderr = [];
                 const process = spawn('git', args, { cwd: repo_path });
@@ -115,15 +119,13 @@ app.whenReady().then(async () => {
             }
         }
     });
-    ipcMain.handle('read-file', async (event, file_path, { null_if_not_exists = false } = {}) => {
-        if (Array.isArray(file_path)) {
-            file_path = path.join(...file_path);
-        }
+    ipcMain.handle('read-file', async (event, repo_path, file_path, { null_if_not_exists = false } = {}) => {
         return await log(
+            repo_path,
             `read-file ${file_path}`,
             (async () => {
                 try {
-                    return await fs.promises.readFile(file_path, { encoding: 'utf8' });
+                    return await fs.promises.readFile(path.join(repo_path, file_path), { encoding: 'utf8' });
                 } catch (e) {
                     if (null_if_not_exists && e.code === 'ENOENT') {
                         return null;
@@ -133,13 +135,12 @@ app.whenReady().then(async () => {
             })(),
         );
     });
-    ipcMain.handle('write-file', async (event, file_path, content, { make_directory = true } = {}) => {
-        if (Array.isArray(file_path)) {
-            file_path = path.join(...file_path);
-        }
+    ipcMain.handle('write-file', async (event, repo_path, file_path, content, { make_directory = true } = {}) => {
         return await log(
+            repo_path,
             `write-file ${file_path}`,
             (async () => {
+                file_path = path.join(repo_path, file_path);
                 if (make_directory) {
                     await fs.promises.mkdir(path.dirname(file_path), { recursive: true });
                 }
@@ -147,13 +148,11 @@ app.whenReady().then(async () => {
             })(),
         );
     });
-    ipcMain.handle('delete-file', async (event, file_path) => {
-        if (Array.isArray(file_path)) {
-            file_path = path.join(...file_path);
-        }
+    ipcMain.handle('delete-file', async (event, repo_path, file_path) => {
         return await log(
+            repo_path,
             `delete-file ${file_path}`,
-            fs.promises.unlink(file_path),
+            fs.promises.unlink(path.join(repo_path, file_path)),
         );
     });
     window.on('focus', () => window.webContents.send('window-focus'));

@@ -59,7 +59,7 @@
                 openTerminal: async () => await electron.openTerminal(this.selected_tab.path),
                 callGit: async (...args) => await electron.callGit(this.selected_tab.path, args),
                 ...Object.fromEntries(['readFile', 'writeFile', 'deleteFile'].map(func_name =>
-                    [func_name, async (file_path, ...args) => await electron[func_name]([this.selected_tab.path, file_path], ...args)]
+                    [func_name, async (...args) => await electron[func_name](this.selected_tab.path, ...args)]
                 )),
             };
         },
