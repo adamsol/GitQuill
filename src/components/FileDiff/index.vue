@@ -21,6 +21,14 @@
             </select>
             <hr class="mx-2" />
 
+            <input
+                v-if="collapse_unchanged_regions"
+                v-model="context_line_count"
+                class="w-12"
+                min="0"
+                title="Number of context lines"
+                type="number"
+            />
             <toggle v-model:active="collapse_unchanged_regions" title="Collapse unchanged regions">
                 <icon name="mdi-view-day" class="size-6" />
             </toggle>
@@ -96,6 +104,7 @@
 
     export default {
         mixins: [
+            StoreMixin('context_line_count', 3),
             StoreMixin('collapse_unchanged_regions', true),
             StoreMixin('side_by_side_view', true),
             StoreMixin('whitespace_diff', false),
@@ -120,6 +129,7 @@
             options() {
                 return {
                     hideUnchangedRegions: {
+                        contextLineCount: this.context_line_count,
                         enabled: this.collapse_unchanged_regions,
                     },
                     renderSideBySide: this.side_by_side_view,
