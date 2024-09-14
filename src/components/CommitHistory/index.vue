@@ -110,9 +110,9 @@
         components: { CommitGraph, CommitRefsRow, CommitRow },
         inject: [
             'references', 'references_by_hash', 'selected_reference', 'hidden_references',
-            'commits', 'selected_commit', 'second_selected_commit',
+            'commits', 'commit_by_hash', 'selected_commits', 'selected_commit_hashes',
             'current_branch_name', 'current_head', 'current_operation', 'working_tree_files', 'selected_file',
-            'updateSelectedFile',
+            'setSelectedReference', 'setSelectedCommits', 'updateSelectedFile',
         ],
         data: () => ({
             scroll_position: 0,
@@ -126,12 +126,12 @@
             },
         },
         watch: {
-            selected_commit() {
+            selected_commits() {
                 const scroller = this.$refs.main_scroller;
 
-                if (this.selected_commit !== null && scroller !== undefined) {
+                if (this.selected_commits.length === 1 && scroller !== undefined) {
                     const state = scroller.getScroll();
-                    const pos = this.selected_commit.index * scroller.itemSize;
+                    const pos = this.selected_commits[0].index * scroller.itemSize;
                     if (pos < state.start || pos + scroller.itemSize > state.end) {
                         this.$refs.main_scroller.scrollToPosition(pos - (state.end - state.start) / 5);
                     }
@@ -190,8 +190,8 @@
                     }
                     this.references = Object.freeze(references);
 
-                    if (!_.some(this.references, { id: this.selected_reference?.id })) {
-                        this.selected_reference = null;
+                    if (this.selected_reference !== null && !_.some(this.references, { id: this.selected_reference.id })) {
+                        this.setSelectedReference(null);
                     }
                 }
                 // https://git-scm.com/docs/git-log#_pretty_formats
@@ -261,17 +261,18 @@
                     }
                     commit.running_commits = [...running_commits];
                 }
-                if (this.commits === undefined || this.selected_commit?.hash === 'WORKING_TREE') {
-                    this.selected_commit = Object.freeze(commits[0]);
+                if (this.commits === undefined) {
+                    this.setSelectedCommits([commits[0]]);
                 }
                 this.commits = Object.freeze(commits);
 
-                if (this.selected_commit !== null && !_.some(this.commits, _.pick(this.selected_commit, 'hash'))) {
-                    this.selected_commit = null;
-                    this.selected_file = null;
+                for (const [i, commit] of this.selected_commits.entries()) {
+                    if (commit.hash === 'WORKING_TREE') {
+                        this.selected_commits[i] = Object.freeze(commits[0]);
+                    }
                 }
-                if (this.second_selected_commit !== null && !_.some(this.commits, _.pick(this.second_selected_commit, 'hash'))) {
-                    this.second_selected_commit = null;
+                if (this.selected_commit_hashes.intersection(new Set(_.map(this.commits, 'hash'))).size < this.selected_commit_hashes.size) {
+                    this.setSelectedCommits([]);
                     this.selected_file = null;
                 }
                 await this.search();
@@ -296,7 +297,7 @@
                 this.current_branch_name = branch === 'HEAD' ? null : branch;
                 this.working_tree_files = files;
 
-                if (this.selected_commit?.hash === 'WORKING_TREE') {
+                if (this.selected_commit_hashes.has('WORKING_TREE')) {
                     this.updateSelectedFile();
                 }
             },
@@ -332,7 +333,7 @@
             },
             setSearchIndex(index) {
                 this.search_index = index;
-                this.selected_commit = Object.freeze(this.commits[this.search_items[this.search_index]]);
+                this.setSelectedCommits([this.commits[this.search_items[this.search_index]]]);
             },
             resetSearch() {
                 this.search_index = null;

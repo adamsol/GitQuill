@@ -2,7 +2,7 @@
 <template>
     <div v-if="files !== undefined" class="h-full break-words">
         <splitpanes
-            v-if="commit.hash === 'WORKING_TREE' && second_commit === null"
+            v-if="current_commits.length === 1 && commit.hash === 'WORKING_TREE'"
             horizontal
             @resized="commit_pane_size = $event[1].size"
         >
@@ -79,33 +79,35 @@
         </splitpanes>
 
         <div v-else class="flex flex-col h-full">
-            <div v-if="second_commit === null" class="flex justify-end gap-1 flex-wrap mb-3">
+            <div class="flex justify-end gap-1 flex-wrap mb-3">
                 <template v-if="current_operation === null">
-                    <btn :disabled="current_branch_name === null && current_head === commit.hash" @click="checkoutCommit">
-                        <icon name="mdi-target" class="size-5" />
-                        Checkout commit
-                    </btn>
-                    <btn @click="show_branch_modal = true">
-                        <icon name="mdi-source-branch" class="size-5" />
-                        Branch
-                    </btn>
-                    <btn @click="show_tag_modal = true">
-                        <icon name="mdi-tag-outline" class="size-5" />
-                        Tag
-                    </btn>
-                    <btn :disabled="current_head === commit.hash" @click="resetToCommit">
-                        <icon name="mdi-undo" class="size-5" />
-                        Reset to commit
-                    </btn>
-                    <btn @click="cherrypickCommit">
+                    <template v-if="current_commits.length === 1">
+                        <btn :disabled="current_branch_name === null && current_head === commit.hash" @click="checkoutCommit">
+                            <icon name="mdi-target" class="size-5" />
+                            Checkout commit
+                        </btn>
+                        <btn @click="show_branch_modal = true">
+                            <icon name="mdi-source-branch" class="size-5" />
+                            Branch
+                        </btn>
+                        <btn @click="show_tag_modal = true">
+                            <icon name="mdi-tag-outline" class="size-5" />
+                            Tag
+                        </btn>
+                        <btn :disabled="current_head === commit.hash" @click="resetToCommit">
+                            <icon name="mdi-undo" class="size-5" />
+                            Reset to commit
+                        </btn>
+                    </template>
+                    <btn :disabled="working_tree_selected" @click="cherrypickCommits">
                         <icon name="mdi-checkbox-marked-outline" class="size-5" />
-                        Cherry-pick
+                        Cherry-pick {{ current_commits.length > 1 ? `${current_commits.length} commits` : '' }}
                     </btn>
-                    <btn @click="revertCommit">
+                    <btn :disabled="working_tree_selected" @click="revertCommits">
                         <icon name="mdi-backup-restore" class="size-5" />
-                        Revert
+                        Revert {{ current_commits.length > 1 ? `${current_commits.length} commits` : '' }}
                     </btn>
-                    <btn @click="startRebase">
+                    <btn v-if="current_commits.length === 1" @click="startRebase">
                         <icon name="mdi-file-edit-outline" class="size-5" />
                         Edit (Rebase)
                     </btn>
@@ -116,12 +118,12 @@
                     Functionality limited during {{ current_operation.type }}
                 </div>
             </div>
-            <div v-else>
+            <div v-if="current_commits.length === 2">
                 Diff between...
             </div>
 
-            <template v-for="c in second_commit === null ? [commit] : ordered_commits">
-                <hr v-if="second_commit !== null" class="my-2" />
+            <template v-for="c in current_commits">
+                <hr v-if="current_commits.length > 1" class="my-2" />
 
                 <div v-if="c.hash === 'WORKING_TREE'" class="text-xl italic">
                     Working tree
@@ -132,20 +134,20 @@
                     <div class="text-xl">
                         <commit-message :content="c.subject" />
                     </div>
-                    <div v-if="c.body" class="mt-2 whitespace-pre-wrap">
-                        <commit-message :content="c.body" />
-                    </div>
                 </div>
             </template>
 
-            <div v-if="second_commit === null" class="mt-2">
+            <template v-if="current_commits.length === 1">
+                <div v-if="commit.body" class="my-2 whitespace-pre-wrap">
+                    <commit-message :content="commit.body" />
+                </div>
                 <div v-for="name in commit.committer_email === commit.author_email ? ['author'] : ['author', 'committer']">
                     <div class="text-xs text-gray mt-1">
                         {{ name }}:
                     </div>
                     <CommitterDetails :commit :prefix="name" />
                 </div>
-            </div>
+            </template>
 
             <hr class="my-2" />
             <div class="grow overflow-auto">
@@ -170,15 +172,13 @@
         ],
         components: { BranchModal, CommitterDetails, FileRow, TagModal },
         inject: [
-            'commits', 'commit_by_hash', 'selected_commit', 'second_selected_commit', 'ordered_commits_to_diff',
+            'commits', 'commit_by_hash', 'selected_commits', 'commits_to_diff',
             'current_branch_name', 'current_head', 'current_operation', 'current_operation_label',
             'working_tree_files', 'uncommitted_changes_count', 'selected_file',
-            'updateSelectedFile', 'saveSelectedFile', 'refreshStatus', 'refreshHistory',
+            'setSelectedCommits', 'updateSelectedFile', 'saveSelectedFile', 'refreshStatus', 'refreshHistory',
         ],
         data: () => ({
-            commit: undefined,
-            second_commit: undefined,
-            ordered_commits: undefined,
+            current_commits: undefined,
             files: undefined,
             message: '',
             amend: false,
@@ -186,19 +186,25 @@
             show_tag_modal: false,
         }),
         computed: {
+            commit() {
+                return this.current_commits[0];
+            },
+            working_tree_selected() {
+                return _.some(this.current_commits, { hash: 'WORKING_TREE' });
+            },
             current_operation_in_conflict() {
                 return this.current_operation !== null && (this.current_operation.type !== 'rebase' || this.current_operation.hash !== this.commits[0].parents[0]);
             },
         },
         watch: {
-            async selected_commit() {
-                await this.load();
-            },
-            async second_selected_commit() {
-                await this.load();
+            selected_commits: {
+                async handler() {
+                    await this.load();
+                },
+                deep: true,
             },
             async working_tree_files() {
-                if (_.some([this.commit, this.second_commit], { hash: 'WORKING_TREE' })) {
+                if (_.some(this.current_commits, { hash: 'WORKING_TREE' }) && this.current_commits.length <= 2) {
                     await this.load();
                 }
             },
@@ -223,11 +229,10 @@
         },
         methods: {
             async load() {
-                const commit = this.selected_commit;
-                const second_commit = this.second_selected_commit;
-                const ordered_commits = this.ordered_commits_to_diff;
+                const current_commits = this.selected_commits;
+                const commits_to_diff = this.commits_to_diff;
 
-                if (commit.hash === 'WORKING_TREE' && second_commit === null) {
+                if (current_commits.length === 1 && current_commits[0].hash === 'WORKING_TREE') {
                     if (this.message === '') {
                         if (this.current_operation?.type === 'rebase') {
                             this.message = await repo.readFile('.git/rebase-merge/message');
@@ -238,9 +243,9 @@
                     }
                     this.files = this.working_tree_files;
 
-                } else {
+                } else if (current_commits.length <= 2) {
                     const hashes = [];
-                    for (const commit of ordered_commits) {
+                    for (const commit of commits_to_diff) {
                         if (commit.hash === 'WORKING_TREE') {
                             continue;
                         } else if (commit.hash === 'EMPTY_ROOT') {
@@ -251,7 +256,7 @@
                         }
                     }
                     const status = await repo.callGit('diff', ...hashes.reverse(), '--name-status', '-z');
-                    if (!_.isEqual(ordered_commits, this.ordered_commits_to_diff)) {
+                    if (!_.isEqual(commits_to_diff, this.commits_to_diff)) {
                         return;
                     }
                     const tokens = status.split('\0');
@@ -271,10 +276,11 @@
                         files.push(file);
                     }
                     this.files = Object.freeze({ committed: files });
+
+                } else {
+                    this.files = Object.freeze({ committed: [] });
                 }
-                this.commit = commit;
-                this.second_commit = second_commit;
-                this.ordered_commits = ordered_commits;
+                this.current_commits = current_commits;
             },
             async run(action) {
                 await this.saveSelectedFile();
@@ -321,9 +327,9 @@
                     this.refreshStatus(),
                 ]);
             },
-            async cherrypickCommit() {
+            async cherrypickCommits() {
                 try {
-                    await repo.callGit('cherry-pick', this.commit.hash);
+                    await repo.callGit('cherry-pick', ..._.map(this.current_commits, 'hash'));
                 } finally {
                     await Promise.all([
                         this.refreshHistory(),
@@ -331,9 +337,9 @@
                     ]);
                 }
             },
-            async revertCommit() {
+            async revertCommits() {
                 try {
-                    await repo.callGit('revert', this.commit.hash);
+                    await repo.callGit('revert', ..._.map(this.current_commits, 'hash'));
                 } finally {
                     await Promise.all([
                         this.refreshHistory(),
@@ -353,7 +359,7 @@
                     await repo.callGit('revert', commit.hash, '--no-commit');
                     await repo.callGit('restore', '--source', commit.hash, '--', '.');
                 }
-                this.selected_commit = Object.freeze(this.commits[0]);
+                this.setSelectedCommits([this.commits[0]]);
                 await Promise.all([
                     this.refreshHistory(),
                     this.refreshStatus(),

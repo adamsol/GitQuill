@@ -3,8 +3,7 @@
     <div
         class="row clickable whitespace-nowrap"
         :class="active ? 'active' : '[&:not(:first-child)]:*:text-gray'"
-        @click.exact="selected_commit = Object.freeze(commit)"
-        @click.ctrl="second_selected_commit = commit.hash === second_selected_commit?.hash ? null : Object.freeze(commit)"
+        @click="select"
     >
         <div v-if="commit.hash === 'WORKING_TREE'" class="italic">
             <template v-if="current_operation_label !== undefined">
@@ -37,13 +36,65 @@
 
 <script>
     export default {
-        inject: ['selected_commit', 'second_selected_commit', 'uncommitted_changes_count', 'current_operation_label', 'selected_file'],
+        inject: [
+            'commits', 'commit_by_hash', 'selected_commits', 'selected_commit_hashes',
+            'uncommitted_changes_count', 'current_operation_label', 'selected_file',
+            'setSelectedCommits',
+        ],
         props: {
             commit: { type: Object, default: null },
         },
         computed: {
             active() {
-                return [this.selected_commit?.hash, this.second_selected_commit?.hash].includes(this.commit.hash);
+                return this.selected_commit_hashes.has(this.commit.hash);
+            },
+        },
+        methods: {
+            select(event) {
+                if (event.shiftKey && this.selected_commits.length > 0) {
+                    let source = _.last(this.selected_commits);
+                    let target = this.commit;
+                    if (target.index < source.index) {
+                        [source, target] = [target, source];
+                    }
+                    const visited = [];
+
+                    const traverse = commit => {
+                        if (commit.index >= target.index) {
+                            return commit.index === target.index;
+                        }
+                        visited.push(commit);
+                        for (const hash of commit.parents) {
+                            if (traverse(this.commit_by_hash[hash])) {
+                                return true;
+                            }
+                        }
+                        visited.pop();
+                    }
+                    traverse(source);
+
+                    if (this.commit === target) {
+                        visited.push(this.commit);
+                    } else {
+                        visited.reverse();
+                        if (visited.length === 0) {
+                            visited.push(this.commit);
+                        }
+                    }
+                    _.remove(visited, commit => this.selected_commit_hashes.has(commit.hash));
+
+                    this.setSelectedCommits([...this.selected_commits, ...visited]);
+
+                } else if (event.ctrlKey) {
+                    if (this.selected_commit_hashes.has(this.commit.hash)) {
+                        this.setSelectedCommits(_.exclude(this.selected_commits, { hash: this.commit.hash }));
+                    } else {
+                        this.setSelectedCommits([...this.selected_commits, this.commit]);
+                    }
+
+                } else {
+                    this.setSelectedCommits([this.commit]);
+                }
             },
         },
     };

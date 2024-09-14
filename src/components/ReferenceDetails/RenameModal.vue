@@ -16,8 +16,8 @@
 <script>
     export default {
         inject: [
-            'references', 'selected_reference', 'hidden_references',
-            'isCurrentBranch', 'refreshHistory', 'refreshStatus',
+            'references', 'hidden_references',
+            'setSelectedReference', 'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         props: {
             reference: { type: Object, required: true },
@@ -37,7 +37,7 @@
                     ...this.isCurrentBranch(this.reference) ? [this.refreshStatus()] : [],
                 ]);
                 const new_reference = _.find(this.references, { type: this.reference.type, name: this.name });
-                this.selected_reference = Object.freeze(new_reference);
+                this.setSelectedReference(new_reference);
 
                 if (this.hidden_references.has(this.reference.id)) {
                     this.hidden_references.delete(this.reference.id);

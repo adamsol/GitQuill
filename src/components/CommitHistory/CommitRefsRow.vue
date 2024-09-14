@@ -7,7 +7,7 @@
                 class="px-1.5 text-white rounded-md flex items-center gap-1.5 cursor-pointer"
                 :style="{ 'background-color': $settings.colors[commit.level % $settings.colors.length] }"
                 :title="$_.title(reference.type) + (isCurrentBranch(reference) ? ' (current)' : '')"
-                @click="selected_reference = Object.freeze(reference)"
+                @click="setSelectedReference(reference)"
             >
                 <icon v-if="reference.type === 'head' || isCurrentBranch(reference)" name="mdi-target" class="size-4" />
                 {{ reference.name }}
@@ -20,8 +20,8 @@
 <script>
     export default {
         inject: [
-            'selected_reference', 'hidden_references', 'current_branch_name',
-            'isCurrentBranch',
+            'hidden_references', 'current_branch_name',
+            'setSelectedReference', 'isCurrentBranch',
         ],
         props: {
             commit: { type: Object, default: null },

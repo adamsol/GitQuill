@@ -3,8 +3,8 @@
     <div
         class="row clickable group"
         :class="{ active, 'text-gray line-through': hidden }"
-        @click="selected_reference = Object.freeze(reference)"
-        @dblclick="hidden ? {} : selected_commit = Object.freeze(commit_by_hash[reference.hash])"
+        @click="setSelectedReference(reference)"
+        @dblclick="hidden ? {} : setSelectedCommits([commit_by_hash[reference.hash]])"
     >
         <div class="grow ellipsis" :title="reference.name + '\n(double click to view commit)'">
             {{ reference.name }}
@@ -24,8 +24,8 @@
 <script>
     export default {
         inject: [
-            'selected_reference', 'hidden_references', 'commit_by_hash', 'selected_commit',
-            'refreshHistory',
+            'selected_reference', 'hidden_references', 'commit_by_hash',
+            'setSelectedReference', 'setSelectedCommits', 'refreshHistory',
         ],
         props: {
             reference: { type: Object, required: true },

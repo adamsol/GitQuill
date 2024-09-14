@@ -37,7 +37,7 @@
                 v-else
                 class="font-mono"
                 title="View commit"
-                @click="selected_commit = Object.freeze(commit_by_hash[reference.hash])"
+                @click="setSelectedCommits([commit_by_hash[reference.hash]])"
             >
                 <icon name="mdi-source-commit" class="size-5"></icon>
                 {{ reference.hash.slice(0, 7) }}
@@ -52,8 +52,8 @@
     export default {
         components: { RenameModal },
         inject: [
-            'selected_reference', 'hidden_references', 'commit_by_hash', 'selected_commit', 'current_operation',
-            'isCurrentBranch', 'refreshHistory', 'refreshStatus',
+            'selected_reference', 'hidden_references', 'commit_by_hash', 'current_operation',
+            'setSelectedCommits', 'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
             show_rename_modal: false,

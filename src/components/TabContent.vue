@@ -24,7 +24,7 @@
                 </pane>
                 <pane class="min-w-96">
                     <CommitDetails
-                        v-if="selected_commit !== null"
+                        v-if="selected_commits.length > 0"
                         class="pt-2 pb-4 pr-4"
                     />
                     <ReferenceDetails
@@ -82,8 +82,7 @@
                     selected_reference: null,
                     hidden_references: new Set(),
                     commits: undefined,
-                    selected_commit: null,
-                    second_selected_commit: null,
+                    selected_commits: [],
                     current_branch_name: null,
                     current_operation: null,
                     working_tree_files: undefined,
@@ -100,19 +99,24 @@
                     commit_by_hash() {
                         return _.keyBy(this.commits, 'hash');
                     },
+                    selected_commit_hashes() {
+                        return new Set(_.map(this.selected_commits, 'hash'));
+                    },
                     uncommitted_changes_count() {
                         if (this.working_tree_files !== undefined) {
                             const unique_file_paths = new Set(_.map([...this.working_tree_files.unstaged, ...this.working_tree_files.staged], 'path'));
                             return unique_file_paths.size;
                         }
                     },
-                    ordered_commits_to_diff() {
-                        const second_commit_or_parent =
-                            this.second_selected_commit ??
-                            this.commit_by_hash[this.selected_commit.parents[0]] ??
-                            { hash: 'EMPTY_ROOT', index: Infinity }
-                        ;
-                        return _.sortBy([this.selected_commit, second_commit_or_parent], 'index');
+                    commits_to_diff() {
+                        if (this.selected_commits.length <= 2) {
+                            const second_commit_or_parent =
+                                this.selected_commits[1] ??
+                                this.commit_by_hash[this.selected_commits[0].parents[0]] ??
+                                { hash: 'EMPTY_ROOT', index: Infinity }
+                            ;
+                            return _.sortBy([this.selected_commits[0], second_commit_or_parent], 'index');
+                        }
                     },
                     current_head() {
                         return this.references_by_type.head[0].hash;
@@ -126,6 +130,18 @@
                     },
                 },
                 methods: {
+                    setSelectedReference(reference) {
+                        this.selected_reference = reference;
+                        if (reference !== null) {
+                            this.setSelectedCommits([]);
+                        }
+                    },
+                    setSelectedCommits(commits) {
+                        this.selected_commits = commits.map(Object.freeze);
+                        if (commits.length > 0) {
+                            this.setSelectedReference(null);
+                        }
+                    },
                     isCurrentBranch(reference) {
                         return reference.type === 'local_branch' && reference.name === this.current_branch_name;
                     },
@@ -141,7 +157,7 @@
                         this.working_tree_files = Object.freeze(files);
                     },
                     updateSelectedFile() {
-                        if (this.selected_file === null || this.selected_commit?.hash !== 'WORKING_TREE' ) {
+                        if (this.selected_file === null) {
                             return;
                         }
                         let area = this.selected_file.area;
@@ -185,22 +201,11 @@
                 deep: true,
                 immediate: true,
             },
-            selected_reference() {
-                if (this.selected_reference !== null) {
-                    this.selected_commit = null;
-                }
-            },
             hidden_references: {
                 async handler() {
                     await repo.writeFile('.git/.quill/hidden-refs.txt', [...this.hidden_references].join('\n'));
                 },
                 deep: true,
-            },
-            selected_commit() {
-                if (this.selected_commit !== null) {
-                    this.selected_reference = null;
-                    this.second_selected_commit = null;
-                }
             },
         },
         async created() {
