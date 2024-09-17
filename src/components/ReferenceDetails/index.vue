@@ -23,7 +23,7 @@
                 </btn>
                 <RenameModal v-if="show_rename_modal" :reference @close="show_rename_modal = false" />
             </template>
-            <div v-else class="italic">
+            <div v-else class="text-gray italic">
                 Functionality limited during {{ current_operation.type }}
             </div>
         </div>
@@ -35,19 +35,16 @@
             {{ reference.name }}
         </div>
 
-        <div class="flex justify-end mt-2">
-            <div v-if="hidden_references.has(reference.id)" class="italic">
-                Reference is hidden in the graph
+        <div class="mt-3">
+            <div v-if="hidden_references.has(reference.id)" class="text-gray italic">
+                Hidden in the graph
             </div>
-            <btn
-                v-else
-                class="font-mono"
-                title="View commit"
-                @click="setSelectedCommits([commit_by_hash[reference.hash]])"
-            >
-                <icon name="mdi-source-commit" class="size-5"></icon>
-                {{ reference.hash.slice(0, 7) }}
-            </btn>
+            <div v-else>
+                <div class="text-xs text-gray">
+                    commit:
+                </div>
+                <commit-link :hash="reference.hash" />
+            </div>
         </div>
     </div>
 </template>
@@ -58,8 +55,8 @@
     export default {
         components: { RenameModal },
         inject: [
-            'selected_reference', 'hidden_references', 'commit_by_hash', 'current_head', 'current_operation',
-            'setSelectedCommits', 'isCurrentBranch', 'refreshHistory', 'refreshStatus',
+            'selected_reference', 'hidden_references', 'current_head', 'current_operation',
+            'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
             show_rename_modal: false,

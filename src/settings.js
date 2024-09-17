@@ -17,3 +17,5 @@ export const colors = [
     '#984c80',
     '#77509b',
 ];
+
+export const hash_abbr_length = 7;

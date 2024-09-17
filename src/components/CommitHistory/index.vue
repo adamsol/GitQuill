@@ -225,7 +225,7 @@
 
                 for (const [i, commit] of commits.entries()) {
                     commit.index = i;
-                    commit.hash_abbr = commit.hash.slice(0, 7);
+                    commit.hash_abbr = commit.hash.slice(0, settings.hash_abbr_length);
                     commit.references = _.sortBy(this.references_by_hash[commit.hash], ref => reference_type_order.indexOf(ref.type));
                     commit.parents = commit.parents ? commit.parents.split(' ') : [];
                     for (const parent_hash of commit.parents) {

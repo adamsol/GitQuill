@@ -14,6 +14,7 @@ import _ from './utils';
 
 import Btn from './widgets/btn';
 import CommitHash from './widgets/commit-hash';
+import CommitLink from './widgets/commit-link';
 import CommitMessage from './widgets/commit-message';
 import FilePath from './widgets/file-path';
 import Icon from './widgets/icon';
@@ -33,6 +34,7 @@ app.component('RecycleScroller', RecycleScroller);
 
 app.component('Btn', Btn);
 app.component('CommitHash', CommitHash);
+app.component('CommitLink', CommitLink);
 app.component('CommitMessage', CommitMessage);
 app.component('FilePath', FilePath);
 app.component('Icon', Icon);

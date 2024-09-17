@@ -114,7 +114,7 @@
                     <BranchModal v-if="show_branch_modal" :commit @close="show_branch_modal = false" />
                     <TagModal v-if="show_tag_modal" :commit @close="show_tag_modal = false" />
                 </template>
-                <div v-else class="italic">
+                <div v-else class="text-gray italic">
                     Functionality limited during {{ current_operation.type }}
                 </div>
             </div>
@@ -140,6 +140,15 @@
             <template v-if="current_commits.length === 1">
                 <div v-if="commit.body" class="my-2 whitespace-pre-wrap">
                     <commit-message :content="commit.body" />
+                </div>
+                <div class="text-xs text-gray mt-3">
+                    {{ $_.pluralize('parent', commit.parents.length) }}:
+                </div>
+                <div class="flex">
+                    <template v-for="(hash, i) in commit.parents">
+                        {{ i > 0 ? ',&nbsp;' : '' }}
+                        <commit-link :hash />
+                    </template>
                 </div>
                 <div v-for="name in commit.committer_email === commit.author_email ? ['author'] : ['author', 'committer']">
                     <div class="text-xs text-gray mt-1">
