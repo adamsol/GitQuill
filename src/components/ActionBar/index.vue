@@ -50,7 +50,7 @@
                 await this.saveSelectedFile();
                 try {
                     await repo.callGit('cherry-pick', this.last_wip_branch.hash, '--no-commit');
-                    await repo.callGit('branch', '--force', '--delete', this.last_wip_branch.name);
+                    await repo.callGit('branch', '--delete', this.last_wip_branch.name, '--force');
                 } finally {
                     await Promise.all([
                         this.refreshHistory(),

@@ -86,6 +86,10 @@
                             <icon name="mdi-target" class="size-5" />
                             Checkout commit
                         </btn>
+                        <btn :disabled="current_head === commit.hash" @click="resetToCommit">
+                            <icon name="mdi-undo" class="size-5" />
+                            Reset to commit
+                        </btn>
                         <btn @click="show_branch_modal = true">
                             <icon name="mdi-source-branch" class="size-5" />
                             Branch
@@ -93,10 +97,6 @@
                         <btn @click="show_tag_modal = true">
                             <icon name="mdi-tag-outline" class="size-5" />
                             Tag
-                        </btn>
-                        <btn :disabled="current_head === commit.hash" @click="resetToCommit">
-                            <icon name="mdi-undo" class="size-5" />
-                            Reset to commit
                         </btn>
                     </template>
                     <btn :disabled="working_tree_selected" @click="cherrypickCommits">

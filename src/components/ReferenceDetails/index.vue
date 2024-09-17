@@ -3,14 +3,20 @@
     <div v-if="reference !== undefined" class="break-words">
         <div class="flex justify-end gap-1 flex-wrap mb-3">
             <template v-if="current_operation === null">
-                <btn v-if="reference.type === 'local_branch'" :disabled="isCurrentBranch(reference)" @click="checkoutBranch">
-                    <icon name="mdi-target" class="size-5" />
-                    Checkout branch
-                </btn>
-                <btn v-if="reference.type === 'local_branch'" @click="show_rename_modal = true">
-                    <icon name="mdi-pencil" class="size-5" />
-                    Rename
-                </btn>
+                <template v-if="reference.type === 'local_branch'">
+                    <btn :disabled="isCurrentBranch(reference)" @click="checkoutBranch">
+                        <icon name="mdi-target" class="size-5" />
+                        Checkout branch
+                    </btn>
+                    <btn :disabled="current_head === reference.hash" @click="resetBranchToHead">
+                        <icon name="mdi-undo" class="size-5" />
+                        Reset branch to HEAD
+                    </btn>
+                    <btn @click="show_rename_modal = true">
+                        <icon name="mdi-pencil" class="size-5" />
+                        Rename
+                    </btn>
+                </template>
                 <btn :disabled="isCurrentBranch(reference)" @click="deleteReference">
                     <icon name="mdi-delete" class="size-5" />
                     Delete
@@ -52,7 +58,7 @@
     export default {
         components: { RenameModal },
         inject: [
-            'selected_reference', 'hidden_references', 'commit_by_hash', 'current_operation',
+            'selected_reference', 'hidden_references', 'commit_by_hash', 'current_head', 'current_operation',
             'setSelectedCommits', 'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
@@ -71,6 +77,10 @@
                     this.refreshHistory(),
                     this.refreshStatus(),
                 ]);
+            },
+            async resetBranchToHead() {
+                await repo.callGit('branch', this.reference.name, '--force');
+                await this.refreshHistory();
             },
             async deleteReference() {
                 if (this.reference.type === 'local_branch') {

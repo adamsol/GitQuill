@@ -190,8 +190,9 @@
                     }
                     this.references = Object.freeze(references);
 
-                    if (this.selected_reference !== null && !_.some(this.references, { id: this.selected_reference.id })) {
-                        this.setSelectedReference(null);
+                    if (this.selected_reference !== null) {
+                        const reference = _.find(this.references, { id: this.selected_reference.id });
+                        this.setSelectedReference(reference ?? null);
                     }
                 }
                 // https://git-scm.com/docs/git-log#_pretty_formats
