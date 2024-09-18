@@ -18,18 +18,10 @@
 </template>
 
 <script>
-    import JSON5 from 'json5';
-
     export default {
+        inject: ['autolinks'],
         props: {
             content: { type: String, required: true },
-        },
-        data: () => ({
-            autolinks: undefined,
-        }),
-        async created() {
-            const content = await repo.readFile('.git/.quill/autolinks.json5', { null_if_not_exists: true });
-            this.autolinks = JSON5.parse(content ?? '[]');
         },
         computed: {
             parts() {

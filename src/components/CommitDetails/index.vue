@@ -122,26 +122,30 @@
                 Diff between...
             </div>
 
-            <template v-for="c in current_commits">
-                <hr v-if="current_commits.length > 1" class="my-2" />
+            <div class="min-h-14 overflow-auto">
+                <template v-for="c in current_commits">
+                    <hr v-if="current_commits.length > 1" class="my-2" />
 
-                <div v-if="c.hash === 'WORKING_TREE'" class="text-xl italic">
-                    Working tree
-                </div>
-
-                <div v-else>
-                    <commit-hash :hash="c.hash" />
-                    <div class="text-xl">
-                        <commit-message :content="c.subject" />
+                    <div v-if="c.hash === 'WORKING_TREE'" class="text-xl italic">
+                        Working tree
                     </div>
-                </div>
-            </template>
 
-            <template v-if="current_commits.length === 1">
-                <div v-if="commit.body" class="my-2 whitespace-pre-wrap">
+                    <div v-else>
+                        <commit-hash :hash="c.hash" />
+                        <div class="text-xl">
+                            <commit-message :content="c.subject" />
+                        </div>
+                    </div>
+                </template>
+
+                <div v-if="current_commits.length === 1 && commit.body" class="my-2 whitespace-pre-wrap">
                     <commit-message :content="commit.body" />
                 </div>
-                <div class="text-xs text-gray mt-3">
+            </div>
+
+            <template v-if="current_commits.length === 1">
+                <hr class="my-2" />
+                <div class="text-xs text-gray">
                     {{ $_.pluralize('parent', commit.parents.length) }}:
                 </div>
                 <div class="flex">

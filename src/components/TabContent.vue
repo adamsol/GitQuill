@@ -44,6 +44,7 @@
 </template>
 
 <script>
+    import JSON5 from 'json5';
     import { computed as vue_computed } from 'vue/dist/vue.esm-bundler';
 
     import StoreMixin from '@/mixins/StoreMixin';
@@ -83,6 +84,7 @@
                     hidden_references: new Set(),
                     commits: undefined,
                     selected_commits: [],
+                    autolinks: undefined,
                     current_branch_name: null,
                     current_operation: null,
                     working_tree_files: undefined,
@@ -196,6 +198,9 @@
                     if (this.repo_details.path !== undefined) {
                         const hidden_references_content = await repo.readFile('.git/.quill/hidden-refs.txt', { null_if_not_exists: true });
                         this.hidden_references = new Set(hidden_references_content?.split('\n') ?? []);
+
+                        const autolinks_content = await repo.readFile('.git/.quill/autolinks.json5', { null_if_not_exists: true });
+                        this.autolinks = JSON5.parse(autolinks_content ?? '[]');
                     }
                 },
                 deep: true,
