@@ -184,7 +184,7 @@
             'commits', 'commit_by_hash', 'selected_commits', 'commits_to_diff',
             'current_branch_name', 'current_head', 'current_operation', 'current_operation_label',
             'working_tree_files', 'uncommitted_changes_count', 'selected_file',
-            'setSelectedCommits', 'updateSelectedFile', 'saveSelectedFile', 'refreshStatus', 'refreshHistory',
+            'setSelectedCommits', 'updateSelectedFile', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
             current_commits: undefined,

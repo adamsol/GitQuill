@@ -38,7 +38,7 @@
     export default {
         inject: [
             'commits', 'commit_by_hash', 'selected_commits', 'selected_commit_hashes',
-            'uncommitted_changes_count', 'current_operation_label', 'selected_file',
+            'current_operation_label', 'uncommitted_changes_count', 'selected_file',
             'setSelectedCommits',
         ],
         props: {

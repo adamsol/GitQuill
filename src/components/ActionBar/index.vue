@@ -19,7 +19,7 @@
 <script>
     export default {
         inject: [
-            'references_by_type', 'uncommitted_changes_count', 'current_branch_name', 'current_head',
+            'references_by_type', 'current_branch_name', 'current_head', 'uncommitted_changes_count',
             'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         computed: {

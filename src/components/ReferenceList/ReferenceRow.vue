@@ -6,7 +6,7 @@
         @click="setSelectedReference(reference)"
         @dblclick="hidden ? {} : setSelectedCommits([commit_by_hash[reference.hash]])"
     >
-        <div class="grow ellipsis" :title="reference.name + '\n(double click to view commit)'">
+        <div class="grow ellipsis" :title="reference.name + '\n(double-click to view commit)'">
             {{ reference.name }}
         </div>
 
