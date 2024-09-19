@@ -62,10 +62,14 @@
                     </btn>
                     <btn
                         :disabled="files.unstaged.length > 0 || files.staged.length > 0"
-                        @click="abortCurrentOperation"
+                        @click="cancelCurrentOperation('--abort')"
                     >
-                        <icon name="mdi-cancel" class="size-5" />
+                        <icon name="mdi-restore" class="size-5" />
                         Abort
+                    </btn>
+                    <btn @click="cancelCurrentOperation('--quit')">
+                        <icon name="mdi-cancel" class="size-5" />
+                        Quit
                     </btn>
                 </div>
                 <textarea
@@ -403,11 +407,11 @@
                     ]);
                 }
             },
-            async abortCurrentOperation() {
+            async cancelCurrentOperation(cmd) {
                 if (await this.saveSelectedFile()) {
                     return;
                 }
-                await repo.callGit(this.current_operation.type, '--abort');
+                await repo.callGit(this.current_operation.type, cmd);
 
                 this.message = '';
                 this.amend = false;
