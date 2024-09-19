@@ -81,8 +81,18 @@
 
         constructor({ diff_editor, lane, line_range_mapping, action, callback }) {
             this.dom_node = document.createElement('button');
-            this.dom_node.title = _.title(action);
+            this.dom_node.title = _.title(action) + (action === 'discard' ? '\n(click twice)' : '');
+            this.first_click = false;
             this.dom_node.addEventListener('click', () => {
+                if (action === 'discard' && !this.first_click) {
+                    this.first_click = true;
+                    this.dom_node.classList.add('text-red');
+                    setTimeout(() => {
+                        this.first_click = false;
+                        this.dom_node.classList.remove('text-red');
+                    }, settings.discard_second_click_cooldown);
+                    return;
+                }
                 const [source, target] = action === 'stage' ? ['modified', 'original'] : ['original', 'modified'];
                 const editor = diff_editor._editors[target];
                 editor.pushUndoStop();

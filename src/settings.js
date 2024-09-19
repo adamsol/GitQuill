@@ -2,7 +2,7 @@
 export const icons = {
     stage: 'mdi-check',
     unstage: 'mdi-arrow-u-left-top',
-    discard: 'mdi-delete',
+    discard: 'mdi-delete-alert',
 
     tag: 'mdi-tag-outline',
     local_branch: 'mdi-source-branch',
@@ -19,3 +19,4 @@ export const colors = [
 ];
 
 export const hash_abbr_length = 7;
+export const discard_second_click_cooldown = 2000;
