@@ -213,7 +213,7 @@
                 return _.some(this.current_commits, { hash: 'WORKING_TREE' });
             },
             current_operation_in_conflict() {
-                return this.current_operation !== null && (this.current_operation.type !== 'rebase' || this.current_operation.hash !== this.commits[0].parents[0]);
+                return this.current_operation !== null && (this.current_operation.type !== 'rebase' || this.current_operation.hash !== this.current_head);
             },
         },
         watch: {
@@ -229,7 +229,7 @@
                 }
             },
             amend() {
-                const { subject, body } = this.commit_by_hash[this.commits[0].parents[0]];
+                const { subject, body } = this.commit_by_hash[this.current_head];
                 const message = subject + (body ? '\n\n' + body : '');
 
                 if (this.amend) {

@@ -99,7 +99,7 @@
     import CommitRow from './CommitRow';
 
     const field_separator = '\x06';
-    const reference_type_order = ['head', 'tag', 'local_branch', 'remote_branch'];
+    const reference_type_order = ['tag', 'head', 'local_branch', 'remote_branch'];
 
     export default {
         mixins: [
@@ -153,37 +153,40 @@
             },
             async loadHistory({ skip_references = false} = {}) {
                 if (!skip_references) {
-                    const summary = await repo.callGit('show-ref', '--dereference', '--head');
+                    const summary = await repo.callGit(
+                        'for-each-ref', '--sort=version:refname',
+                        '--format=%(refname) %(objectname) %(*objectname)',  // https://stackoverflow.com/questions/1862423/how-to-tell-which-commit-a-tag-points-to-in-git
+                    );
                     let references = [];
-                    const tags = {};
 
                     for (const line of _.filter(summary.split('\n'))) {
-                        let [hash, id] = line.split(' ');
-                        let reference;
+                        const [id, ...hashes] = line.split(' ');
+                        const name = id.split('/').slice(2).join('/');
+                        const hash = hashes[1] || hashes[0];
+                        let type;
 
-                        if (id === 'HEAD') {
-                            reference = { type: 'head', name: id };
-                        } else if (id.startsWith('refs/tags/')) {
-                            // Handle both lightweight and annotated tags. Annotated tags appear twice.
-                            id = id.replace(/\^\{}$/, '');
-                            reference = { type: 'tag', name: id.split('/').slice(2).join('/') };
-                            if (tags[reference.name] === undefined) {
-                                tags[reference.name] = reference;
-                            } else {
-                                tags[reference.name].hash = hash;
-                                continue;
-                            }
+                        if (id.startsWith('refs/tags/')) {
+                            type = 'tag';
                         } else if (id.startsWith('refs/heads/')) {
-                            reference = { type: 'local_branch', name: id.split('/').slice(2).join('/') };
+                            type = 'local_branch';
                         } else if (id.startsWith('refs/remotes/') && !id.endsWith('/HEAD')) {
-                            reference = { type: 'remote_branch', name: id.split('/').slice(2).join('/') };
+                            type = 'remote_branch';
                         } else {
                             continue;
                         }
-                        Object.assign(reference, { hash, id });
-                        references.push(reference);
+                        references.push({ type, name, id, hash });
                     }
-                    references = _.sortBy(references, 'name');
+                    let head = (await repo.readFile('.git/HEAD')).trim();
+                    const prefix = 'ref: refs/heads/';
+
+                    if (head.startsWith(prefix)) {
+                        const name = head.slice(prefix.length);
+                        head = _.find(references, { type: 'local_branch', name }).hash;
+                        this.current_branch_name = name;
+                    } else {
+                        this.current_branch_name = null;
+                    }
+                    references.push({ type: 'head', name: 'HEAD', id: 'HEAD', hash: head });
 
                     if (_.isEqual(this.references, references)) {
                         return;
@@ -294,9 +297,7 @@
                 }
                 this.current_operation = operation;
 
-                const { branch, ...files } = Object.freeze(await getStatus('--branch'));
-                this.current_branch_name = branch === 'HEAD' ? null : branch;
-                this.working_tree_files = files;
+                this.working_tree_files = Object.freeze(await getStatus());
 
                 if (this.selected_commit_hashes.has('WORKING_TREE')) {
                     this.updateSelectedFile();

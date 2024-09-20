@@ -17,7 +17,7 @@
     export default {
         inject: [
             'references', 'hidden_references',
-            'setSelectedReference', 'isCurrentBranch', 'refreshHistory', 'refreshStatus',
+            'setSelectedReference', 'refreshHistory',
         ],
         props: {
             reference: { type: Object, required: true },
@@ -31,11 +31,8 @@
         methods: {
             async submit() {
                 await repo.callGit('branch', '--move', this.reference.name, this.name);
+                await this.refreshHistory();
 
-                await Promise.all([
-                    this.refreshHistory(),
-                    ...this.isCurrentBranch(this.reference) ? [this.refreshStatus()] : [],
-                ]);
                 const new_reference = _.find(this.references, { type: this.reference.type, name: this.name });
                 this.setSelectedReference(new_reference);
 
