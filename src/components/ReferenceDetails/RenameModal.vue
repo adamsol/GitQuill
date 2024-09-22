@@ -16,7 +16,7 @@
 <script>
     export default {
         inject: [
-            'references', 'hidden_references',
+            'repo', 'references', 'hidden_references',
             'setSelectedReference', 'refreshHistory',
         ],
         props: {
@@ -30,7 +30,7 @@
         },
         methods: {
             async submit() {
-                await repo.callGit('branch', '--move', this.reference.name, this.name);
+                await this.repo.callGit('branch', '--move', this.reference.name, this.name);
                 await this.refreshHistory();
 
                 const new_reference = _.find(this.references, { type: this.reference.type, name: this.name });

@@ -48,7 +48,6 @@
     import { computed as vue_computed } from 'vue/dist/vue.esm-bundler';
 
     import StoreMixin from '@/mixins/StoreMixin';
-    import WindowEventMixin from '@/mixins/WindowEventMixin';
     import { getStatus } from '@/utils/git';
 
     import ActionBar from './ActionBar';
@@ -92,6 +91,24 @@
                     save_semaphore: Promise.resolve(),
                 }),
                 computed: {
+                    repo() {
+                        const handleErrors = async promise => {
+                            try {
+                                return await promise;
+                            } catch (e) {
+                                const message = e.message.replace(/^Error invoking remote method '[\w-]+': Error: /, '');
+                                this.error_messages.push(message);
+                                throw e;
+                            }
+                        };
+                        return Object.freeze({
+                            openTerminal: async () => await handleErrors(electron.openTerminal(this.repo_details.path)),
+                            callGit: async (...args) => await handleErrors(electron.callGit(this.repo_details.path, ...args)),
+                            ...Object.fromEntries(['readFile', 'writeFile', 'deleteFile'].map(func_name =>
+                                [func_name, async (...args) => await handleErrors(electron[func_name](this.repo_details.path, ...args))]
+                            )),
+                        });
+                    },
                     references_by_hash() {
                         return _.groupBy(this.references, 'hash');
                     },
@@ -149,7 +166,7 @@
                     },
                     async updateFileStatus(file) {
                         // https://stackoverflow.com/questions/71268388/show-renamed-moved-status-with-git-diff-on-single-file
-                        const status = await getStatus('--', file.path, ..._.filter([file.old_path]));
+                        const status = await getStatus(this.repo, '--', file.path, ..._.filter([file.old_path]));
                         const files = _.cloneDeep(this.working_tree_files);
 
                         for (const area of ['unstaged', 'staged']) {
@@ -183,7 +200,6 @@
             }),
             StoreMixin('main_pane_size', 70),
             StoreMixin('references_pane_size', 15),
-            WindowEventMixin('unhandledrejection', 'onUnhandledRejection'),
         ],
         props: {
             repo_details: { type: Object, required: true },
@@ -196,10 +212,10 @@
             repo_details: {
                 async handler() {
                     if (this.repo_details.path !== undefined) {
-                        const hidden_references_content = await repo.readFile('.git/.quill/hidden-refs.txt', { null_if_not_exists: true });
+                        const hidden_references_content = await this.repo.readFile('.git/.quill/hidden-refs.txt', { null_if_not_exists: true });
                         this.hidden_references = new Set(hidden_references_content?.split('\n') ?? []);
 
-                        const autolinks_content = await repo.readFile('.git/.quill/autolinks.json5', { null_if_not_exists: true });
+                        const autolinks_content = await this.repo.readFile('.git/.quill/autolinks.json5', { null_if_not_exists: true });
                         this.autolinks = JSON5.parse(autolinks_content ?? '[]');
                     }
                 },
@@ -208,7 +224,7 @@
             },
             hidden_references: {
                 async handler() {
-                    await repo.writeFile('.git/.quill/hidden-refs.txt', [...this.hidden_references].join('\n'));
+                    await this.repo.writeFile('.git/.quill/hidden-refs.txt', [...this.hidden_references].join('\n'));
                 },
                 deep: true,
             },
@@ -228,10 +244,6 @@
                     this.repo_details.path = path;
                     this.repo_details.label ??= path.slice(path.lastIndexOf('/') + 1);
                 }
-            },
-            onUnhandledRejection(event) {
-                const message = event.reason.message.replace(/^Error invoking remote method '[\w-]+': Error: /, '');
-                this.error_messages.push(message);
             },
         },
     };

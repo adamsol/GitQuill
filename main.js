@@ -64,14 +64,16 @@ app.whenReady().then(async () => {
     window.maximize();
 
     async function log(repo_path, repr, promise) {
-        logging.transports.file.resolvePathFn = () => path.join(repo_path, '.git/.quill/app.log');
+        const file_path = path.join(repo_path, '.git/.quill/app.log');
         try {
             const t = performance.now();
             const result = await promise;
             const ms = `${Math.round(performance.now() - t)}`.padStart(3, ' ');
+            logging.transports.file.resolvePathFn = () => file_path;
             logging.info(`[${ms} ms] ${repr}`);
             return result;
         } catch (e) {
+            logging.transports.file.resolvePathFn = () => file_path;
             logging.error(`${repr}\n${e}`);
             throw e;
         }
@@ -82,7 +84,7 @@ app.whenReady().then(async () => {
     ipcMain.handle('open-terminal', async (event, repo_path) => {
         exec('start cmd.exe', { cwd: repo_path });
     });
-    ipcMain.handle('call-git', async (event, repo_path, args) => {
+    ipcMain.handle('call-git', async (event, repo_path, ...args) => {
         const run = async () => await log(
             repo_path,
             `call-git ${JSON.stringify(args)}`,

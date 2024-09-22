@@ -46,22 +46,9 @@
             StoreMixin('selected_tab_id', 1),
             WindowEventMixin('keydown', 'onKeyDown'),
         ],
-        computed: {
-            selected_tab() {
-                return _.find(this.tabs, { id: this.selected_tab_id });
-            },
-        },
         created() {
             let last_id = _.max(_.map(this.tabs, 'id')) ?? 0;
             this.getNextId = () => ++last_id;
-
-            window.repo = {
-                openTerminal: async () => await electron.openTerminal(this.selected_tab.path),
-                callGit: async (...args) => await electron.callGit(this.selected_tab.path, args),
-                ...Object.fromEntries(['readFile', 'writeFile', 'deleteFile'].map(func_name =>
-                    [func_name, async (...args) => await electron[func_name](this.selected_tab.path, ...args)]
-                )),
-            };
         },
         methods: {
             closeTab(tab) {

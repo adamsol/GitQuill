@@ -1,5 +1,5 @@
 
-export async function getStatus(...args) {
+export async function getStatus(repo, ...args) {
     // https://git-scm.com/docs/git-status#_short_format
     // https://stackoverflow.com/questions/28222633/git-status-not-showing-contents-of-newly-added-folder
     const status = await repo.callGit('status', '--porcelain', '-z', '--untracked-files=all', ...args);
@@ -35,7 +35,7 @@ export async function getStatus(...args) {
         for (const file of _.filter(conflict_files, { x: 'U', y: 'D' })) {
             await repo.deleteFile(file.path);
         }
-        return await getStatus(...args);
+        return await getStatus(repo, ...args);
     }
     const processFiles = files => _.sortBy(_.reject(files, { status: ' ' }), 'path');
 

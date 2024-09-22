@@ -21,7 +21,7 @@
 <script>
     export default {
         inject: [
-            'hidden_references', 'current_branch_name',
+            'repo', 'hidden_references', 'current_branch_name',
             'setSelectedReference', 'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         props: {
@@ -29,7 +29,7 @@
         },
         methods: {
             async checkoutBranch(reference) {
-                await repo.callGit('checkout', reference.name);
+                await this.repo.callGit('checkout', reference.name);
 
                 await Promise.all([
                     this.refreshHistory(),

@@ -15,7 +15,10 @@
 
 <script>
     export default {
-        inject: ['refreshHistory'],
+        inject: [
+            'repo',
+            'refreshHistory',
+        ],
         props: {
             commit: { type: Object, required: true },
         },
@@ -24,7 +27,7 @@
         }),
         methods: {
             async submit() {
-                await repo.callGit('tag', this.name, this.commit.hash);
+                await this.repo.callGit('tag', this.name, this.commit.hash);
                 await this.refreshHistory();
             },
         },

@@ -191,7 +191,7 @@
         ],
         components: { BranchModal, CommitterDetails, FileRow, TagModal },
         inject: [
-            'commits', 'commit_by_hash', 'selected_commits', 'commits_to_diff',
+            'repo', 'commits', 'commit_by_hash', 'selected_commits', 'commits_to_diff',
             'current_branch_name', 'current_head', 'current_operation', 'current_operation_label',
             'working_tree_files', 'uncommitted_changes_count', 'selected_file',
             'setSelectedCommits', 'updateSelectedFile', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
@@ -244,9 +244,6 @@
             await this.$nextTick();
             await this.load();
         },
-        async activated() {
-            await this.load();
-        },
         methods: {
             async load() {
                 const current_commits = this.selected_commits;
@@ -255,9 +252,9 @@
                 if (current_commits.length === 1 && current_commits[0].hash === 'WORKING_TREE') {
                     if (this.message === '') {
                         if (this.current_operation?.type === 'rebase') {
-                            this.message = await repo.readFile('.git/rebase-merge/message');
+                            this.message = await this.repo.readFile('.git/rebase-merge/message');
                         } else if (['cherry-pick', 'revert'].includes(this.current_operation?.type)) {
-                            const message = await repo.readFile('.git/MERGE_MSG');
+                            const message = await this.repo.readFile('.git/MERGE_MSG');
                             this.message = message.split('\n').filter(line => !line.startsWith('#')).join('\n');
                         }
                     }
@@ -270,12 +267,12 @@
                             continue;
                         } else if (commit.hash === 'EMPTY_ROOT') {
                             // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
-                            hashes.push((await repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim());
+                            hashes.push((await this.repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim());
                         } else {
                             hashes.push(commit.hash);
                         }
                     }
-                    const status = await repo.callGit('diff', ...hashes.reverse(), '--name-status', '-z');
+                    const status = await this.repo.callGit('diff', ...hashes.reverse(), '--name-status', '-z');
                     if (!_.isEqual(commits_to_diff, this.commits_to_diff)) {
                         return;
                     }
@@ -306,16 +303,16 @@
                 await this.saveSelectedFile();
 
                 if (action === 'stage') {
-                    await repo.callGit('add', '--all');
+                    await this.repo.callGit('add', '--all');
 
                 } else if (action === 'unstage') {
-                    await repo.callGit('restore', '--staged', '--', '.');
+                    await this.repo.callGit('restore', '--staged', '--', '.');
 
                 } else if (action === 'discard') {
                     if (this.first_click.discard) {
                         await Promise.all([
-                            repo.callGit('clean', '--force', '--', '.'),
-                            repo.callGit('checkout', '--', '.'),
+                            this.repo.callGit('clean', '--force', '--', '.'),
+                            this.repo.callGit('checkout', '--', '.'),
                         ]);
                     } else {
                         this.first_click.discard = true;
@@ -327,7 +324,7 @@
             async doCommit() {
                 await this.saveSelectedFile();
 
-                await repo.callGit('commit', ...this.amend ? ['--amend'] : [], '--message', this.message);
+                await this.repo.callGit('commit', ...this.amend ? ['--amend'] : [], '--message', this.message);
                 this.message = '';
                 this.amend = false;
 
@@ -337,7 +334,7 @@
                 ]);
             },
             async checkoutCommit() {
-                await repo.callGit('checkout', this.commit.hash);
+                await this.repo.callGit('checkout', this.commit.hash);
 
                 await Promise.all([
                     this.refreshHistory(),
@@ -345,7 +342,7 @@
                 ]);
             },
             async resetToCommit() {
-                await repo.callGit('reset', this.commit.hash);
+                await this.repo.callGit('reset', this.commit.hash);
 
                 await Promise.all([
                     this.refreshHistory(),
@@ -354,7 +351,7 @@
             },
             async cherrypickCommits() {
                 try {
-                    await repo.callGit('cherry-pick', ..._.map(this.current_commits, 'hash'));
+                    await this.repo.callGit('cherry-pick', ..._.map(this.current_commits, 'hash'));
                 } finally {
                     await Promise.all([
                         this.refreshHistory(),
@@ -364,7 +361,7 @@
             },
             async revertCommits() {
                 try {
-                    await repo.callGit('revert', ..._.map(this.current_commits, 'hash'));
+                    await this.repo.callGit('revert', ..._.map(this.current_commits, 'hash'));
                 } finally {
                     await Promise.all([
                         this.refreshHistory(),
@@ -379,10 +376,10 @@
                     // https://stackoverflow.com/questions/22992543/how-do-i-git-rebase-the-first-commit
                     target = '--root';
                 }
-                await repo.callGit('-c', 'sequence.editor=sed -i 1s/^pick/edit/', 'rebase', '--interactive', target);
+                await this.repo.callGit('-c', 'sequence.editor=sed -i 1s/^pick/edit/', 'rebase', '--interactive', target);
                 if (this.selected_file !== null) {
-                    await repo.callGit('revert', commit.hash, '--no-commit');
-                    await repo.callGit('restore', '--source', commit.hash, '--', '.');
+                    await this.repo.callGit('revert', commit.hash, '--no-commit');
+                    await this.repo.callGit('restore', '--source', commit.hash, '--', '.');
                 }
                 this.setSelectedCommits([this.commits[0]]);
                 await Promise.all([
@@ -397,13 +394,13 @@
                 // No conflict means that we've just started rebasing.
                 // Edit the commit message in this case.
                 if (!this.current_operation_in_conflict) {
-                    await repo.callGit('commit', '--amend', '--message', this.message);
+                    await this.repo.callGit('commit', '--amend', '--message', this.message);
                 }
                 try {
                     if (this.current_operation_in_conflict) {
-                        await repo.callGit('-c', `core.editor=true`, this.current_operation.type, '--continue');
+                        await this.repo.callGit('-c', `core.editor=true`, this.current_operation.type, '--continue');
                     } else {
-                        await repo.callGit(this.current_operation.type, '--skip');
+                        await this.repo.callGit(this.current_operation.type, '--skip');
                     }
                 } finally {
                     this.message = '';
@@ -419,7 +416,7 @@
                 if (await this.saveSelectedFile()) {
                     return;
                 }
-                await repo.callGit(this.current_operation.type, cmd);
+                await this.repo.callGit(this.current_operation.type, cmd);
 
                 this.message = '';
                 this.amend = false;

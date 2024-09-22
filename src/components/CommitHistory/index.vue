@@ -109,7 +109,7 @@
         ],
         components: { CommitGraph, CommitRefsRow, CommitRow },
         inject: [
-            'references', 'references_by_hash', 'selected_reference', 'hidden_references',
+            'repo', 'references', 'references_by_hash', 'selected_reference', 'hidden_references',
             'commits', 'commit_by_hash', 'selected_commits', 'selected_commit_hashes',
             'current_branch_name', 'current_head', 'current_operation', 'working_tree_files', 'selected_file',
             'setSelectedReference', 'setSelectedCommits', 'updateSelectedFile',
@@ -153,7 +153,7 @@
             },
             async loadHistory({ skip_references = false} = {}) {
                 if (!skip_references) {
-                    const summary = await repo.callGit(
+                    const summary = await this.repo.callGit(
                         'for-each-ref', '--sort=version:refname',
                         '--format=%(refname) %(objectname) %(*objectname)',  // https://stackoverflow.com/questions/1862423/how-to-tell-which-commit-a-tag-points-to-in-git
                     );
@@ -176,7 +176,7 @@
                         }
                         references.push({ type, name, id, hash });
                     }
-                    let head = (await repo.readFile('.git/HEAD')).trim();
+                    let head = (await this.repo.readFile('.git/HEAD')).trim();
                     const prefix = 'ref: refs/heads/';
 
                     if (head.startsWith(prefix)) {
@@ -212,7 +212,7 @@
                     committer_date: '%cd',
                 };
                 const excluded_references = [...this.hidden_references, 'refs/stash'];
-                const log = await repo.callGit(
+                const log = await this.repo.callGit(
                     'log', ..._.map(excluded_references, id => `--exclude=${id}`), '--all', '--date-order', '-z',
                     '--pretty=format:' + Object.values(format).join(field_separator),
                     '--date=format-local:%Y-%m-%d %H:%M',  // https://stackoverflow.com/questions/7853332/how-to-change-git-log-date-formats
@@ -289,7 +289,7 @@
                     ['cherry-pick', '.git/CHERRY_PICK_HEAD'],
                     ['revert', '.git/REVERT_HEAD'],
                 ]) {
-                    const hash = await repo.readFile(path, { null_if_not_exists: true });
+                    const hash = await this.repo.readFile(path, { null_if_not_exists: true });
                     if (hash !== null) {
                         operation = { type, hash: hash.trim() };
                         break;
@@ -297,7 +297,7 @@
                 }
                 this.current_operation = operation;
 
-                this.working_tree_files = Object.freeze(await getStatus());
+                this.working_tree_files = Object.freeze(await getStatus(this.repo));
 
                 if (this.selected_commit_hashes.has('WORKING_TREE')) {
                     this.updateSelectedFile();

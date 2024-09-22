@@ -19,7 +19,10 @@
 
 <script>
     export default {
-        inject: ['refreshHistory', 'refreshStatus'],
+        inject: [
+            'repo',
+            'refreshHistory', 'refreshStatus',
+        ],
         props: {
             commit: { type: Object, required: true },
         },
@@ -30,9 +33,9 @@
         methods: {
             async submit() {
                 if (this.checkout) {
-                    await repo.callGit('checkout', this.commit.hash, '-b', this.name);
+                    await this.repo.callGit('checkout', this.commit.hash, '-b', this.name);
                 } else {
-                    await repo.callGit('branch', this.name, this.commit.hash);
+                    await this.repo.callGit('branch', this.name, this.commit.hash);
                 }
                 await Promise.all([
                     this.refreshHistory(),

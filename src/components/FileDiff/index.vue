@@ -125,7 +125,7 @@
             WindowEventMixin('keydown', 'onKeyDown'),
         ],
         inject: [
-            'commits_to_diff', 'working_tree_files', 'selected_file', 'save_semaphore',
+            'repo', 'commits_to_diff', 'working_tree_files', 'selected_file', 'save_semaphore',
             'updateFileStatus', 'updateSelectedFile',
         ],
         data: () => ({
@@ -176,9 +176,6 @@
             },
         },
         async created() {
-            await this.load();
-        },
-        async activated() {
             await this.load();
         },
         methods: {
@@ -247,7 +244,7 @@
                             return '';
                         } else {
                             const file_path = ['R', 'C'].includes(file.status) ? file.old_path : file.path;
-                            return await repo.callGit('show', `${rev}:${file_path}`);
+                            return await this.repo.callGit('show', `${rev}:${file_path}`);
                         }
                     }
                 };
@@ -258,9 +255,9 @@
                         const rev = file.area === 'staged' ? ':0' : commits_to_diff[0].hash;
 
                         if (rev === 'WORKING_TREE') {
-                            return await repo.readFile(file.path);
+                            return await this.repo.readFile(file.path);
                         } else {
-                            return await repo.callGit('show', `${rev}:${file.path}`);
+                            return await this.repo.callGit('show', `${rev}:${file.path}`);
                         }
                     }
                 };
@@ -302,14 +299,14 @@
                             staged_content = contents[0];
                         }
                     } else if (this.file.area === 'staged') {
-                        unstaged_content = await repo.readFile(this.file.path);
+                        unstaged_content = await this.repo.readFile(this.file.path);
                         staged_content = contents[1];
                     }
                     if (staged_content !== undefined) {
-                        await repo.writeFile(this.file.path, staged_content);
-                        await repo.callGit('add', '--', this.file.path);
+                        await this.repo.writeFile(this.file.path, staged_content);
+                        await this.repo.callGit('add', '--', this.file.path);
                     }
-                    await repo.writeFile(this.file.path, unstaged_content);
+                    await this.repo.writeFile(this.file.path, unstaged_content);
 
                     this.saved_contents = contents;
                     this.unsaved_changes = false;

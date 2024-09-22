@@ -29,7 +29,7 @@
 <script>
     export default {
         inject: [
-            'selected_file',
+            'repo', 'selected_file',
             'updateFileStatus', 'updateSelectedFile', 'saveSelectedFile',
         ],
         props: {
@@ -48,17 +48,17 @@
                 await this.saveSelectedFile();
 
                 if (action === 'stage') {
-                    await repo.callGit('add', '--', this.file.path);
+                    await this.repo.callGit('add', '--', this.file.path);
 
                 } else if (action === 'unstage') {
-                    await repo.callGit('restore', '--staged', '--', this.file.path, ..._.filter([this.file.old_path]));
+                    await this.repo.callGit('restore', '--staged', '--', this.file.path, ..._.filter([this.file.old_path]));
 
                 } else if (action === 'discard') {
                     if (this.first_click.discard) {
                         if (this.file.status === 'A') {
-                            await repo.callGit('clean', '--force', '--', this.file.path);
+                            await this.repo.callGit('clean', '--force', '--', this.file.path);
                         } else {
-                            await repo.callGit('checkout', '--', this.file.path);
+                            await this.repo.callGit('checkout', '--', this.file.path);
                         }
                     } else {
                         this.first_click.discard = true;

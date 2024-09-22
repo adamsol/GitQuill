@@ -55,7 +55,7 @@
     export default {
         components: { RenameModal },
         inject: [
-            'selected_reference', 'hidden_references', 'current_head', 'current_operation',
+            'repo', 'selected_reference', 'hidden_references', 'current_head', 'current_operation',
             'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
@@ -68,7 +68,7 @@
         },
         methods: {
             async checkoutBranch() {
-                await repo.callGit('checkout', this.reference.name);
+                await this.repo.callGit('checkout', this.reference.name);
 
                 await Promise.all([
                     this.refreshHistory(),
@@ -76,18 +76,18 @@
                 ]);
             },
             async resetBranchToHead() {
-                await repo.callGit('branch', this.reference.name, '--force');
+                await this.repo.callGit('branch', this.reference.name, '--force');
                 await this.refreshHistory();
             },
             async deleteReference() {
                 if (this.reference.type === 'local_branch') {
-                    await repo.callGit('branch', '--delete', this.reference.name, '--force');
+                    await this.repo.callGit('branch', '--delete', this.reference.name, '--force');
                 } else if (this.reference.type === 'remote_branch') {
                     // Delete only the local remote-tracking branch.
                     // https://stackoverflow.com/questions/2003505/how-do-i-delete-a-git-branch-locally-and-remotely
-                    await repo.callGit('branch', '--delete', this.reference.name, '--remotes');
+                    await this.repo.callGit('branch', '--delete', this.reference.name, '--remotes');
                 } else if (this.reference.type === 'tag') {
-                    await repo.callGit('tag', '--delete', this.reference.name);
+                    await this.repo.callGit('tag', '--delete', this.reference.name);
                 }
                 this.hidden_references.delete(this.reference.id);
                 await this.refreshHistory();
