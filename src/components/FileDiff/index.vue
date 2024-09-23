@@ -123,6 +123,7 @@
             ElectronEventMixin('window-blur', 'save'),
 
             WindowEventMixin('keydown', 'onKeyDown'),
+            WindowEventMixin('beforeunload', 'onBeforeUnload'),
         ],
         inject: [
             'repo', 'commits_to_diff', 'working_tree_files', 'selected_file', 'save_semaphore',
@@ -177,6 +178,9 @@
         },
         async created() {
             await this.load();
+        },
+        async deactivated() {
+            await this.save();
         },
         methods: {
             onMountEditor(diff_editor) {
@@ -332,6 +336,9 @@
                 if (event.code === 'Escape') {
                     await this.close();
                 }
+            },
+            async onBeforeUnload() {
+                await this.save();
             },
             onSelectLanguage() {
                 electron.store.set(`language.${this.extension}`, this.language);
