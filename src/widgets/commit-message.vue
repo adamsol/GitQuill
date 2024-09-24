@@ -1,25 +1,23 @@
 
 <template>
-    <div v-if="autolinks !== undefined">
-        <span v-for="part in parts">
-            <a
-                v-if="part.href"
-                class="border-b border-dashed"
-                :href="part.href"
-                target="_blank"
-            >
-                {{ part.text }}
-            </a>
-            <span v-else>
-                {{ part.text }}
-            </span>
+    <span v-for="part in parts">
+        <a
+            v-if="part.href"
+            class="border-b border-dashed"
+            :href="part.href"
+            target="_blank"
+        >
+            {{ part.text }}
+        </a>
+        <span v-else>
+            {{ part.text }}
         </span>
-    </div>
+    </span>
 </template>
 
 <script>
     export default {
-        inject: ['autolinks'],
+        inject: ['config'],
         props: {
             content: { type: String, required: true },
         },
@@ -27,7 +25,7 @@
             parts() {
                 const parts = [{ text: this.content }];
 
-                for (let [regex, replacer] of this.autolinks) {
+                for (let [regex, replacer] of this.config?.autolinks ?? []) {
                     regex = new RegExp(regex, 'g');
                     for (let i = 0; i < parts.length; ++i) {
                         if (parts[i].href === undefined) {

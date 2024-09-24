@@ -7,8 +7,10 @@
             Open repository
         </btn>
     </div>
+
     <div v-else-if="show" class="h-full flex flex-col">
-        <ActionBar />
+        <ActionBar class="pt-1.5 pb-0.5" />
+
         <div class="grow overflow-hidden">
             <splitpanes @resized="main_pane_size = $event[0].size">
                 <pane :size="main_pane_size">
@@ -78,12 +80,12 @@
         mixins: [
             provideReactively({
                 data: () => ({
+                    config: undefined,
                     references: undefined,
                     selected_reference: null,
                     hidden_references: new Set(),
                     commits: undefined,
                     selected_commits: [],
-                    autolinks: undefined,
                     current_branch_name: null,
                     current_operation: null,
                     working_tree_files: undefined,
@@ -215,8 +217,8 @@
                         const hidden_references_content = await this.repo.readFile('.git/.quill/hidden-refs.txt', { null_if_not_exists: true });
                         this.hidden_references = new Set(hidden_references_content?.split('\n') ?? []);
 
-                        const autolinks_content = await this.repo.readFile('.git/.quill/autolinks.json5', { null_if_not_exists: true });
-                        this.autolinks = JSON5.parse(autolinks_content ?? '[]');
+                        const config_content = await this.repo.readFile('.git/.quill/config.json5', { null_if_not_exists: true });
+                        this.config = Object.freeze(JSON5.parse(config_content ?? '{}'));
                     }
                 },
                 deep: true,

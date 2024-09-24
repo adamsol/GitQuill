@@ -1,31 +1,63 @@
 
 <template>
     <div class="flex gap-2 justify-center">
-        <btn :disabled="uncommitted_changes_count === 0" @click="saveWip">
-            <icon name="mdi-archive-arrow-down-outline" class="size-6" />
-            Save WIP
-        </btn>
-        <btn :disabled="last_wip_branch === undefined" @click="restoreWip">
-            <icon name="mdi-archive-arrow-up-outline" class="size-6" />
-            Restore WIP
-        </btn>
-        <btn @click="openTerminal">
-            <icon name="mdi-console" class="size-6" />
-            Open terminal
-        </btn>
+        <template v-for="action in actions">
+            <hr v-if="action.separator" class="mx-1" />
+            <btn
+                v-else
+                :disabled="action.disabled"
+                @click="action.callback"
+            >
+                <icon :name="action.icon" class="size-6" />
+                {{ action.label }}
+            </btn>
+        </template>
     </div>
 </template>
 
 <script>
     export default {
         inject: [
-            'repo', 'references_by_type', 'current_branch_name', 'current_head', 'uncommitted_changes_count',
+            'repo', 'config', 'references_by_type', 'current_branch_name', 'current_head', 'uncommitted_changes_count',
             'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         computed: {
             last_wip_branch() {
                 const branches = _.filter(this.references_by_type.local_branch ?? [], branch => branch.name.match(/^wip-\d+/));
                 return _.last(branches);
+            },
+            actions() {
+                return [
+                    {
+                        icon: 'mdi-archive-arrow-down-outline',
+                        label: 'Save WIP',
+                        callback: this.saveWip,
+                        disabled: (this.uncommitted_changes_count ?? 0) === 0,
+                    },
+                    {
+                        icon: 'mdi-archive-arrow-up-outline',
+                        label: 'Restore WIP',
+                        callback: this.restoreWip,
+                        disabled: this.last_wip_branch === undefined,
+                    },
+                    {
+                        separator: true,
+                    },
+                    {
+                        icon: 'mdi-console',
+                        label: 'Open terminal',
+                        callback: this.repo.openTerminal,
+                    },
+                    ...this.config?.custom_actions ? [
+                        {
+                            separator: true,
+                        },
+                        ...this.config.custom_actions.map(action => ({
+                            ...action,
+                            callback: () => this.repo.callGit(...action.command),
+                        })),
+                    ] : [],
+                ];
             },
         },
         methods: {
@@ -57,9 +89,6 @@
                         this.refreshStatus(),
                     ]);
                 }
-            },
-            async openTerminal() {
-                await this.repo.openTerminal();
             },
         },
     };
