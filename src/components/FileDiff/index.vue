@@ -117,6 +117,7 @@
             StoreMixin('context_line_count', 3),
             StoreMixin('collapse_unchanged_regions', true),
             StoreMixin('side_by_side_view', true),
+            StoreMixin('side_by_side_ratio', 0.5),
             StoreMixin('whitespace_diff', false),
             StoreMixin('word_wrap', false),
 
@@ -144,8 +145,8 @@
                         enabled: this.collapse_unchanged_regions,
                     },
                     renderSideBySide: this.side_by_side_view,
+                    splitViewDefaultRatio: this.side_by_side_ratio,
                     useInlineViewWhenSpaceIsLimited: false,
-                    enableSplitViewResizing: false,
                     ignoreTrimWhitespace: !this.whitespace_diff,
                     wordWrap: this.word_wrap ? 'on' : 'off',
 
@@ -223,6 +224,11 @@
                     for (const widget of widgets) {
                         diff_editor._editors.modified.addGlyphMarginWidget(widget);
                     }
+                });
+                // https://github.com/microsoft/vscode/blob/1.93.1/src/vs/editor/browser/widget/diffEditor/components/diffEditorSash.ts#L78
+                diff_editor._sash.value._sash.onDidEnd(() => {
+                    const [a, b] = ['original', 'modified'].map(name => this.diff_editor._editors[name]._domElement.clientWidth);
+                    this.side_by_side_ratio = a / (a + b);
                 });
             },
             getEditorContents() {

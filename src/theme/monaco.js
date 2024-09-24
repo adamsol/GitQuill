@@ -21,5 +21,6 @@ export default {
 		'diffEditor.removedTextBackground': colors.red + text_opacity,
 		'diffEditor.unchangedRegionBackground': colors.gray.bg,
 		'diffEditor.unchangedCodeBackground': '#0000',
+		'sash.hoverBorder': '#0000',
 	},
 };
