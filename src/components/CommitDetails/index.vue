@@ -191,7 +191,7 @@
         ],
         components: { BranchModal, CommitterDetails, FileRow, TagModal },
         inject: [
-            'repo', 'commits', 'commit_by_hash', 'selected_commits', 'commits_to_diff',
+            'repo', 'commits', 'commit_by_hash', 'selected_commits', 'revisions_to_diff',
             'current_branch_name', 'current_head', 'current_operation', 'current_operation_label',
             'working_tree_files', 'uncommitted_changes_count', 'selected_file',
             'setSelectedCommits', 'updateSelectedFile', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
@@ -247,7 +247,7 @@
         methods: {
             async load() {
                 const current_commits = this.selected_commits;
-                const commits_to_diff = this.commits_to_diff;
+                const revisions_to_diff = this.revisions_to_diff;
 
                 if (current_commits.length === 1 && current_commits[0].hash === 'WORKING_TREE') {
                     if (this.message === '') {
@@ -262,18 +262,18 @@
 
                 } else if (current_commits.length <= 2) {
                     const hashes = [];
-                    for (const commit of commits_to_diff) {
-                        if (commit.hash === 'WORKING_TREE') {
+                    for (const hash of revisions_to_diff) {
+                        if (hash === 'WORKING_TREE') {
                             continue;
-                        } else if (commit.hash === 'EMPTY_ROOT') {
+                        } else if (hash === 'EMPTY_ROOT') {
                             // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
                             hashes.push((await this.repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim());
                         } else {
-                            hashes.push(commit.hash);
+                            hashes.push(hash);
                         }
                     }
                     const status = await this.repo.callGit('diff', ...hashes.reverse(), '--name-status', '-z');
-                    if (!_.isEqual(commits_to_diff, this.commits_to_diff)) {
+                    if (!_.isEqual(revisions_to_diff, this.revisions_to_diff)) {
                         return;
                     }
                     const tokens = status.split('\0');

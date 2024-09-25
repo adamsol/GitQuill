@@ -123,14 +123,14 @@
                     selected_commit_hashes() {
                         return new Set(_.map(this.selected_commits, 'hash'));
                     },
-                    commits_to_diff() {
-                        if (this.selected_commits.length <= 2) {
-                            const second_commit_or_parent =
-                                this.selected_commits[1] ??
-                                this.commit_by_hash[this.selected_commits[0].parents[0]] ??
-                                { hash: 'EMPTY_ROOT', index: Infinity }
-                            ;
-                            return _.sortBy([this.selected_commits[0], second_commit_or_parent], 'index');
+                    revisions_to_diff() {
+                        if (this.selected_commits.length === 1) {
+                            const commit = this.selected_commits[0];
+                            const parent = commit.hash === 'WORKING_TREE' ? 'HEAD' : commit.parents[0] ?? 'EMPTY_ROOT';
+                            return [commit.hash, parent];
+
+                        } else if (this.selected_commits.length === 2) {
+                            return _.map(_.sortBy(this.selected_commits, 'index'), 'hash');
                         }
                     },
                     current_head() {

@@ -127,7 +127,7 @@
             WindowEventMixin('beforeunload', 'onBeforeUnload'),
         ],
         inject: [
-            'repo', 'commits_to_diff', 'working_tree_files', 'selected_file', 'save_semaphore',
+            'repo', 'revisions_to_diff', 'working_tree_files', 'selected_file', 'save_semaphore',
             'updateFileStatus', 'updateSelectedFile',
         ],
         data: () => ({
@@ -240,7 +240,7 @@
             async load() {
                 await this.save_semaphore;
 
-                const commits_to_diff = this.commits_to_diff;
+                const revisions_to_diff = this.revisions_to_diff;
                 const file = this.selected_file;
 
                 const loadOriginal = async () => {
@@ -248,7 +248,7 @@
                         return '';
                     } else {
                         // https://stackoverflow.com/questions/60853992/how-to-git-show-a-staged-file
-                        const rev = file.area === 'unstaged' ? ':0' : commits_to_diff[1].hash;
+                        const rev = file.area === 'unstaged' ? ':0' : revisions_to_diff[1];
 
                         if (rev === 'EMPTY_ROOT') {
                             return '';
@@ -262,7 +262,7 @@
                     if (file.status === 'D') {
                         return '';
                     } else {
-                        const rev = file.area === 'staged' ? ':0' : commits_to_diff[0].hash;
+                        const rev = file.area === 'staged' ? ':0' : revisions_to_diff[0];
 
                         if (rev === 'WORKING_TREE') {
                             return await this.repo.readFile(file.path);
