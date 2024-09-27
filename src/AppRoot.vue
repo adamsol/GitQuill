@@ -23,12 +23,13 @@
         <hr class="mb-1" />
 
         <div class="grow overflow-hidden">
-            <keep-alive v-for="tab in tabs" :key="tab.id">
+            <template v-for="tab in tabs" :key="tab.id">
                 <TabContent
-                    v-if="tab.id === selected_tab_id"
+                    v-if="tabs_initialized.has(tab.id)"
+                    :active="tab.id === selected_tab_id"
                     :repo_details="tab"
                 />
-            </keep-alive>
+            </template>
         </div>
     </div>
 </template>
@@ -46,6 +47,17 @@
             StoreMixin('selected_tab_id', 1),
             WindowEventMixin('keydown', 'onKeyDown'),
         ],
+        data: () => ({
+            tabs_initialized: new Set(),
+        }),
+        watch: {
+            selected_tab_id: {
+                handler() {
+                    this.tabs_initialized.add(this.selected_tab_id);
+                },
+                immediate: true,
+            },
+        },
         created() {
             let last_id = _.max(_.map(this.tabs, 'id')) ?? 0;
             this.getNextId = () => ++last_id;

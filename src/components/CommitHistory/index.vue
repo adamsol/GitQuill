@@ -109,7 +109,7 @@
         ],
         components: { CommitGraph, CommitRefsRow, CommitRow },
         inject: [
-            'repo', 'references', 'references_by_hash', 'selected_reference', 'hidden_references',
+            'tab_active', 'repo', 'references', 'references_by_hash', 'selected_reference', 'hidden_references',
             'commits', 'commit_by_hash', 'selected_commits', 'selected_commit_hashes',
             'current_branch_name', 'current_head', 'current_operation', 'working_tree_files', 'selected_file',
             'setSelectedReference', 'setSelectedCommits', 'updateSelectedFile',
@@ -126,6 +126,11 @@
             },
         },
         watch: {
+            async tab_active() {
+                if (this.tab_active) {
+                    await this.load();
+                }
+            },
             selected_commits() {
                 const scroller = this.$refs.main_scroller;
 
@@ -139,9 +144,6 @@
             },
         },
         async created() {
-            await this.load();
-        },
-        async activated() {
             await this.load();
         },
         methods: {

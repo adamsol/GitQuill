@@ -18,14 +18,17 @@ export default (event_name, callback_name) => {
         }
     }
     return {
+        watch: {
+            tab_active() {
+                if (this.tab_active) {
+                    addListener.call(this);
+                } else {
+                    removeListener.call(this);
+                }
+            },
+        },
         created() {
             addListener.call(this);
-        },
-        activated() {
-            addListener.call(this);
-        },
-        deactivated() {
-            removeListener.call(this);
         },
         unmounted() {
             removeListener.call(this);

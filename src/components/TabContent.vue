@@ -1,48 +1,50 @@
 
 <template>
-    <div v-if="repo_details.path === undefined" class="h-full flex flex-col gap-2 items-center justify-center">
-        <input v-model.trim="repo_details.label" placeholder="Label" />
-        <btn @click="openRepo">
-            <icon name="mdi-folder" class="size-5" />
-            Open repository
-        </btn>
-    </div>
-
-    <div v-else-if="show" class="h-full flex flex-col">
-        <ActionBar class="pt-1.5 pb-0.5" />
-
-        <div class="grow overflow-hidden">
-            <splitpanes @resized="main_pane_size = $event[0].size">
-                <pane :size="main_pane_size">
-                    <splitpanes v-show="selected_file === null" @resized="references_pane_size = $event[0].size">
-                        <pane class="min-w-48" :size="references_pane_size">
-                            <ReferenceList class="pt-2 pb-4 pl-4" />
-                        </pane>
-                        <pane>
-                            <CommitHistory ref="commit_history" class="py-2" />
-                        </pane>
-                    </splitpanes>
-                    <FileDiff v-if="selected_file !== null" ref="file_diff" />
-                </pane>
-                <pane class="min-w-96">
-                    <CommitDetails
-                        v-if="selected_commits.length > 0"
-                        class="pt-2 pb-4 pr-4"
-                    />
-                    <ReferenceDetails
-                        v-else-if="selected_reference !== null"
-                        class="pt-2 pb-4 pr-4"
-                    />
-                </pane>
-            </splitpanes>
+    <div v-show="active" class="h-full flex flex-col">
+        <div v-if="repo_details.path === undefined" class="grow flex flex-col gap-2 items-center justify-center">
+            <input v-model.trim="repo_details.label" placeholder="Label" />
+            <btn @click="openRepo">
+                <icon name="mdi-folder" class="size-5" />
+                Open repository
+            </btn>
         </div>
-    </div>
 
-    <modal v-if="error_messages.length > 0" @close="error_messages.shift()">
-        <div class="whitespace-pre font-mono">
-            {{ error_messages[0] }}
-        </div>
-    </modal>
+        <template v-else>
+            <ActionBar class="pt-1.5 pb-0.5" />
+
+            <div class="grow overflow-hidden">
+                <splitpanes @resized="main_pane_size = $event[0].size">
+                    <pane :size="main_pane_size">
+                        <splitpanes v-show="selected_file === null" @resized="references_pane_size = $event[0].size">
+                            <pane class="min-w-48" :size="references_pane_size">
+                                <ReferenceList class="pt-2 pb-4 pl-4" />
+                            </pane>
+                            <pane>
+                                <CommitHistory ref="commit_history" class="py-2" />
+                            </pane>
+                        </splitpanes>
+                        <FileDiff v-if="selected_file !== null" ref="file_diff" />
+                    </pane>
+                    <pane class="min-w-96">
+                        <CommitDetails
+                            v-if="selected_commits.length > 0"
+                            class="pt-2 pb-4 pr-4"
+                        />
+                        <ReferenceDetails
+                            v-else-if="selected_reference !== null"
+                            class="pt-2 pb-4 pr-4"
+                        />
+                    </pane>
+                </splitpanes>
+            </div>
+        </template>
+
+        <modal v-if="error_messages.length > 0" @close="error_messages.shift()">
+            <div class="whitespace-pre font-mono">
+                {{ error_messages[0] }}
+            </div>
+        </modal>
+    </div>
 </template>
 
 <script>
@@ -69,7 +71,7 @@
                     set: value => this[name] = value,
                 })]));
             },
-            data: data,
+            data,
             computed,
             methods,
         };
@@ -93,6 +95,9 @@
                     save_semaphore: Promise.resolve(),
                 }),
                 computed: {
+                    tab_active() {
+                        return this.active;
+                    },
                     repo() {
                         const handleErrors = async promise => {
                             try {
@@ -204,10 +209,10 @@
             StoreMixin('references_pane_size', 15),
         ],
         props: {
+            active: { type: Boolean },
             repo_details: { type: Object, required: true },
         },
         data: () => ({
-            show: false,
             error_messages: [],
         }),
         watch: {
@@ -230,13 +235,6 @@
                 },
                 deep: true,
             },
-        },
-        async created() {
-            // Prevent running the `activated` hook when components are created,
-            // in order to avoid loading data twice.
-            // https://github.com/vuejs/core/issues/10806
-            await this.$nextTick();
-            this.show = true;
         },
         methods: {
             async openRepo() {

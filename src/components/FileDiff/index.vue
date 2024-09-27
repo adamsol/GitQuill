@@ -127,7 +127,7 @@
             WindowEventMixin('beforeunload', 'onBeforeUnload'),
         ],
         inject: [
-            'repo', 'revisions_to_diff', 'working_tree_files', 'selected_file', 'save_semaphore',
+            'tab_active', 'repo', 'revisions_to_diff', 'working_tree_files', 'selected_file', 'save_semaphore',
             'updateFileStatus', 'updateSelectedFile',
         ],
         data: () => ({
@@ -172,6 +172,11 @@
             },
         },
         watch: {
+            async tab_active() {
+                if (!this.tab_active) {
+                    await this.save();
+                }
+            },
             async selected_file() {
                 await this.save();
                 await this.load();
@@ -179,9 +184,6 @@
         },
         async created() {
             await this.load();
-        },
-        async deactivated() {
-            await this.save();
         },
         methods: {
             onMountEditor(diff_editor) {
