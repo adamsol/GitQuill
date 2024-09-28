@@ -16,9 +16,9 @@
         <div class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
             <btn
                 v-for="action in file.area === 'unstaged' ? ['discard', 'stage'] : file.area === 'staged' ? ['unstage'] : []"
-                :class="{ 'text-red': first_click[action] }"
-                :title="$_.title(action) + (action === 'discard' ? '\n(click twice)' : '')"
-                @click.stop="run(action)"
+                :click_twice="action === 'discard' && 'text-red'"
+                :title="$_.title(action)"
+                @click="run(action)"
             >
                 <icon :name="$settings.icons[action]" class="size-5" />
             </btn>
@@ -35,9 +35,6 @@
         props: {
             file: { type: Object, required: true },
         },
-        data: () => ({
-            first_click: {},
-        }),
         computed: {
             active() {
                 return _.isEqual(this.file, this.selected_file);
@@ -54,15 +51,10 @@
                     await this.repo.callGit('restore', '--staged', '--', this.file.path, ..._.filter([this.file.old_path]));
 
                 } else if (action === 'discard') {
-                    if (this.first_click.discard) {
-                        if (this.file.status === 'A') {
-                            await this.repo.callGit('clean', '--force', '--', this.file.path);
-                        } else {
-                            await this.repo.callGit('checkout', '--', this.file.path);
-                        }
+                    if (this.file.status === 'A') {
+                        await this.repo.callGit('clean', '--force', '--', this.file.path);
                     } else {
-                        this.first_click.discard = true;
-                        setTimeout(() => this.first_click.discard = false, settings.discard_second_click_cooldown);
+                        await this.repo.callGit('checkout', '--', this.file.path);
                     }
                 }
                 await this.updateFileStatus(this.file);

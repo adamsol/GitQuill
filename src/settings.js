@@ -19,4 +19,4 @@ export const colors = [
 ];
 
 export const hash_abbr_length = 7;
-export const discard_second_click_cooldown = 2000;
+export const second_click_cooldown = 2000;

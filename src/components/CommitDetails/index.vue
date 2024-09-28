@@ -24,9 +24,8 @@
                                 </div>
                                 <btn
                                     v-for="action in area === 'unstaged' ? ['discard', 'stage'] : ['unstage']"
-                                    :class="{ 'text-red': first_click[action] }"
+                                    :click_twice="action === 'discard' && 'text-red'"
                                     :disabled="files[area].length === 0"
-                                    :title="action === 'discard' ? '(click twice)' : ''"
                                     @click="run(action)"
                                 >
                                     <icon :name="$settings.icons[action]" class="size-5" />
@@ -199,7 +198,6 @@
         data: () => ({
             current_commits: undefined,
             files: undefined,
-            first_click: {},
             message: '',
             amend: false,
             show_branch_modal: false,
@@ -309,15 +307,10 @@
                     await this.repo.callGit('restore', '--staged', '--', '.');
 
                 } else if (action === 'discard') {
-                    if (this.first_click.discard) {
-                        await Promise.all([
-                            this.repo.callGit('clean', '--force', '--', '.'),
-                            this.repo.callGit('checkout', '--', '.'),
-                        ]);
-                    } else {
-                        this.first_click.discard = true;
-                        setTimeout(() => this.first_click.discard = false, settings.discard_second_click_cooldown);
-                    }
+                    await Promise.all([
+                        this.repo.callGit('clean', '--force', '--', '.'),
+                        this.repo.callGit('checkout', '--', '.'),
+                    ]);
                 }
                 await this.refreshStatus();
             },

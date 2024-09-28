@@ -5,6 +5,7 @@
             <hr v-if="action.separator" class="mx-1" />
             <btn
                 v-else
+                :click_twice="action.click_twice ? 'text-accent' : false"
                 :disabled="action.disabled"
                 @click="action.callback"
             >

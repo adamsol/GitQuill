@@ -10,7 +10,7 @@
                         @click="selected_tab_id = tab.id"
                     >
                         {{ tab.label ?? "New tab" }}
-                        <btn title="Close" @click.stop="closeTab(tab)">
+                        <btn title="Close" @click="closeTab(tab)">
                             <icon name="mdi-close" class="size-4" />
                         </btn>
                     </div>

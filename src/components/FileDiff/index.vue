@@ -72,6 +72,7 @@
     import ElectronEventMixin from '@/mixins/ElectronEventMixin';
     import StoreMixin from '@/mixins/StoreMixin';
     import WindowEventMixin from '@/mixins/WindowEventMixin';
+    import Btn from '@/widgets/btn';
     import Icon from '@/widgets/icon';
 
     // https://github.com/microsoft/vscode/blob/1.88.1/src/vs/editor/browser/widget/diffEditor/features/revertButtonsFeature.ts
@@ -80,32 +81,34 @@
         static counter = 0;
 
         constructor({ diff_editor, lane, line_range_mapping, action, callback }) {
-            this.dom_node = document.createElement('button');
-            this.dom_node.title = _.title(action) + (action === 'discard' ? '\n(click twice)' : '');
-            this.first_click = false;
-            this.dom_node.addEventListener('click', () => {
-                if (action === 'discard' && !this.first_click) {
-                    this.first_click = true;
-                    this.dom_node.classList.add('text-red');
-                    setTimeout(() => {
-                        this.first_click = false;
-                        this.dom_node.classList.remove('text-red');
-                    }, settings.discard_second_click_cooldown);
-                    return;
-                }
-                const [source, target] = action === 'stage' ? ['modified', 'original'] : ['original', 'modified'];
-                const editor = diff_editor._editors[target];
-                editor.pushUndoStop();
-                editor.executeEdits(undefined, [{
-                    range: line_range_mapping[target].toExclusiveRange(),
-                    text: diff_editor._editors[source].getModel().getValueInRange(line_range_mapping[source].toExclusiveRange()),
-                }]);
-                callback();
-            });
+            this.dom_node = document.createElement('div');
             this.position = { lane, range: line_range_mapping.modified.toExclusiveRange() };
             this.id = `GlyphMarginWidget${++this.constructor.counter}`;
 
-            createApp(Icon, { name: settings.icons[action], class: 'size-4 pointer-events-none' }).mount(this.dom_node);
+            const app = createApp({
+                template: `
+                    <btn class="p-0.5" @click="onClick">
+                        <icon name="${settings.icons[action]}" class="size-4 pointer-events-none" />
+                    </btn>
+                `,
+                components: { Btn, Icon },
+                methods: {
+                    onClick() {
+                        const [source, target] = action === 'stage' ? ['modified', 'original'] : ['original', 'modified'];
+                        const editor = diff_editor._editors[target];
+                        editor.pushUndoStop();
+                        editor.executeEdits(undefined, [{
+                            range: line_range_mapping[target].toExclusiveRange(),
+                            text: diff_editor._editors[source].getModel().getValueInRange(line_range_mapping[source].toExclusiveRange()),
+                        }]);
+                        callback();
+                    },
+                },
+            }, {
+                click_twice: action === 'discard' && 'text-red',
+                title: _.title(action),
+            });
+            app.mount(this.dom_node);
         }
         getDomNode() { return this.dom_node; }
         getPosition() { return this.position; }

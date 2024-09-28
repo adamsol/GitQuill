@@ -1,7 +1,7 @@
 
 import * as monaco from 'monaco-editor';
 import { Splitpanes, Pane } from 'splitpanes';
-import { createApp } from 'vue/dist/vue.esm-bundler';
+import { createApp } from 'vue';
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 import Draggable from 'vuedraggable';
 import { RecycleScroller } from 'vue-virtual-scroller';

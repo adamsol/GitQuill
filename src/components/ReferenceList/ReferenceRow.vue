@@ -13,7 +13,7 @@
         <div class="w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
             <btn
                 :title="hidden ? 'Show': 'Hide'"
-                @click.stop="toggleVisibility"
+                @click="toggleVisibility"
             >
                 <icon :name="hidden ? 'mdi-eye-outline' : 'mdi-eye-off-outline'" class="size-4" />
             </btn>
