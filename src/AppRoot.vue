@@ -20,9 +20,9 @@
                 <icon name="mdi-plus" class="size-6" />
             </btn>
         </div>
-        <hr class="mb-1" />
+        <hr />
 
-        <div class="grow overflow-hidden">
+        <div id="tab_wrapper" class="grow pt-1 overflow-hidden relative">
             <template v-for="tab in tabs" :key="tab.id">
                 <TabContent
                     v-if="tabs_initialized.has(tab.id)"

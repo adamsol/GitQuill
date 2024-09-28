@@ -25,7 +25,7 @@ async function openRepo() {
     if (folder_path !== undefined) {
         const git_path = path.join(folder_path, '.git');
 
-        if (fs.existsSync(git_path) && fs.lstatSync(git_path).isDirectory()) {
+        if (fs.existsSync(git_path)) {
             return folder_path;
         } else {
             await dialog.showMessageBox(window, {
@@ -63,11 +63,14 @@ app.whenReady().then(async () => {
     });
     window.maximize();
 
-    async function log(repo_path, repr, promise) {
+    async function log(repo_path, repr, func) {
+        const t = performance.now();
+        if (!fs.existsSync(path.join(repo_path, '.git'))) {
+            throw new Error("Not a Git repository!");
+        }
         const file_path = path.join(repo_path, '.git/.quill/app.log');
         try {
-            const t = performance.now();
-            const result = await promise;
+            const result = await func();
             const ms = `${Math.round(performance.now() - t)}`.padStart(3, ' ');
             logging.transports.file.resolvePathFn = () => file_path;
             logging.info(`[${ms} ms] ${repr}`);
@@ -88,7 +91,7 @@ app.whenReady().then(async () => {
         const run = async () => await log(
             repo_path,
             `call-git ${JSON.stringify(args)}`,
-            new Promise((resolve, reject) => {
+            () => new Promise((resolve, reject) => {
                 const stdout = [], stderr = [];
                 const process = spawn('git', args, { cwd: repo_path });
                 process.stdout.setEncoding('utf8');
@@ -125,7 +128,7 @@ app.whenReady().then(async () => {
         return await log(
             repo_path,
             `read-file ${file_path}`,
-            (async () => {
+            async () => {
                 try {
                     return await fs.promises.readFile(path.join(repo_path, file_path), { encoding: 'utf8' });
                 } catch (e) {
@@ -134,27 +137,33 @@ app.whenReady().then(async () => {
                     }
                     throw e;
                 }
-            })(),
+            },
         );
     });
-    ipcMain.handle('write-file', async (event, repo_path, file_path, content, { make_directory = true } = {}) => {
+    ipcMain.handle('write-file', async (event, repo_path, file_path, content, { make_directory = false } = {}) => {
         return await log(
             repo_path,
             `write-file ${file_path}`,
-            (async () => {
+            async () => {
                 file_path = path.join(repo_path, file_path);
                 if (make_directory) {
-                    await fs.promises.mkdir(path.dirname(file_path), { recursive: true });
+                    try {
+                        await fs.promises.mkdir(path.dirname(file_path));
+                    } catch (e) {
+                        if (e.code !== 'EEXIST') {
+                            throw e;
+                        }
+                    }
                 }
                 await fs.promises.writeFile(file_path, content);
-            })(),
+            },
         );
     });
     ipcMain.handle('delete-file', async (event, repo_path, file_path) => {
         return await log(
             repo_path,
             `delete-file ${file_path}`,
-            fs.promises.unlink(path.join(repo_path, file_path)),
+            () => fs.promises.unlink(path.join(repo_path, file_path)),
         );
     });
     window.on('focus', () => window.webContents.send('window-focus'));

@@ -1,9 +1,9 @@
 
 <template>
-    <teleport to="#app">
+    <teleport to="#tab_wrapper">
         <div
             ref="modal"
-            class="fixed inset-0 z-40 flex flex-col bg-black/40 p-6"
+            class="absolute inset-0 z-40 flex flex-col bg-black/40 p-6"
             @click.self="close"
             @keydown.esc="close"
         >

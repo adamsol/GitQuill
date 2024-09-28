@@ -38,13 +38,13 @@
                 </splitpanes>
             </div>
         </template>
-
-        <modal v-if="error_messages.length > 0" @close="error_messages.shift()">
-            <div class="whitespace-pre font-mono">
-                {{ error_messages[0] }}
-            </div>
-        </modal>
     </div>
+
+    <modal v-if="active && error_messages.length > 0" @close="error_messages.shift()">
+        <div class="whitespace-pre font-mono">
+            {{ error_messages[0] }}
+        </div>
+    </modal>
 </template>
 
 <script>
@@ -104,7 +104,9 @@
                                 return await promise;
                             } catch (e) {
                                 const message = e.message.replace(/^Error invoking remote method '[\w-]+': Error: /, '');
-                                this.error_messages.push(message);
+                                if (_.last(this.error_messages) !== message) {
+                                    this.error_messages.push(message);
+                                }
                                 throw e;
                             }
                         };
@@ -231,7 +233,7 @@
             },
             hidden_references: {
                 async handler() {
-                    await this.repo.writeFile('.git/.quill/hidden-refs.txt', [...this.hidden_references].join('\n'));
+                    await this.repo.writeFile('.git/.quill/hidden-refs.txt', [...this.hidden_references].join('\n'), { make_directory: true });
                 },
                 deep: true,
             },
