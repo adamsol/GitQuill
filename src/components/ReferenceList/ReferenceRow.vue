@@ -4,7 +4,7 @@
         class="row clickable group"
         :class="{ active, 'text-gray line-through': hidden }"
         @click="setSelectedReference(reference)"
-        @dblclick="hidden ? {} : setSelectedCommits([commit_by_hash[reference.hash]])"
+        @dblclick="hidden || commit === undefined ? {} : setSelectedCommits([commit])"
     >
         <div class="grow ellipsis" :title="reference.name + '\n(double-click to view commit)'">
             {{ reference.name }}
@@ -36,6 +36,9 @@
             },
             hidden() {
                 return this.hidden_references.has(this.reference.id);
+            },
+            commit() {
+                return this.commit_by_hash[this.reference.hash];
             },
         },
         methods: {

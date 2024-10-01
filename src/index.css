@@ -28,13 +28,7 @@
         @apply border-t border-r border-gray/30 self-stretch h-auto;
     }
     input, textarea, select {
-        @apply p-1 bg-gray-dark border border-gray/30 rounded-sm;
-    }
-    input[type=checkbox] {
-        @apply opacity-80;
-    }
-    input[type=number]:is(:hover,:focus)::-webkit-inner-spin-button {
-        @apply opacity-50;
+        @apply p-1 bg-gray-dark border border-gray/30 rounded-sm [color-scheme:dark];
     }
 
     .splitpanes--vertical > .splitpanes__splitter {

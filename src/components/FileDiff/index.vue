@@ -1,7 +1,7 @@
 
 <template>
     <div class="h-full flex flex-col">
-        <div class="flex items-center gap-2 p-2">
+        <div class="flex items-center gap-2 p-2 pr-0">
             <div v-if="file !== undefined" class="ellipsis">
                 <template v-if="['R', 'C'].includes(file.status)">
                     <file-path :path="file.old_path" />
@@ -41,9 +41,9 @@
             <toggle v-model:active="word_wrap" title="Word wrap">
                 <icon name="mdi-wrap" class="size-6" />
             </toggle>
-            <hr class="mx-2" />
+            <hr class="ml-2 mr-1" />
 
-            <btn title="Close" @click="close">
+            <btn title="Close file" @click="close">
                 <icon name="mdi-close" class="size-6" />
             </btn>
         </div>

@@ -1,6 +1,10 @@
 
 <template>
+    <div v-if="commit_by_hash[hash] === undefined" class="text-gray">
+        not in the graph
+    </div>
     <button
+        v-else
         class="font-mono"
         title="View commit"
         @click="setSelectedCommits([commit_by_hash[hash]]); selected_file = null"

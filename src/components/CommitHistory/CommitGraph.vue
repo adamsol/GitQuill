@@ -40,13 +40,16 @@
 
                 let index = Math.floor(Math.max(this.scroll_position - size/2, 0) / this.row_height);
                 const first_visible_commit = this.commits[index];
-                const commits_to_draw = new Set([first_visible_commit]);
+                const commits_to_draw = new Set(_.filter([first_visible_commit]));
 
                 while (index * this.row_height - this.scroll_position < canvas.height && index < this.commits.length) {
                     for (const commit of this.commits[index].running_commits) {
                         commits_to_draw.add(commit);
                         for (const parent_hash of commit.parents) {
-                            commits_to_draw.add(this.commit_by_hash[parent_hash]);
+                            const parent = this.commit_by_hash[parent_hash];
+                            if (parent !== undefined) {
+                                commits_to_draw.add(parent);
+                            }
                         }
                     }
                     index += 1;
@@ -61,14 +64,19 @@
                 }
                 for (const commit of commits_to_draw) {
                     for (const parent_hash of commit.parents) {
-                        if (coords[parent_hash] !== undefined) {
-                            ctx.strokeStyle = settings.colors[commit.level % settings.colors.length];
-                            ctx.lineWidth = 2;
-                            ctx.beginPath();
-                            ctx.moveTo(...coords[commit.hash]);
-                            ctx.lineTo(...coords[parent_hash]);
-                            ctx.stroke();
+                        const commit_coords = coords[commit.hash];
+                        const parent_coords = coords[parent_hash];
+
+                        ctx.strokeStyle = settings.colors[commit.level % settings.colors.length];
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(...commit_coords);
+                        if (parent_coords === undefined) {
+                            ctx.lineTo(commit_coords[0], canvas.height);
+                        } else {
+                            ctx.lineTo(...parent_coords);
                         }
+                        ctx.stroke();
                     }
                 }
                 for (const commit of commits_to_draw) {

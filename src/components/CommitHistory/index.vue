@@ -2,22 +2,22 @@
 <template>
     <div class="h-full flex flex-col gap-3">
         <div class="flex items-center gap-1">
-            <icon name="mdi-magnify" class="size-5 ml-2 shrink-0" />
+            <icon name="mdi-magnify" class="size-5 shrink-0" />
             <input
                 v-model.trim="search_query"
                 ref="search_input"
                 class="grow"
+                placeholder="Search commits"
                 :spellcheck="false"
-                @change="search()"
                 @input="resetSearch()"
-                @keydown.enter.exact="changeSearchIndex(1)"
+                @keydown.enter.exact="search_index === null ? search() : changeSearchIndex(1)"
                 @keydown.enter.shift="changeSearchIndex(-1)"
                 @keydown.esc="clearSearch()"
                 @paste="search()"
             />
             <template v-if="search_index !== null">
                 <div class="px-2">
-                    {{ search_index + 1 }} / {{ search_items.length }}
+                    {{ search_index + 1 }} / {{ search_hashes.length }}
                 </div>
                 <btn title="Previous" @click="changeSearchIndex(-1)">
                     <icon name="mdi-chevron-up" class="size-6" />
@@ -25,66 +25,96 @@
                 <btn title="Next" @click="changeSearchIndex(1)">
                     <icon name="mdi-chevron-down" class="size-6" />
                 </btn>
-                <btn title="Clear" @click="clearSearch()">
+                <btn title="Clear search" @click="clearSearch()">
                     <icon name="mdi-close" class="size-6" />
                 </btn>
             </template>
+
+            <hr class="mx-2" />
+            <btn title="Commit history settings" @click="show_settings_modal = true">
+                <icon name="mdi-cog-outline" class="size-6" />
+            </btn>
+
+            <SettingsModal
+                v-if="show_settings_modal"
+                v-model:initial_limit="commit_history_initial_limit"
+                v-model:search_limit="commit_history_search_limit"
+                @close="show_settings_modal = false"
+            />
         </div>
 
-        <splitpanes
-            class="py-1 bg-gray-dark overflow-hidden"
-            @resized="commit_history_column_sizes = $_.map($event, 'size')"
-        >
-            <pane :size="commit_history_column_sizes[0]" class="flex flex-col overflow-x-auto min-w-12">
-                <!-- `list-class="static"` is necessary for horizontal scroll. -->
-                <recycle-scroller
-                    v-if="commits !== undefined"
-                    ref="references_scroller"
-                    class="scrollbar-hidden"
-                    :items="commits"
-                    :item-size="row_height"
-                    key-field="hash"
-                    list-class="static"
-                    v-slot="{ item }"
+        <div class="grow py-1 bg-gray-dark overflow-hidden relative">
+            <splitpanes @resized="commit_history_column_sizes = $_.map($event, 'size')">
+                <pane :size="commit_history_column_sizes[0]" class="flex flex-col overflow-x-auto min-w-12">
+                    <!-- `list-class="static"` is necessary for horizontal scroll. -->
+                    <recycle-scroller
+                        v-if="commits !== undefined"
+                        ref="references_scroller"
+                        class="scrollbar-hidden"
+                        emit-update
+                        :items="commits"
+                        :item-size="row_height"
+                        key-field="hash"
+                        list-class="static"
+                        v-slot="{ item }"
+                        @scroll="onScroll"
+                        @update="onScrollerUpdate"
+                    >
+                        <CommitRefsRow :commit="item" />
+                    </recycle-scroller>
+                </pane>
+                <pane
+                    :size="commit_history_column_sizes[1]"
+                    ref="graph_pane"
+                    class="relative overflow-auto scrollbar-hidden min-w-8"
                     @scroll="onScroll"
                 >
-                    <CommitRefsRow :commit="item" />
-                </recycle-scroller>
-            </pane>
-            <pane
-                :size="commit_history_column_sizes[1]"
-                ref="graph_pane"
-                class="relative overflow-auto scrollbar-hidden min-w-8"
-                @scroll="onScroll"
+                    <div
+                        v-if="commits !== undefined"
+                        class="absolute w-full"
+                        :style="{ 'height': `${commits.length * row_height}px` }"
+                    />
+                    <CommitGraph
+                        v-if="commits !== undefined"
+                        class="sticky top-0"
+                        :row_height
+                        :scroll_position
+                    />
+                </pane>
+                <pane class="flex flex-col min-w-96">
+                    <recycle-scroller
+                        v-if="commits !== undefined"
+                        ref="main_scroller"
+                        emit-update
+                        :items="commits"
+                        item-class="pt-1"
+                        :item-size="row_height"
+                        key-field="hash"
+                        v-slot="{ item }"
+                        @scroll="onScroll"
+                    >
+                        <CommitRow :commit="item" />
+                    </recycle-scroller>
+                </pane>
+            </splitpanes>
+
+            <btn
+                v-if="commits !== undefined && !scrolled_to_top"
+                class="absolute left-1/2 -translate-x-1/2 top-3 bg-gray-dark/80 border border-accent hover:!bg-gray-bg"
+                @click="$refs.main_scroller.$el.scrollTop = 0"
             >
-                <div
-                    v-if="commits !== undefined"
-                    class="absolute w-full"
-                    :style="{ 'height': `${commits.length * row_height}px` }"
-                />
-                <CommitGraph
-                    v-if="commits !== undefined"
-                    class="sticky top-0"
-                    :row_height
-                    :scroll_position
-                />
-            </pane>
-            <pane class="flex flex-col min-w-96">
-                <recycle-scroller
-                    v-if="commits !== undefined"
-                    ref="main_scroller"
-                    emit-update
-                    :items="commits"
-                    item-class="pt-1"
-                    :item-size="row_height"
-                    key-field="hash"
-                    v-slot="{ item }"
-                    @scroll="onScroll"
-                >
-                    <CommitRow :commit="item" />
-                </recycle-scroller>
-            </pane>
-        </splitpanes>
+                <icon name="mdi-arrow-up" class="size-5" />
+                Scroll to top
+            </btn>
+            <btn
+                v-if="scrolled_to_bottom && !loaded_all"
+                class="absolute left-1/2 -translate-x-1/2 bottom-3 bg-gray-dark/80 border border-accent hover:!bg-gray-bg"
+                @click="loadMore"
+            >
+                <icon name="mdi-arrow-down" class="size-5" />
+                Load more
+            </btn>
+        </div>
     </div>
 </template>
 
@@ -96,18 +126,23 @@
 
     import CommitGraph from './CommitGraph';
     import CommitRefsRow from './CommitRefsRow';
-    import CommitRow from './CommitRow';
+    import CommitRow from './CommitRow'
+    import SettingsModal from './SettingsModal';
 
     const field_separator = '\x06';
     const reference_type_order = ['tag', 'head', 'local_branch', 'remote_branch'];
+    const commit_limit_multiplier = 4;
 
     export default {
         mixins: [
+            StoreMixin('commit_history_column_sizes', [10, 10]),
+            StoreMixin('commit_history_initial_limit', 100),
+            StoreMixin('commit_history_search_limit', null),
+
             ElectronEventMixin('window-focus', 'load'),
             WindowEventMixin('keydown', 'onKeyDown'),
-            StoreMixin('commit_history_column_sizes', [10, 10]),
         ],
-        components: { CommitGraph, CommitRefsRow, CommitRow },
+        components: { CommitGraph, CommitRefsRow, CommitRow, SettingsModal },
         inject: [
             'tab_active', 'repo', 'references', 'references_by_hash', 'selected_reference', 'hidden_references',
             'commits', 'commit_by_hash', 'selected_commits', 'selected_commit_hashes',
@@ -115,14 +150,21 @@
             'setSelectedReference', 'setSelectedCommits', 'updateSelectedFile',
         ],
         data: () => ({
+            current_commit_limit: undefined,
             scroll_position: 0,
+            scrolled_to_top: undefined,
+            scrolled_to_bottom: undefined,
             search_query: '',
-            search_items: [],
+            search_hashes: [],
             search_index: null,
+            show_settings_modal: false,
         }),
         computed: {
             row_height() {
                 return 40;
+            },
+            loaded_all() {
+                return this.current_commit_limit === null || this.current_commit_limit > this.commits.length - 1;
             },
         },
         watch: {
@@ -142,6 +184,16 @@
                     }
                 }
             },
+            async commit_history_initial_limit() {
+                if (this.search_index === null) {
+                    await this.loadHistory({ skip_references: true });
+                }
+            },
+            async commit_history_search_limit() {
+                if (this.search_index !== null) {
+                    await this.loadHistory({ skip_references: true });
+                }
+            },
         },
         async created() {
             await this.load();
@@ -153,7 +205,7 @@
                     this.loadStatus(),
                 ]);
             },
-            async loadHistory({ skip_references = false} = {}) {
+            async loadHistory({ skip_references = false, limit } = {}) {
                 if (!skip_references) {
                     const summary = await this.repo.callGit(
                         'for-each-ref', '--sort=version:refname',
@@ -214,10 +266,24 @@
                     committer_date: '%cd',
                 };
                 const excluded_references = [...this.hidden_references, 'refs/stash'];
+
+                if (limit === undefined) {
+                    limit = this.commit_history_initial_limit;
+                    if (limit !== null) {
+                        const scroller = this.$refs.main_scroller;
+                        if (scroller !== undefined) {
+                            const state = scroller.getScroll();
+                            while ((limit + 1) * scroller.itemSize < state.end) {
+                                limit *= commit_limit_multiplier;
+                            }
+                        }
+                    }
+                }
                 const log = await this.repo.callGit(
                     'log', ..._.map(excluded_references, id => `--exclude=${id}`), '--all', '--date-order', '-z',
                     '--pretty=format:' + Object.values(format).join(field_separator),
                     '--date=format-local:%Y-%m-%d %H:%M',  // https://stackoverflow.com/questions/7853332/how-to-change-git-log-date-formats
+                    ...limit === null ? [] : [`--max-count=${limit}`],
                 );
                 const commits = [
                     { hash: 'WORKING_TREE', parents: this.current_head },
@@ -271,6 +337,7 @@
                     this.setSelectedCommits([commits[0]]);
                 }
                 this.commits = Object.freeze(commits);
+                this.current_commit_limit = limit;
 
                 for (const [i, commit] of this.selected_commits.entries()) {
                     if (commit.hash === 'WORKING_TREE') {
@@ -281,7 +348,9 @@
                     this.setSelectedCommits([]);
                     this.selected_file = null;
                 }
-                await this.search();
+                if (this.search_index !== null) {
+                    await this.search();
+                }
             },
             async loadStatus() {
                 let operation = null;
@@ -313,6 +382,12 @@
                     this.resetSearch();
                     return;
                 }
+                if (this.commit_history_search_limit === null ? !this.loaded_all : this.commits.length - 1 < this.commit_history_search_limit) {
+                    await this.loadHistory({
+                        skip_references: true,
+                        limit: this.commit_history_search_limit,
+                    });
+                }
                 const found = [];
                 const attrs = ['hash', 'subject', 'body', 'author_name', 'committer_name'];
                 // https://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
@@ -320,33 +395,47 @@
 
                 for (const [i, commit] of this.commits.entries()) {
                     if (i > 0 && _.some(attrs.map(attr => commit[attr]), value => regex.test(value))) {
-                        found.push(i);
+                        found.push(commit.hash);
                     }
                 }
-                this.search_items = found;
+                const preserved_index = found.indexOf(this.search_hashes[this.search_index]);
+                this.search_hashes = found;
+
                 if (found.length > 0) {
-                    this.setSearchIndex(0);
+                    if (this.search_index === null) {
+                        this.setSearchIndex(0);
+                    } else {
+                        this.setSearchIndex(preserved_index, { select: false });
+                    }
                 } else {
                     this.search_index = -1;
                 }
             },
             changeSearchIndex(delta) {
-                if (this.search_items.length > 0) {
-                    this.setSearchIndex((this.search_index + delta + this.search_items.length) % this.search_items.length);
+                if (this.search_hashes.length > 0) {
+                    this.setSearchIndex((this.search_index + delta + this.search_hashes.length) % this.search_hashes.length);
                 }
             },
-            setSearchIndex(index) {
+            setSearchIndex(index, { select = true } = {}) {
                 this.search_index = index;
-                this.setSelectedCommits([this.commits[this.search_items[this.search_index]]]);
+                if (select) {
+                    this.setSelectedCommits([this.commit_by_hash[this.search_hashes[this.search_index]]]);
+                }
             },
             resetSearch() {
                 this.search_index = null;
-                this.search_items = [];
+                this.search_hashes = [];
             },
             clearSearch() {
                 this.search_query = '';
                 this.$refs.search_input.blur();
                 this.resetSearch();
+            },
+            async loadMore() {
+                await this.loadHistory({
+                    skip_references: true,
+                    limit: this.current_commit_limit * commit_limit_multiplier,
+                });
             },
             onKeyDown(event) {
                 if (event.ctrlKey && event.key === 'f') {
@@ -358,6 +447,13 @@
                 this.$refs.main_scroller.scrollToPosition(this.scroll_position);
                 this.$refs.references_scroller.scrollToPosition(this.scroll_position);
                 this.$refs.graph_pane.$el.scrollTop = this.scroll_position;
+            },
+            onScrollerUpdate() {
+                const scroller = this.$refs.main_scroller;
+                const state = scroller.getScroll();
+
+                this.scrolled_to_top = state.start < scroller.itemSize;
+                this.scrolled_to_bottom = state.end > (this.commits.length - 1) * scroller.itemSize;
             },
         },
     };

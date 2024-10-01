@@ -14,8 +14,16 @@
 
             <div class="grow overflow-hidden">
                 <splitpanes @resized="main_pane_size = $event[0].size">
-                    <pane :size="main_pane_size">
-                        <splitpanes v-show="selected_file === null" @resized="references_pane_size = $event[0].size">
+                    <pane :size="main_pane_size" class="relative">
+                        <FileDiff
+                            v-if="selected_file !== null"
+                            ref="file_diff"
+                            class="absolute inset-0"
+                        />
+                        <splitpanes
+                            :class="{ invisible: selected_file !== null }"
+                            @resized="references_pane_size = $event[0].size"
+                        >
                             <pane class="min-w-48" :size="references_pane_size">
                                 <ReferenceList class="pt-2 pb-4 pl-4" />
                             </pane>
@@ -23,7 +31,6 @@
                                 <CommitHistory ref="commit_history" class="py-2" />
                             </pane>
                         </splitpanes>
-                        <FileDiff v-if="selected_file !== null" ref="file_diff" />
                     </pane>
                     <pane class="min-w-96">
                         <CommitDetails
