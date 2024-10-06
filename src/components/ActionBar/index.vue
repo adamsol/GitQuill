@@ -7,6 +7,7 @@
                 v-else
                 :click_twice="action.click_twice ? 'text-accent' : false"
                 :disabled="action.disabled"
+                :title="action.title"
                 @click="action.callback"
             >
                 <icon :name="action.icon" class="size-6" />
@@ -24,7 +25,7 @@
         ],
         computed: {
             last_wip_branch() {
-                const branches = _.filter(this.references_by_type.local_branch ?? [], branch => branch.name.match(/^wip-\d+/));
+                const branches = _.filter(this.references_by_type.local_branch ?? [], branch => branch.name.startsWith(settings.wip_prefix));
                 return _.last(branches);
             },
             actions() {
@@ -38,6 +39,7 @@
                     {
                         icon: 'mdi-archive-arrow-up-outline',
                         label: 'Restore WIP',
+                        title: this.last_wip_branch === undefined ? '' : `Will restore ${this.last_wip_branch.name}`,
                         callback: this.restoreWip,
                         disabled: this.last_wip_branch === undefined,
                     },
@@ -68,7 +70,7 @@
                 // https://stackoverflow.com/questions/17415579/how-to-iso-8601-format-a-date-with-timezone-offset-in-javascript
                 const formatted_time = new Date().toLocaleString('sv').replace(/\D/g, '');
                 await Promise.all([
-                    this.repo.callGit('checkout', '-b', `wip-${formatted_time}`),
+                    this.repo.callGit('checkout', '-b', settings.wip_prefix + formatted_time),
                     this.repo.callGit('add', '--all'),
                 ]);
                 await this.repo.callGit('commit', '--message', 'WIP', '--no-verify');

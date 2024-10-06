@@ -8,7 +8,11 @@
                         <icon name="mdi-target" class="size-5" />
                         Checkout branch
                     </btn>
-                    <btn :disabled="current_head === reference.hash" @click="resetBranchToHead">
+                    <btn v-if="is_wip" @click="restoreWip">
+                        <icon name="mdi-archive-arrow-up-outline" class="size-5" />
+                        Restore WIP
+                    </btn>
+                    <btn v-else :disabled="current_head === reference.hash" @click="resetBranchToHead">
                         <icon name="mdi-undo" class="size-5" />
                         Reset branch to HEAD
                     </btn>
@@ -65,6 +69,9 @@
             reference() {
                 return this.selected_reference;
             },
+            is_wip() {
+                return this.selected_reference.type === 'local_branch' && this.selected_reference.name.startsWith(settings.wip_prefix);
+            },
         },
         methods: {
             async checkoutBranch() {
@@ -74,6 +81,17 @@
                     this.refreshHistory(),
                     this.refreshStatus(),
                 ]);
+            },
+            async restoreWip() {
+                try {
+                    await this.repo.callGit('cherry-pick', this.reference.hash, '--no-commit');
+                    await this.repo.callGit('branch', '--delete', this.reference.name, '--force');
+                } finally {
+                    await Promise.all([
+                        this.refreshHistory(),
+                        this.refreshStatus(),
+                    ]);
+                }
             },
             async resetBranchToHead() {
                 await this.repo.callGit('branch', this.reference.name, '--force');

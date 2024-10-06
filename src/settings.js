@@ -19,4 +19,5 @@ export const colors = [
 ];
 
 export const hash_abbr_length = 7;
+export const wip_prefix = 'wip/';
 export const second_click_cooldown = 2000;
