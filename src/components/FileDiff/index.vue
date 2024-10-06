@@ -2,13 +2,13 @@
 <template>
     <div class="h-full flex flex-col">
         <div class="flex items-center gap-2 p-2 pr-0">
-            <div v-if="file !== undefined" class="ellipsis">
+            <template v-if="file !== undefined">
                 <template v-if="['R', 'C'].includes(file.status)">
                     <file-path :path="file.old_path" />
                     <icon name="mdi-arrow-right" class="size-5 inline mx-2" />
                 </template>
                 <file-path :path="file.path" />
-            </div>
+            </template>
             <div v-if="unsaved_changes" title="Unsaved changes">
                 *
             </div>

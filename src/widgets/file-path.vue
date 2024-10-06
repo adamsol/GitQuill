@@ -1,11 +1,20 @@
 
 <template>
-    <span class="opacity-65">
-        {{ parts[0] }}
-    </span>
-    <span>
-        {{ parts[1] }}
-    </span>
+    <div class="flex overflow-hidden">
+        <!-- https://stackoverflow.com/questions/70886734/how-do-i-control-the-order-in-which-flexbox-items-grow-shrink -->
+        <div v-if="parts.length > 2" class="opacity-65 shrink-[100000000] ellipsis min-w-5">
+            {{ parts[0] }}
+        </div>
+        <div v-if="parts.length > 2" class="opacity-65 shrink-0">
+            /
+        </div>
+        <div v-if="parts.length > 1" class="opacity-65 shrink-[10000] ellipsis [direction:rtl]">
+            /{{ parts.at(-2) }}
+        </div>
+        <div class="ellipsis">
+            {{ parts.at(-1) }}
+        </div>
+    </div>
 </template>
 
 <script>
@@ -15,8 +24,15 @@
         },
         computed: {
             parts() {
-                const index = this.path.lastIndexOf('/') + 1;
-                return [this.path.slice(0, index), this.path.slice(index)];
+                const parts = this.path.split('/');
+                const result = [];
+
+                if (parts.length > 2) {
+                    result.push(parts.slice(0, -2).join('/'));
+                }
+                result.push(...parts.slice(-2));
+
+                return result;
             },
         },
     };

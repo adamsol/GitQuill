@@ -9,9 +9,7 @@
         <div class="w-3 shrink-0">
             {{ file.status }}
         </div>
-        <div class="grow ellipsis">
-            <file-path :path="file.path" />
-        </div>
+        <file-path class="grow" :path="file.path" />
 
         <div class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
             <btn
