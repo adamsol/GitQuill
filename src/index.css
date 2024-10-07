@@ -37,6 +37,9 @@
     .splitpanes--horizontal > .splitpanes__splitter {
         @apply h-4;
     }
+    .splitpanes__pane {
+        @apply !transition-none;
+    }
 
     .monaco-editor {
         .diff-hidden-lines {

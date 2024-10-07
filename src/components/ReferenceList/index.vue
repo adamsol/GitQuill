@@ -20,9 +20,16 @@
                         </div>
                     </div>
                 </div>
-                <div class="grow overflow-auto">
-                    <ReferenceRow v-for="reference in references_by_type[type]" :reference />
-                </div>
+                <recycle-scroller
+                    v-if="references_by_type[type] !== undefined"
+                    class="grow"
+                    :items="references_by_type[type]"
+                    :item-size="32"
+                    key-field="name"
+                    v-slot="{ item }"
+                >
+                    <ReferenceRow :reference="item" />
+                </recycle-scroller>
             </div>
         </pane>
     </splitpanes>

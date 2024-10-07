@@ -32,9 +32,15 @@
                                     {{ $_.title(action) }} all
                                 </btn>
                             </div>
-                            <div class="grow overflow-auto">
-                                <FileRow v-for="file in files[area]" :key="file.path" :file />
-                            </div>
+                            <recycle-scroller
+                                class="grow"
+                                :items="files[area]"
+                                :item-size="36"
+                                key-field="path"
+                                v-slot="{ item }"
+                            >
+                                <FileRow :file="item" />
+                            </recycle-scroller>
                         </div>
                     </pane>
                 </splitpanes>
@@ -126,10 +132,11 @@
             <div v-if="current_commits.length === 2">
                 Diff between...
             </div>
+            <hr v-if="current_commits.length > 1" class="my-2" />
 
             <div class="min-h-14 overflow-auto">
-                <template v-for="c in current_commits">
-                    <hr v-if="current_commits.length > 1" class="my-2" />
+                <template v-for="(c, i) in current_commits">
+                    <hr v-if="i > 0" class="my-2" />
 
                     <div v-if="c.hash === 'WORKING_TREE'" class="text-xl italic">
                         Working tree
@@ -168,9 +175,15 @@
             </template>
 
             <hr class="my-2" />
-            <div class="grow overflow-auto">
-                <FileRow v-for="file in files.committed" :key="file.path" :file />
-            </div>
+            <recycle-scroller
+                class="grow"
+                :items="files.committed"
+                :item-size="32"
+                key-field="path"
+                v-slot="{ item }"
+            >
+                <FileRow :file="item" />
+            </recycle-scroller>
         </div>
     </div>
 </template>
@@ -238,8 +251,6 @@
             },
         },
         async created() {
-            // Prevent strange unfolding effect when the application starts.
-            await this.$nextTick();
             await this.load();
         },
         methods: {
