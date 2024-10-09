@@ -3,6 +3,7 @@ process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
 import { exec, spawn } from 'child_process';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -84,8 +85,18 @@ app.whenReady().then(async () => {
     ipcMain.handle('open-repo', async () => {
         return await openRepo();
     });
-    ipcMain.handle('open-terminal', async (event, repo_path) => {
-        exec('start cmd.exe', { cwd: repo_path });
+    ipcMain.handle('open-terminal', (event, repo_path) => {
+        const platform = os.platform();
+        let cmd;
+
+        if (platform === 'win32') {
+            cmd = 'start cmd';
+        } else if (platform === 'linux') {
+            cmd = 'gnome-terminal';
+        } else if (platform === 'darwin') {
+            cmd = 'open -a Terminal';
+        }
+        exec(cmd, { cwd: repo_path });
     });
     ipcMain.handle('call-git', async (event, repo_path, ...args) => {
         const run = async () => await log(

@@ -18,9 +18,14 @@
 </template>
 
 <script>
+    import WindowEventMixin from '@/mixins/WindowEventMixin';
+
     export default {
+        mixins: [
+            WindowEventMixin('keydown', 'onKeyDown'),
+        ],
         inject: [
-            'repo', 'config', 'references_by_type', 'current_branch_name', 'current_head', 'uncommitted_changes_count',
+            'tab_active', 'repo', 'config', 'references_by_type', 'current_branch_name', 'current_head', 'uncommitted_changes_count',
             'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         computed: {
@@ -49,6 +54,7 @@
                     {
                         icon: 'mdi-console',
                         label: 'Open terminal',
+                        title: '(Alt+T)',
                         callback: this.repo.openTerminal,
                     },
                     ...this.config?.custom_actions ? [
@@ -91,6 +97,11 @@
                         this.refreshHistory(),
                         this.refreshStatus(),
                     ]);
+                }
+            },
+            async onKeyDown(event) {
+                if (event.altKey && event.key === 't') {
+                    await this.repo.openTerminal();
                 }
             },
         },

@@ -117,13 +117,11 @@
                                 throw e;
                             }
                         };
-                        return Object.freeze({
-                            openTerminal: async () => await handleErrors(electron.openTerminal(this.repo_details.path)),
-                            callGit: async (...args) => await handleErrors(electron.callGit(this.repo_details.path, ...args)),
-                            ...Object.fromEntries(['readFile', 'writeFile', 'deleteFile'].map(func_name =>
+                        return Object.freeze(Object.fromEntries(
+                            ['openTerminal', 'callGit', 'readFile', 'writeFile', 'deleteFile'].map(func_name =>
                                 [func_name, async (...args) => await handleErrors(electron[func_name](this.repo_details.path, ...args))]
-                            )),
-                        });
+                            )
+                        ));
                     },
                     references_by_hash() {
                         return _.groupBy(this.references, 'hash');
