@@ -14,13 +14,18 @@
                 {{ action.label }}
             </btn>
         </template>
+
+        <BranchModal v-if="show_branch_modal" @close="show_branch_modal = false" />
     </div>
 </template>
 
 <script>
     import WindowEventMixin from '@/mixins/WindowEventMixin';
 
+    import BranchModal from './BranchModal';
+
     export default {
+        components: { BranchModal },
         mixins: [
             WindowEventMixin('keydown', 'onKeyDown'),
         ],
@@ -28,6 +33,9 @@
             'tab_active', 'repo', 'config', 'references_by_type', 'current_branch_name', 'current_head', 'uncommitted_changes_count',
             'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
+        data: () => ({
+            show_branch_modal: false,
+        }),
         computed: {
             last_wip_branch() {
                 const branches = _.filter(this.references_by_type.local_branch ?? [], branch => branch.name.startsWith(settings.wip_prefix));
@@ -35,6 +43,11 @@
             },
             actions() {
                 return [
+                    {
+                        icon: 'mdi-source-branch',
+                        label: 'Branch',
+                        callback: () => this.show_branch_modal = true,
+                    },
                     {
                         icon: 'mdi-archive-arrow-down-outline',
                         label: 'Save WIP',

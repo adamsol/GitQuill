@@ -10,7 +10,7 @@
                 </label>
                 <btn type="submit">
                     <icon name="mdi-source-branch" class="size-5" />
-                    Create branch
+                    Create and checkout branch
                 </btn>
             </div>
         </form>
@@ -20,19 +20,16 @@
 <script>
     export default {
         inject: [
-            'repo',
+            'repo', 'current_head',
             'refreshHistory',
         ],
-        props: {
-            commit: { type: Object, required: true },
-        },
         data: () => ({
             name: '',
             force: false,
         }),
         methods: {
             async submit() {
-                await this.repo.callGit('branch', this.name, this.commit.hash, ...this.force ? ['--force'] : []);
+                await this.repo.callGit('checkout', this.current_head, this.force ? '-B' : '-b', this.name);
                 await this.refreshHistory();
             },
         },
