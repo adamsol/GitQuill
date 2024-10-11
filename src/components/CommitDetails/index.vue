@@ -39,7 +39,7 @@
                                 key-field="path"
                                 v-slot="{ item }"
                             >
-                                <FileRow :file="item" />
+                                <FileRow :key="item.path" :file="item" />
                             </recycle-scroller>
                         </div>
                     </pane>
@@ -182,7 +182,7 @@
                 key-field="path"
                 v-slot="{ item }"
             >
-                <FileRow :file="item" />
+                <FileRow :key="item.path" :file="item" />
             </recycle-scroller>
         </div>
     </div>

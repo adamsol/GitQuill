@@ -28,7 +28,7 @@
                     key-field="name"
                     v-slot="{ item }"
                 >
-                    <ReferenceRow :reference="item" />
+                    <ReferenceRow :key="item.name" :reference="item" />
                 </recycle-scroller>
             </div>
         </pane>

@@ -60,7 +60,7 @@
                         @scroll="onScroll"
                         @update="onScrollerUpdate"
                     >
-                        <CommitRefsRow :commit="item" />
+                        <CommitRefsRow :key="item.hash" :commit="item" />
                     </recycle-scroller>
                 </pane>
                 <pane
@@ -93,7 +93,7 @@
                         v-slot="{ item }"
                         @scroll="onScroll"
                     >
-                        <CommitRow :commit="item" />
+                        <CommitRow :key="item.hash" :commit="item" />
                     </recycle-scroller>
                 </pane>
             </splitpanes>
