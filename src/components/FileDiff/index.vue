@@ -5,7 +5,7 @@
             <div v-if="file !== undefined" class="ellipsis">
                 <template v-if="['R', 'C'].includes(file.status)">
                     <file-path :path="file.old_path" />
-                    ->
+                    <icon name="mdi-arrow-right" class="size-5 inline mx-2" />
                 </template>
                 <file-path :path="file.path" />
             </div>
@@ -48,10 +48,11 @@
             </btn>
         </div>
 
-        <div class="grow">
+        <div class="grow relative">
             <!-- Note: without `key`, the `hideUnchangedRegions` option behaves strangely after reloading the file. -->
             <vue-monaco-diff-editor
                 v-if="loaded_contents !== undefined"
+                v-show="!show_no_changes_message"
                 :key="loaded_contents"
                 :options="options"
                 :original="loaded_contents[0]"
@@ -60,6 +61,9 @@
                 theme="custom"
                 @mount="onMountEditor"
             />
+            <div v-if="show_no_changes_message" class="absolute inset-0 bg-gray-dark text-center pt-2">
+                No changes
+            </div>
         </div>
     </div>
 </template>
@@ -136,6 +140,7 @@
         data: () => ({
             file: undefined,
             loaded_contents: undefined,
+            diff_hunk_count: undefined,
             unsaved_changes: false,
             language: undefined,
             languages: ['plaintext', ..._.map(monaco_metadata.languages, 'label')],
@@ -173,6 +178,9 @@
                 const parts = this.file.path.split('.');
                 return parts.length > 1 ? _.last(parts) : _.last(this.file.path.split('/'));
             },
+            show_no_changes_message() {
+                return this.diff_hunk_count === 0 && this.collapse_unchanged_regions && !this.unsaved_changes;
+            },
         },
         watch: {
             async tab_active() {
@@ -203,9 +211,10 @@
                     this.unsaved_changes = !_.isEqual(contents, this.saved_contents);
 
                     const diff = diff_editor._diffModel.get().diff.get();
-                    const changes = _.map(diff.mappings, 'lineRangeMapping');
+                    const hunks = _.map(diff.mappings, 'lineRangeMapping');
 
-                    if (changes.length === 0 && contents[0] !== contents[1]) {
+                    this.diff_hunk_count = hunks.length;
+                    if (this.diff_hunk_count === 0 && contents[0] !== contents[1]) {
                         this.whitespace_diff = true;
                     }
                     for (const widget of widgets) {
@@ -217,7 +226,7 @@
                         ...this.file.area === 'unstaged' ? ['discard'] : [],
                         ...this.file.area === 'committed' ? [] : [this.file.area === 'unstaged' ? 'stage' : 'unstage'],
                     ];
-                    for (const line_range_mapping of changes) {
+                    for (const line_range_mapping of hunks) {
                         widgets.push(...actions.map((action, i) => new GlyphMarginWidget({
                             diff_editor,
                             lane: i + 1,
