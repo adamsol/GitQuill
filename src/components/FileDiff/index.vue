@@ -246,10 +246,7 @@
                 });
             },
             getEditorContents() {
-                return [
-                    this.diff_editor._editors.original.getValue(),
-                    this.diff_editor._editors.modified.getValue(),
-                ];
+                return ['original', 'modified'].map(name => this.diff_editor._editors[name].getValue());
             },
             async load() {
                 await this.save_semaphore;
@@ -307,6 +304,11 @@
                 }
                 await this.save_semaphore;
 
+                // A small hack to trigger trimming the automatically inserted indentation.
+                // https://github.com/microsoft/monaco-editor/issues/1993
+                for (const name of ['original', 'modified']) {
+                    this.diff_editor._editors[name].getModel().pushEditOperations([], []);
+                }
                 const contents = this.getEditorContents();
                 if (_.isEqual(contents, this.saved_contents)) {
                     return false;
