@@ -148,13 +148,6 @@
                     current_head() {
                         return this.references_by_type.head[0].hash;
                     },
-                    current_operation_label() {
-                        return {
-                            'rebase': 'Rebasing',
-                            'cherry-pick': 'Cherry-picking',
-                            'revert': 'Reverting',
-                        }[this.current_operation?.type];
-                    },
                     uncommitted_changes_count() {
                         if (this.working_tree_files !== undefined) {
                             const unique_file_paths = new Set(_.map([...this.working_tree_files.unstaged, ...this.working_tree_files.staged], 'path'));

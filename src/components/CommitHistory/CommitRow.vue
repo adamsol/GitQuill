@@ -6,8 +6,8 @@
         @click="select"
     >
         <div v-if="commit.hash === 'WORKING_TREE'" class="italic">
-            <template v-if="current_operation_label !== undefined">
-                [{{ current_operation_label }}]
+            <template v-if="current_operation !== null">
+                [{{ current_operation.label }}]
             </template>
             <template v-if="uncommitted_changes_count === 0">
                 Working tree clean
@@ -35,10 +35,12 @@
 </template>
 
 <script>
+    import { findPathBetweenCommits } from '@/utils/git';
+
     export default {
         inject: [
             'commits', 'commit_by_hash', 'selected_commits', 'selected_commit_hashes',
-            'current_operation_label', 'uncommitted_changes_count', 'selected_file',
+            'current_operation', 'uncommitted_changes_count', 'selected_file',
             'setSelectedCommits',
         ],
         props: {
@@ -57,33 +59,20 @@
                     if (target.index < source.index) {
                         [source, target] = [target, source];
                     }
-                    const visited = [];
-
-                    const traverse = commit => {
-                        if (commit.index >= target.index) {
-                            return commit.index === target.index;
-                        }
-                        visited.push(commit);
-                        for (const hash of commit.parents) {
-                            if (traverse(this.commit_by_hash[hash])) {
-                                return true;
-                            }
-                        }
-                        visited.pop();
-                    }
-                    traverse(source);
+                    const path = [];
+                    findPathBetweenCommits(source, target, this.commit_by_hash, path);
 
                     if (this.commit === target) {
-                        visited.push(this.commit);
+                        path.push(this.commit);
                     } else {
-                        visited.reverse();
-                        if (visited.length === 0) {
-                            visited.push(this.commit);
+                        path.reverse();
+                        if (path.length === 0) {
+                            path.push(this.commit);
                         }
                     }
-                    _.remove(visited, commit => this.selected_commit_hashes.has(commit.hash));
+                    _.remove(path, commit => this.selected_commit_hashes.has(commit.hash));
 
-                    this.setSelectedCommits([...this.selected_commits, ...visited]);
+                    this.setSelectedCommits([...this.selected_commits, ...path]);
 
                 } else if (event.ctrlKey) {
                     if (this.selected_commit_hashes.has(this.commit.hash)) {

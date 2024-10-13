@@ -54,3 +54,19 @@ export async function getStatus(repo, ...args) {
         }))),
     };
 }
+
+export function findPathBetweenCommits(source, target, commit_by_hash, path = []) {
+    const traverse = commit => {
+        if (commit.index >= target.index) {
+            return commit.index === target.index;
+        }
+        path.push(commit);
+        for (const hash of commit.parents) {
+            if (traverse(commit_by_hash[hash])) {
+                return true;
+            }
+        }
+        path.pop();
+    }
+    return traverse(source);
+}

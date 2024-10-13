@@ -2,7 +2,10 @@
 <template>
     <div v-if="reference !== undefined" class="break-words">
         <div class="flex justify-end gap-1 flex-wrap mb-3">
-            <template v-if="current_operation === null">
+            <div v-if="current_operation?.conflict" class="text-gray italic">
+                Functionality limited during conflict
+            </div>
+            <template v-else>
                 <template v-if="reference.type === 'local_branch'">
                     <btn :disabled="isCurrentBranch(reference)" @click="checkoutBranch">
                         <icon name="mdi-target" class="size-5" />
@@ -27,9 +30,6 @@
                 </btn>
                 <RenameModal v-if="show_rename_modal" :reference @close="show_rename_modal = false" />
             </template>
-            <div v-else class="text-gray italic">
-                Functionality limited during {{ current_operation.type }}
-            </div>
         </div>
 
         <div class="text-sm text-gray">

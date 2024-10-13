@@ -45,53 +45,61 @@
                     </pane>
                 </splitpanes>
             </pane>
+
             <pane :size="commit_pane_size" class="min-h-24 flex flex-col gap-2">
-                <div v-if="current_operation === null" class="flex items-center justify-end gap-3">
+                <div v-if="current_operation?.conflict">
+                    Conflict:
+                </div>
+                <div v-else class="flex items-center gap-3 justify-end">
                     <label>
                         <input v-model="amend" type="checkbox" />
                         Amend
                     </label>
-                    <btn :disabled="message === ''" @click="doCommit">
+                    <btn :disabled="message === '' || files.staged.length === 0 && !amend" @click="doCommit">
                         <icon name="mdi-source-commit" class="size-5" />
                         Commit
                     </btn>
                 </div>
-                <div v-else class="flex items-center">
-                    <div class="grow">
-                        {{ current_operation_label }}...
-                    </div>
-                    <btn
-                        :disabled="files.unstaged.length > 0"
-                        @click="continueCurrentOperation"
-                    >
-                        <icon name="mdi-forward" class="size-5" />
-                        Continue
-                    </btn>
-                    <btn
-                        :disabled="files.unstaged.length > 0 || files.staged.length > 0"
-                        @click="cancelCurrentOperation('--abort')"
-                    >
-                        <icon name="mdi-restore" class="size-5" />
-                        Abort
-                    </btn>
-                    <btn @click="cancelCurrentOperation('--quit')">
-                        <icon name="mdi-cancel" class="size-5" />
-                        Quit
-                    </btn>
-                </div>
+
                 <textarea
                     v-model.trim="message"
                     class="grow px-2 resize-none"
-                    :disabled="current_operation_in_conflict"
+                    :disabled="current_operation?.conflict"
                     :spellcheck="false"
-                    :title="current_operation_in_conflict ? `Editing the commit message during ${this.current_operation.type} conflict is unsupported.` : ''"
                 />
+
+                <div v-if="current_operation !== null" class="flex items-center gap-1">
+                    <div>
+                        {{ current_operation.label }}...
+                    </div>
+                    <div class="grow" />
+
+                    <btn v-if="current_operation.conflict" :disabled="files.unstaged.length > 0" @click="continueCurrentOperation">
+                        <icon name="mdi-forward" class="size-5" />
+                        Continue
+                    </btn>
+                    <btn v-else :disabled="$_.some(files, 'length')" @click="continueCurrentOperation">
+                        <icon name="mdi-forward" class="size-5" />
+                        Proceed
+                    </btn>
+                    <btn @click="cancelCurrentOperation('--quit')">
+                        <icon name="mdi-close-circle-outline" class="size-5" />
+                        Quit
+                    </btn>
+                    <btn :disabled="$_.some(files, 'length')" @click="cancelCurrentOperation('--abort')">
+                        <icon name="mdi-cancel" class="size-5" />
+                        Abort
+                    </btn>
+                </div>
             </pane>
         </splitpanes>
 
         <div v-else class="flex flex-col h-full">
             <div class="flex justify-end gap-1 flex-wrap mb-3">
-                <template v-if="current_operation === null">
+                <div v-if="current_operation?.conflict" class="text-gray italic">
+                    Functionality limited during conflict
+                </div>
+                <template v-else>
                     <template v-if="current_commits.length === 1">
                         <btn :disabled="current_branch_name === null && current_head === commit.hash" @click="checkoutCommit">
                             <icon name="mdi-target" class="size-5" />
@@ -118,16 +126,13 @@
                         <icon name="mdi-backup-restore" class="size-5" />
                         Revert {{ current_commits.length > 1 ? `${current_commits.length} commits` : '' }}
                     </btn>
-                    <btn v-if="current_commits.length === 1" @click="startRebase">
+                    <btn v-if="current_commits.length === 1" :disabled="!can_edit" @click="startRebase">
                         <icon name="mdi-file-edit-outline" class="size-5" />
                         Edit (Rebase)
                     </btn>
                     <BranchModal v-if="show_branch_modal" :commit @close="show_branch_modal = false" />
                     <TagModal v-if="show_tag_modal" :commit @close="show_tag_modal = false" />
                 </template>
-                <div v-else class="text-gray italic">
-                    Functionality limited during {{ current_operation.type }}
-                </div>
             </div>
             <div v-if="current_commits.length === 2">
                 Diff between...
@@ -190,6 +195,7 @@
 
 <script>
     import StoreMixin from '@/mixins/StoreMixin';
+    import { findPathBetweenCommits } from '@/utils/git';
 
     import BranchModal from './BranchModal';
     import CommitterDetails from './CommitterDetails';
@@ -204,7 +210,7 @@
         components: { BranchModal, CommitterDetails, FileRow, TagModal },
         inject: [
             'repo', 'commits', 'commit_by_hash', 'selected_commits', 'revisions_to_diff',
-            'current_branch_name', 'current_head', 'current_operation', 'current_operation_label',
+            'current_branch_name', 'current_head', 'current_operation',
             'working_tree_files', 'uncommitted_changes_count', 'selected_file',
             'setSelectedCommits', 'updateSelectedFile', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
@@ -223,8 +229,11 @@
             working_tree_selected() {
                 return _.some(this.current_commits, { hash: 'WORKING_TREE' });
             },
-            current_operation_in_conflict() {
-                return this.current_operation !== null && (this.current_operation.type !== 'rebase' || this.current_operation.hash !== this.current_head);
+            can_edit() {
+                return _.every([
+                    this.current_operation === null,
+                    findPathBetweenCommits(this.commits[0], this.current_commits[0], this.commit_by_hash),
+                ]);
             },
         },
         watch: {
@@ -259,13 +268,8 @@
                 const revisions_to_diff = this.revisions_to_diff;
 
                 if (current_commits.length === 1 && current_commits[0].hash === 'WORKING_TREE') {
-                    if (this.message === '') {
-                        if (this.current_operation?.type === 'rebase') {
-                            this.message = await this.repo.readFile('.git/rebase-merge/message');
-                        } else if (['cherry-pick', 'revert'].includes(this.current_operation?.type)) {
-                            const message = await this.repo.readFile('.git/MERGE_MSG');
-                            this.message = message.split('\n').filter(line => !line.startsWith('#')).join('\n');
-                        }
+                    if (this.message === '' && this.current_operation?.conflict) {
+                        this.message = this.current_operation?.conflict_message;
                     }
                     this.files = this.working_tree_files;
 
@@ -380,12 +384,22 @@
                     // https://stackoverflow.com/questions/22992543/how-do-i-git-rebase-the-first-commit
                     target = '--root';
                 }
-                await this.repo.callGit('-c', 'sequence.editor=sed -i 1s/^pick/edit/', 'rebase', '--interactive', target);
+                const script = `
+                    import fs from 'fs';
+
+                    const file_path = process.argv[1];
+
+                    const content = fs.readFileSync(file_path, { encoding: 'utf8' });
+                    fs.writeFileSync(file_path, content.replace(/^pick/, 'edit'));
+                `.replace(/\n\s*/g, ' ');
+
+                await this.repo.callGit('-c', `sequence.editor=node --eval "${script}"`, 'rebase', '--interactive', target);
                 if (this.selected_file !== null) {
                     await this.repo.callGit('revert', commit.hash, '--no-commit');
                     await this.repo.callGit('restore', '--source', commit.hash, '--', '.');
                 }
                 this.setSelectedCommits([this.commits[0]]);
+
                 await Promise.all([
                     this.refreshHistory(),
                     this.refreshStatus(),
@@ -395,13 +409,8 @@
                 if (await this.saveSelectedFile()) {
                     return;
                 }
-                // No conflict means that we've just started rebasing.
-                // Edit the commit message in this case.
-                if (!this.current_operation_in_conflict) {
-                    await this.repo.callGit('commit', '--amend', '--message', this.message);
-                }
                 try {
-                    if (this.current_operation_in_conflict) {
+                    if (this.files.staged.length > 0) {
                         await this.repo.callGit('-c', `core.editor=true`, this.current_operation.type, '--continue');
                     } else {
                         await this.repo.callGit(this.current_operation.type, '--skip');

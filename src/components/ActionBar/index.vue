@@ -1,6 +1,9 @@
 
 <template>
-    <div class="flex gap-2 justify-center">
+    <div class="flex items-center gap-2 justify-center">
+        <div v-if="current_operation?.conflict" class="text-gray italic">
+            Functionality limited during conflict
+        </div>
         <template v-for="action in actions">
             <hr v-if="action.separator" class="mx-1" />
             <btn
@@ -30,7 +33,8 @@
             WindowEventMixin('keydown', 'onKeyDown'),
         ],
         inject: [
-            'tab_active', 'repo', 'config', 'references_by_type', 'current_branch_name', 'current_head', 'uncommitted_changes_count',
+            'tab_active', 'repo', 'config', 'references_by_type',
+            'current_branch_name', 'current_head', 'current_operation', 'uncommitted_changes_count',
             'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
@@ -43,24 +47,26 @@
             },
             actions() {
                 return [
-                    {
-                        icon: 'mdi-source-branch',
-                        label: 'Branch',
-                        callback: () => this.show_branch_modal = true,
-                    },
-                    {
-                        icon: 'mdi-archive-arrow-down-outline',
-                        label: 'Save WIP',
-                        callback: this.saveWip,
-                        disabled: (this.uncommitted_changes_count ?? 0) === 0,
-                    },
-                    {
-                        icon: 'mdi-archive-arrow-up-outline',
-                        label: 'Restore WIP',
-                        title: this.last_wip_branch === undefined ? '' : `Will restore ${this.last_wip_branch.name}`,
-                        callback: this.restoreWip,
-                        disabled: this.last_wip_branch === undefined,
-                    },
+                    ...this.current_operation?.conflict ? [] : [
+                        {
+                            icon: 'mdi-source-branch',
+                            label: 'Branch',
+                            callback: () => this.show_branch_modal = true,
+                        },
+                        {
+                            icon: 'mdi-archive-arrow-down-outline',
+                            label: 'Save WIP',
+                            callback: this.saveWip,
+                            disabled: (this.uncommitted_changes_count ?? 0) === 0,
+                        },
+                        {
+                            icon: 'mdi-archive-arrow-up-outline',
+                            label: 'Restore WIP',
+                            title: this.last_wip_branch === undefined ? '' : `Will restore ${this.last_wip_branch.name}`,
+                            callback: this.restoreWip,
+                            disabled: this.last_wip_branch === undefined,
+                        },
+                    ],
                     {
                         separator: true,
                     },

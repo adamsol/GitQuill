@@ -361,8 +361,22 @@
                     ['revert', '.git/REVERT_HEAD'],
                 ]) {
                     const hash = await this.repo.readFile(path, { null_if_not_exists: true });
+
                     if (hash !== null) {
-                        operation = { type, hash: hash.trim() };
+                        const label = {
+                            'rebase': 'Rebasing',
+                            'cherry-pick': 'Cherry-picking',
+                            'revert': 'Reverting',
+                        }[type];
+                        const conflict_message = await this.repo.readFile('.git/MERGE_MSG', { null_if_not_exists: true });
+
+                        operation = {
+                            type,
+                            label,
+                            hash: hash.trim(),
+                            conflict_message: conflict_message?.split('\n').filter(line => !line.startsWith('#')).join('\n'),
+                            conflict: conflict_message !== null,
+                        };
                         break;
                     }
                 }
