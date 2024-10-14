@@ -149,10 +149,11 @@
                         return this.references_by_type.head[0].hash;
                     },
                     uncommitted_changes_count() {
-                        if (this.working_tree_files !== undefined) {
-                            const unique_file_paths = new Set(_.map([...this.working_tree_files.unstaged, ...this.working_tree_files.staged], 'path'));
-                            return unique_file_paths.size;
+                        if (this.working_tree_files === undefined) {
+                            return 0;
                         }
+                        const unique_file_paths = new Set(_.map([...this.working_tree_files.unstaged, ...this.working_tree_files.staged], 'path'));
+                        return unique_file_paths.size;
                     },
                 },
                 methods: {

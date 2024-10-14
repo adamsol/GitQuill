@@ -57,7 +57,7 @@
                             icon: 'mdi-archive-arrow-down-outline',
                             label: 'Save WIP',
                             callback: this.saveWip,
-                            disabled: (this.uncommitted_changes_count ?? 0) === 0,
+                            disabled: this.uncommitted_changes_count === 0,
                         },
                         {
                             icon: 'mdi-archive-arrow-up-outline',
@@ -65,6 +65,13 @@
                             title: this.last_wip_branch === undefined ? '' : `Will restore ${this.last_wip_branch.name}`,
                             callback: this.restoreWip,
                             disabled: this.last_wip_branch === undefined,
+                        },
+                        {
+                            icon: 'mdi-check-all',
+                            label: 'Amend',
+                            title: 'Stage all changes and amend the last commit',
+                            callback: this.amendCommit,
+                            disabled: this.uncommitted_changes_count === 0,
                         },
                     ],
                     {
@@ -111,6 +118,18 @@
                 try {
                     await this.repo.callGit('cherry-pick', this.last_wip_branch.hash, '--no-commit');
                     await this.repo.callGit('branch', '--delete', this.last_wip_branch.name, '--force');
+                } finally {
+                    await Promise.all([
+                        this.refreshHistory(),
+                        this.refreshStatus(),
+                    ]);
+                }
+            },
+            async amendCommit() {
+                await this.saveSelectedFile();
+                try {
+                    await this.repo.callGit('add', '--all');
+                    await this.repo.callGit('commit', '--amend', '--no-edit');
                 } finally {
                     await Promise.all([
                         this.refreshHistory(),
