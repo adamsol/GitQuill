@@ -39,7 +39,7 @@
 
     export default {
         inject: [
-            'commits', 'commit_by_hash', 'selected_commits', 'selected_commit_hashes',
+            'commits', 'commit_by_hash', 'selected_commits',
             'current_operation', 'uncommitted_changes_count', 'selected_file',
             'setSelectedCommits',
         ],
@@ -48,13 +48,13 @@
         },
         computed: {
             active() {
-                return this.selected_commit_hashes.has(this.commit.hash);
+                return this.selected_commits.includes(this.commit.hash);
             },
         },
         methods: {
             select(event) {
                 if (event.shiftKey && this.selected_commits.length > 0) {
-                    let source = _.last(this.selected_commits);
+                    let source = this.commit_by_hash[_.last(this.selected_commits)];
                     let target = this.commit;
                     if (target.index < source.index) {
                         [source, target] = [target, source];
@@ -63,26 +63,20 @@
                     findPathBetweenCommits(source, target, this.commit_by_hash, path);
 
                     if (this.commit === target) {
-                        path.push(this.commit);
+                        path.push(this.commit.hash);
                     } else {
                         path.reverse();
                         if (path.length === 0) {
-                            path.push(this.commit);
+                            path.push(this.commit.hash);
                         }
                     }
-                    _.remove(path, commit => this.selected_commit_hashes.has(commit.hash));
-
-                    this.setSelectedCommits([...this.selected_commits, ...path]);
+                    this.setSelectedCommits(_.uniq([...this.selected_commits, ...path]));
 
                 } else if (event.ctrlKey) {
-                    if (this.selected_commit_hashes.has(this.commit.hash)) {
-                        this.setSelectedCommits(_.exclude(this.selected_commits, { hash: this.commit.hash }));
-                    } else {
-                        this.setSelectedCommits([...this.selected_commits, this.commit]);
-                    }
+                    this.setSelectedCommits(_.xor(this.selected_commits, [this.commit.hash]));
 
                 } else {
-                    this.setSelectedCommits([this.commit]);
+                    this.setSelectedCommits([this.commit.hash]);
                 }
             },
         },

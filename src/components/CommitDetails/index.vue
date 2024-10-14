@@ -237,11 +237,8 @@
             },
         },
         watch: {
-            selected_commits: {
-                async handler() {
-                    await this.load();
-                },
-                deep: true,
+            async selected_commits() {
+                await this.load();
             },
             async working_tree_files() {
                 if (_.some(this.current_commits, { hash: 'WORKING_TREE' }) && this.current_commits.length <= 2) {
@@ -264,7 +261,7 @@
         },
         methods: {
             async load() {
-                const current_commits = this.selected_commits;
+                const current_commits = this.selected_commits.map(hash => this.commit_by_hash[hash]);
                 const revisions_to_diff = this.revisions_to_diff;
 
                 if (current_commits.length === 1 && current_commits[0].hash === 'WORKING_TREE') {
@@ -398,7 +395,7 @@
                     await this.repo.callGit('revert', commit.hash, '--no-commit');
                     await this.repo.callGit('restore', '--source', commit.hash, '--', '.');
                 }
-                this.setSelectedCommits([this.commits[0]]);
+                this.setSelectedCommits(['WORKING_TREE']);
 
                 await Promise.all([
                     this.refreshHistory(),

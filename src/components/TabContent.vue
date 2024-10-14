@@ -132,17 +132,14 @@
                     commit_by_hash() {
                         return _.keyBy(this.commits, 'hash');
                     },
-                    selected_commit_hashes() {
-                        return new Set(_.map(this.selected_commits, 'hash'));
-                    },
                     revisions_to_diff() {
                         if (this.selected_commits.length === 1) {
-                            const commit = this.selected_commits[0];
+                            const commit = this.commit_by_hash[this.selected_commits[0]];
                             const parent = commit.hash === 'WORKING_TREE' ? 'HEAD' : commit.parents[0] ?? 'EMPTY_ROOT';
                             return [commit.hash, parent];
 
                         } else if (this.selected_commits.length === 2) {
-                            return _.map(_.sortBy(this.selected_commits, 'index'), 'hash');
+                            return _.sortBy(this.selected_commits, hash => this.commit_by_hash[hash].index);
                         }
                     },
                     current_head() {
@@ -163,9 +160,9 @@
                             this.setSelectedCommits([]);
                         }
                     },
-                    setSelectedCommits(commits) {
-                        this.selected_commits = commits.map(Object.freeze);
-                        if (commits.length > 0) {
+                    setSelectedCommits(hashes) {
+                        this.selected_commits = hashes;
+                        if (hashes.length > 0) {
                             this.setSelectedReference(null);
                         }
                     },

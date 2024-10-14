@@ -4,7 +4,7 @@
         class="row clickable group"
         :class="{ active, 'text-gray line-through': hidden }"
         @click="setSelectedReference(reference)"
-        @dblclick="hidden || commit === undefined ? {} : setSelectedCommits([commit])"
+        @dblclick="hidden || commit === undefined ? {} : setSelectedCommits([reference.hash])"
     >
         <div class="grow ellipsis" :title="reference.name + '\n(double-click to view commit)'">
             {{ reference.name }}

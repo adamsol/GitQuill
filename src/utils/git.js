@@ -60,7 +60,7 @@ export function findPathBetweenCommits(source, target, commit_by_hash, path = []
         if (commit.index >= target.index) {
             return commit.index === target.index;
         }
-        path.push(commit);
+        path.push(commit.hash);
         for (const hash of commit.parents) {
             if (traverse(commit_by_hash[hash])) {
                 return true;

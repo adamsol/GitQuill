@@ -145,7 +145,7 @@
         components: { CommitGraph, CommitRefsRow, CommitRow, SettingsModal },
         inject: [
             'tab_active', 'repo', 'references', 'references_by_hash', 'selected_reference', 'hidden_references',
-            'commits', 'commit_by_hash', 'selected_commits', 'selected_commit_hashes',
+            'commits', 'commit_by_hash', 'revisions_to_diff', 'selected_commits',
             'current_branch_name', 'current_head', 'current_operation', 'working_tree_files', 'selected_file',
             'setSelectedReference', 'setSelectedCommits', 'updateSelectedFile',
         ],
@@ -173,12 +173,12 @@
                     await this.load();
                 }
             },
-            selected_commits() {
+            selected_commits(new_value, old_value) {
                 const scroller = this.$refs.main_scroller;
 
-                if (this.selected_commits.length === 1 && scroller !== undefined) {
+                if (new_value.length === 1 && old_value.length <= 1 && scroller !== undefined) {
                     const state = scroller.getScroll();
-                    const pos = this.selected_commits[0].index * scroller.itemSize;
+                    const pos = this.commit_by_hash[new_value[0]].index * scroller.itemSize;
                     if (pos < state.start || pos + scroller.itemSize > state.end) {
                         this.$refs.main_scroller.scrollToPosition(pos - (state.end - state.start) / 5);
                     }
@@ -334,17 +334,12 @@
                     commit.running_commits = [...running_commits];
                 }
                 if (this.commits === undefined) {
-                    this.setSelectedCommits([commits[0]]);
+                    this.setSelectedCommits(['WORKING_TREE']);
                 }
                 this.commits = Object.freeze(commits);
                 this.current_commit_limit = limit;
 
-                for (const [i, commit] of this.selected_commits.entries()) {
-                    if (commit.hash === 'WORKING_TREE') {
-                        this.selected_commits[i] = Object.freeze(commits[0]);
-                    }
-                }
-                if (this.selected_commit_hashes.intersection(new Set(_.map(this.commits, 'hash'))).size < this.selected_commit_hashes.size) {
+                if (!_.every(this.selected_commits, hash => _.find(this.commits, { hash }) !== undefined)) {
                     this.setSelectedCommits([]);
                     this.selected_file = null;
                 }
@@ -384,7 +379,7 @@
 
                 this.working_tree_files = Object.freeze(await getStatus(this.repo));
 
-                if (this.selected_commit_hashes.has('WORKING_TREE')) {
+                if (this.revisions_to_diff?.includes('WORKING_TREE')) {
                     this.updateSelectedFile();
                 }
             },
@@ -433,7 +428,7 @@
             setSearchIndex(index, { select = true } = {}) {
                 this.search_index = index;
                 if (select) {
-                    this.setSelectedCommits([this.commit_by_hash[this.search_hashes[this.search_index]]]);
+                    this.setSelectedCommits([this.search_hashes[this.search_index]]);
                 }
             },
             resetSearch() {

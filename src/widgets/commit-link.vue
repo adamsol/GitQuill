@@ -7,7 +7,7 @@
         v-else
         class="font-mono"
         title="View commit"
-        @click="setSelectedCommits([commit_by_hash[hash]]); selected_file = null"
+        @click="setSelectedCommits([hash]); selected_file = null"
     >
         {{ hash_abbr }}
     </button>
