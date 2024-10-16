@@ -354,6 +354,7 @@
                     ['rebase', '.git/rebase-merge/stopped-sha'],
                     ['cherry-pick', '.git/CHERRY_PICK_HEAD'],
                     ['revert', '.git/REVERT_HEAD'],
+                    ['merge', '.git/MERGE_HEAD'],
                 ]) {
                     const hash = await this.repo.readFile(path, { null_if_not_exists: true });
 
@@ -362,6 +363,7 @@
                             'rebase': 'Rebasing',
                             'cherry-pick': 'Cherry-picking',
                             'revert': 'Reverting',
+                            'merge': 'Merging',
                         }[type];
                         const conflict_message = await this.repo.readFile('.git/MERGE_MSG', { null_if_not_exists: true });
 

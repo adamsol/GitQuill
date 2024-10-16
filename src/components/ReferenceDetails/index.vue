@@ -11,6 +11,10 @@
                         <icon name="mdi-target" class="size-5" />
                         Checkout branch
                     </btn>
+                    <btn :disabled="isCurrentBranch(reference)" @click="mergeBranch">
+                        <icon name="mdi-source-pull" class="size-5" />
+                        Merge branch
+                    </btn>
                     <btn v-if="is_wip" @click="restoreWip">
                         <icon name="mdi-archive-arrow-up-outline" class="size-5" />
                         Restore WIP
@@ -81,6 +85,16 @@
                     this.refreshHistory(),
                     this.refreshStatus(),
                 ]);
+            },
+            async mergeBranch() {
+                try {
+                    await this.repo.callGit('merge', this.reference.name, '--no-ff');
+                } finally {
+                    await Promise.all([
+                        this.refreshHistory(),
+                        this.refreshStatus(),
+                    ]);
+                }
             },
             async restoreWip() {
                 try {
