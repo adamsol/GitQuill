@@ -18,6 +18,7 @@ export const colors = [
     '#77509b',
 ];
 
+export const reference_type_order = ['local_branch', 'remote_branch', 'tag'];
 export const hash_abbr_length = 7;
 export const wip_prefix = 'wip/';
 export const second_click_cooldown = 2000;

@@ -48,7 +48,7 @@
         inject: ['references_by_type'],
         computed: {
             reference_types() {
-                return ['local_branch', 'remote_branch', 'tag'];
+                return _.without(settings.reference_type_order, 'head');
             },
         },
     };

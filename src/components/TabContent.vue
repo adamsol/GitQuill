@@ -167,7 +167,7 @@
                         }
                     },
                     isCurrentBranch(reference) {
-                        return reference.type === 'local_branch' && reference.name === this.current_branch_name;
+                        return reference.type === 'local_branch' && reference.name === this.current_branch_name || reference.type === 'head';
                     },
                     async updateFileStatus(file) {
                         // https://stackoverflow.com/questions/71268388/show-renamed-moved-status-with-git-diff-on-single-file
