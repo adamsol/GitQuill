@@ -398,14 +398,20 @@
                         limit: this.commit_history_search_limit,
                     });
                 }
-                const found = [];
-                const attrs = ['hash', 'subject', 'body', 'author_name', 'committer_name'];
                 // https://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
-                const regex = new RegExp('(^|\\b|\\W)' + this.search_query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+                const regexes = this.search_query.split(/\s+/).map(term =>
+                    new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+                );
+                const found = [];
 
                 for (const [i, commit] of this.commits.entries()) {
-                    if (i > 0 && _.some(attrs.map(attr => commit[attr]), value => regex.test(value))) {
-                        found.push(commit.hash);
+                    if (i > 0) {
+                        const values = ['hash', 'subject', 'body', 'author_name', 'committer_name'].map(attr => commit[attr]);
+                        values.push(..._.map(commit.references, 'name'));
+
+                        if (_.every(regexes, regex => _.some(values, value => regex.test(value)))) {
+                            found.push(commit.hash);
+                        }
                     }
                 }
                 const preserved_index = found.indexOf(this.search_hashes[this.search_index]);
@@ -448,8 +454,14 @@
                 });
             },
             onKeyDown(event) {
+                if (this.selected_file !== null) {
+                    return;
+                }
                 if (event.ctrlKey && event.key === 'f') {
                     this.$refs.search_input.focus();
+                }
+                if (event.key === 'F3') {
+                    this.changeSearchIndex(event.shiftKey ? -1 : 1);
                 }
             },
             onScroll(event) {
