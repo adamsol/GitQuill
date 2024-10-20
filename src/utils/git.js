@@ -55,12 +55,17 @@ export async function getStatus(repo, ...args) {
     };
 }
 
+export async function getEmptyRootHash(repo) {
+    // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
+    return (await repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim();
+}
+
 export function findPathBetweenCommits(source, target, commit_by_hash, path = []) {
     const traverse = commit => {
         if (commit.index >= target.index) {
             return commit.index === target.index;
         }
-        path.push(commit.hash);
+        path.push(commit);
         for (const hash of commit.parents) {
             if (traverse(commit_by_hash[hash])) {
                 return true;
@@ -68,5 +73,10 @@ export function findPathBetweenCommits(source, target, commit_by_hash, path = []
         }
         path.pop();
     }
-    return traverse(source);
+    const found = traverse(source);
+    if (!found) {
+        path.push(source);
+    }
+    path.push(target);
+    return found;
 }

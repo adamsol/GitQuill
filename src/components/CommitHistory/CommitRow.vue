@@ -62,15 +62,10 @@
                     const path = [];
                     findPathBetweenCommits(source, target, this.commit_by_hash, path);
 
-                    if (this.commit === target) {
-                        path.push(this.commit.hash);
-                    } else {
+                    if (this.commit !== target) {
                         path.reverse();
-                        if (path.length === 0) {
-                            path.push(this.commit.hash);
-                        }
                     }
-                    this.setSelectedCommits(_.uniq([...this.selected_commits, ...path]));
+                    this.setSelectedCommits(_.uniq([...this.selected_commits, ..._.map(path, 'hash')]));
 
                 } else if (event.ctrlKey) {
                     this.setSelectedCommits(_.xor(this.selected_commits, [this.commit.hash]));

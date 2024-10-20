@@ -195,7 +195,7 @@
 
 <script>
     import StoreMixin from '@/mixins/StoreMixin';
-    import { findPathBetweenCommits } from '@/utils/git';
+    import { findPathBetweenCommits, getEmptyRootHash } from '@/utils/git';
 
     import BranchModal from './BranchModal';
     import CommitterDetails from './CommitterDetails';
@@ -230,10 +230,17 @@
                 return _.some(this.current_commits, { hash: 'WORKING_TREE' });
             },
             can_edit() {
-                return _.every([
-                    this.current_operation === null,
-                    findPathBetweenCommits(this.commits[0], this.current_commits[0], this.commit_by_hash),
-                ]);
+                if (this.current_operation !== null) {
+                    return false;
+                }
+                const path = [];
+                if (!findPathBetweenCommits(this.commits[0], this.current_commits[0], this.commit_by_hash, path)) {
+                    return false;
+                }
+                if (_.some(path, commit => commit.parents.length > 1)) {
+                    return false;
+                }
+                return true;
             },
         },
         watch: {
@@ -276,8 +283,7 @@
                         if (hash === 'WORKING_TREE') {
                             continue;
                         } else if (hash === 'EMPTY_ROOT') {
-                            // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
-                            hashes.push((await this.repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim());
+                            hashes.push(await getEmptyRootHash(this.repo));
                         } else {
                             hashes.push(hash);
                         }
@@ -392,7 +398,8 @@
 
                 await this.repo.callGit('-c', `sequence.editor=node --eval "${script}"`, 'rebase', '--interactive', target);
                 if (this.selected_file !== null) {
-                    await this.repo.callGit('revert', commit.hash, '--no-commit');
+                    const parent_hash = commit.parents[0] ?? await getEmptyRootHash(this.repo);
+                    await this.repo.callGit('restore', '--source', parent_hash, '--staged', '--', '.');
                     await this.repo.callGit('restore', '--source', commit.hash, '--', '.');
                 }
                 this.setSelectedCommits(['WORKING_TREE']);
