@@ -101,7 +101,7 @@
                         const [source, target] = action === 'stage' ? ['modified', 'original'] : ['original', 'modified'];
                         const editor = diff_editor._editors[target];
                         editor.pushUndoStop();
-                        editor.executeEdits(undefined, [{
+                        editor.getModel().pushEditOperations([], [{
                             range: line_range_mapping[target].toExclusiveRange(),
                             text: diff_editor._editors[source].getModel().getValueInRange(line_range_mapping[source].toExclusiveRange()),
                         }]);
@@ -158,7 +158,7 @@
                     ignoreTrimWhitespace: !this.whitespace_diff,
                     wordWrap: this.word_wrap ? 'on' : 'off',
 
-                    readOnly: this.file.area === 'committed',
+                    readOnly: this.file.area !== 'unstaged',
                     originalEditable: this.file.area === 'unstaged',
 
                     links: false,
