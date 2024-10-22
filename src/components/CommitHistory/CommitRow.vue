@@ -9,12 +9,12 @@
             <template v-if="current_operation !== null">
                 [{{ current_operation.label }}]
             </template>
-            <template v-if="uncommitted_changes_count === 0">
+            <template v-if="uncommitted_file_count === 0">
                 Working tree clean
             </template>
             <template v-else>
-                Uncommitted changes
-                ({{ uncommitted_changes_count }})
+                Uncommitted files
+                ({{ uncommitted_file_count }})
             </template>
         </div>
         <template v-else>
@@ -40,7 +40,7 @@
     export default {
         inject: [
             'commits', 'commit_by_hash', 'selected_commits',
-            'current_operation', 'uncommitted_changes_count', 'selected_file',
+            'current_operation', 'uncommitted_file_count', 'selected_file',
             'setSelectedCommits',
         ],
         props: {

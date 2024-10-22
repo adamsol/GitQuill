@@ -3,11 +3,13 @@
     <div v-if="files !== undefined" class="h-full break-words">
         <splitpanes
             v-if="current_commits.length === 1 && commit.hash === 'WORKING_TREE'"
+            :dbl-click-splitter="false"
             horizontal
             @resized="commit_pane_size = $event[1].size"
         >
             <pane class="min-h-40">
                 <splitpanes
+                    :dbl-click-splitter="false"
                     horizontal
                     @resized="unstaged_pane_size = $event[0].size"
                 >
@@ -65,6 +67,7 @@
                     v-model.trim="message"
                     class="grow px-2 resize-none"
                     :disabled="current_operation?.conflict"
+                    placeholder="Commit message"
                     :spellcheck="false"
                 />
 
@@ -95,7 +98,7 @@
         </splitpanes>
 
         <div v-else class="flex flex-col h-full">
-            <div class="flex justify-end gap-1 flex-wrap mb-3">
+            <div class="flex justify-end gap-1 flex-wrap mb-4">
                 <div v-if="current_operation?.conflict" class="text-gray italic">
                     Functionality limited during conflict
                 </div>
@@ -134,12 +137,12 @@
                     <TagModal v-if="show_tag_modal" :commit @close="show_tag_modal = false" />
                 </template>
             </div>
-            <div v-if="current_commits.length === 2">
+            <div v-if="current_commits.length === 2" class="mb-2">
                 Diff between...
             </div>
-            <hr v-if="current_commits.length > 1" class="my-2" />
+            <hr v-if="current_commits.length > 1" class="mb-2" />
 
-            <div class="min-h-14 overflow-auto">
+            <div class="min-h-14 overflow-auto shrink-0" :class="{ 'max-h-60': current_commits.length === 1 }">
                 <template v-for="(c, i) in current_commits">
                     <hr v-if="i > 0" class="my-2" />
 
@@ -155,7 +158,7 @@
                     </div>
                 </template>
 
-                <div v-if="current_commits.length === 1 && commit.body" class="my-2 whitespace-pre-wrap">
+                <div v-if="current_commits.length === 1 && commit.body" class="mt-4 mb-2 whitespace-pre-wrap">
                     <commit-message :content="commit.body" />
                 </div>
             </div>
@@ -211,7 +214,7 @@
         inject: [
             'repo', 'commits', 'commit_by_hash', 'selected_commits', 'revisions_to_diff',
             'current_branch_name', 'current_head', 'current_operation',
-            'working_tree_files', 'uncommitted_changes_count', 'selected_file',
+            'working_tree_files', 'uncommitted_file_count', 'selected_file',
             'setSelectedCommits', 'updateSelectedFile', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
@@ -401,7 +404,6 @@
                 if (this.selected_file !== null) {
                     const parent_hash = commit.parents[0] ?? await getEmptyRootHash(this.repo);
                     await this.repo.callGit('restore', '--source', parent_hash, '--staged', '--', '.');
-                    await this.repo.callGit('restore', '--source', commit.hash, '--', '.');
                 }
                 this.setSelectedCommits(['WORKING_TREE']);
 

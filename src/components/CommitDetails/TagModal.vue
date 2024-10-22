@@ -1,20 +1,18 @@
 
 <template>
     <modal v-slot="{ close }">
-        <form @submit.prevent="submit().then(close)">
-            <input v-model.trim="name" class="w-96" placeholder="Name" />
-            <div class="flex justify-end mt-2">
-                <btn type="submit">
-                    <icon name="mdi-tag-outline" class="size-5" />
-                    Create tag
-                </btn>
-            </div>
-        </form>
+        <ReferenceNameForm
+            label="Create tag"
+            @submit="submit($event).then(close)"
+        />
     </modal>
 </template>
 
 <script>
+    import ReferenceNameForm from '@/forms/ReferenceNameForm';
+
     export default {
+        components: { ReferenceNameForm },
         inject: [
             'repo',
             'refreshHistory',
@@ -22,12 +20,9 @@
         props: {
             commit: { type: Object, required: true },
         },
-        data: () => ({
-            name: '',
-        }),
         methods: {
-            async submit() {
-                await this.repo.callGit('tag', this.name, this.commit.hash);
+            async submit(data) {
+                await this.repo.callGit('tag', data.name, this.commit.hash, ...data.force ? ['--force'] : []);
                 await this.refreshHistory();
             },
         },

@@ -1,6 +1,7 @@
 
 <template>
     <splitpanes
+        :dbl-click-splitter="false"
         horizontal
         @resized="references_list_pane_sizes = Object.fromEntries($_.zip(reference_types, $_.map($event, 'size')))"
     >

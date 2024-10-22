@@ -36,7 +36,7 @@
                 <icon name="mdi-format-columns" class="size-6" />
             </toggle>
             <toggle v-model:active="whitespace_diff" title="Show leading/trailing whitespace diff">
-                <icon name="mdi-format-pilcrow" class="size-6" />
+                <icon name="mdi-keyboard-space" class="size-6" />
             </toggle>
             <toggle v-model:active="word_wrap" title="Word wrap">
                 <icon name="mdi-wrap" class="size-6" />
@@ -125,7 +125,7 @@
             StoreMixin('collapse_unchanged_regions', true),
             StoreMixin('side_by_side_view', true),
             StoreMixin('side_by_side_ratio', 0.5),
-            StoreMixin('whitespace_diff', false),
+            StoreMixin('whitespace_diff', true),
             StoreMixin('word_wrap', false),
 
             ElectronEventMixin('window-blur', 'save'),

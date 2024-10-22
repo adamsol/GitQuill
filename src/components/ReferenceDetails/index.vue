@@ -44,8 +44,8 @@
         </div>
 
         <div class="mt-3">
-            <div v-if="hidden_references.has(reference.id)" class="text-gray italic">
-                Hidden in the graph
+            <div v-if="hidden_references.has(reference.id)" class="text-gray">
+                hidden in the graph
             </div>
             <div v-else>
                 <div class="text-xs text-gray">

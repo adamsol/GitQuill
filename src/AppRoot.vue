@@ -9,7 +9,7 @@
                         :class="{ active: tab.id === selected_tab_id }"
                         @click="selected_tab_id = tab.id"
                     >
-                        {{ tab.label ?? "New tab" }}
+                        {{ tab.title ?? 'New tab' }}
                         <btn title="Close" @click="closeTab(tab)">
                             <icon name="mdi-close" class="size-4" />
                         </btn>

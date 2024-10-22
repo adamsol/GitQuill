@@ -44,8 +44,11 @@
         </div>
 
         <div class="grow py-1 bg-gray-dark overflow-hidden relative">
-            <splitpanes @resized="commit_history_column_sizes = $_.map($event, 'size')">
-                <pane :size="commit_history_column_sizes[0]" class="flex flex-col overflow-x-auto min-w-12">
+            <splitpanes
+                :dbl-click-splitter="false"
+                @resized="[commit_refs_column_size, commit_graph_column_size] = $_.map($event, 'size')"
+            >
+                <pane :size="commit_refs_column_size" class="flex flex-col overflow-x-auto min-w-12">
                     <!-- `list-class="static"` is necessary for horizontal scroll. -->
                     <recycle-scroller
                         v-if="commits !== undefined"
@@ -64,7 +67,7 @@
                     </recycle-scroller>
                 </pane>
                 <pane
-                    :size="commit_history_column_sizes[1]"
+                    :size="commit_graph_column_size"
                     ref="graph_pane"
                     class="relative overflow-auto scrollbar-hidden min-w-8"
                     @scroll="onScroll"
@@ -134,7 +137,8 @@
 
     export default {
         mixins: [
-            StoreMixin('commit_history_column_sizes', [10, 10]),
+            StoreMixin('commit_refs_column_size', 20),
+            StoreMixin('commit_graph_column_size', 10),
             StoreMixin('commit_history_initial_limit', 100),
             StoreMixin('commit_history_search_limit', null),
 

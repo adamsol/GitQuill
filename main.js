@@ -18,7 +18,7 @@ let window;
 
 async function openRepo() {
     const result = await dialog.showOpenDialog(window, {
-        title: "Open Repo",
+        title: 'Open Repo',
         properties: ['openDirectory'],
     });
     const folder_path = result.filePaths[0];
@@ -30,7 +30,7 @@ async function openRepo() {
             return folder_path;
         } else {
             await dialog.showMessageBox(window, {
-                message: "Not a Git repository!",
+                message: 'Not a Git repository!',
             });
             return await openRepo();
         }
@@ -51,7 +51,7 @@ const app_menu_template = [
 ];
 Menu.setApplicationMenu(Menu.buildFromTemplate(app_menu_template));
 
-initContextMenu();
+initContextMenu({ showSelectAll: false });
 Store.initRenderer();
 
 app.whenReady().then(async () => {
@@ -67,7 +67,7 @@ app.whenReady().then(async () => {
     async function log(repo_path, repr, func) {
         const t = performance.now();
         if (!fs.existsSync(path.join(repo_path, '.git'))) {
-            throw new Error("Not a Git repository!");
+            throw new Error('Not a Git repository!');
         }
         const file_path = path.join(repo_path, '.git/.quill/app.log');
         try {
@@ -77,8 +77,9 @@ app.whenReady().then(async () => {
             logging.info(`[${ms} ms] ${repr}`);
             return result;
         } catch (e) {
+            const ms = `${Math.round(performance.now() - t)}`.padStart(3, ' ');
             logging.transports.file.resolvePathFn = () => file_path;
-            logging.error(`${repr}\n${e}`);
+            logging.error(`[${ms} ms] ${repr}\n${e}`);
             throw e;
         }
     }

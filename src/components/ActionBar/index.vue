@@ -34,7 +34,7 @@
         ],
         inject: [
             'tab_active', 'repo', 'config', 'references_by_type',
-            'current_branch_name', 'current_head', 'current_operation', 'uncommitted_changes_count',
+            'current_branch_name', 'current_head', 'current_operation', 'uncommitted_file_count',
             'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
@@ -57,7 +57,7 @@
                             icon: 'mdi-archive-arrow-down-outline',
                             label: 'Save WIP',
                             callback: this.saveWip,
-                            disabled: this.uncommitted_changes_count === 0,
+                            disabled: this.uncommitted_file_count === 0,
                         },
                         {
                             icon: 'mdi-archive-arrow-up-outline',
@@ -71,7 +71,7 @@
                             label: 'Amend',
                             title: 'Stage all changes and amend the last commit',
                             callback: this.amendCommit,
-                            disabled: this.uncommitted_changes_count === 0,
+                            disabled: this.uncommitted_file_count === 0,
                         },
                     ],
                     {

@@ -30,6 +30,9 @@
     input, textarea, select {
         @apply p-1 bg-gray-dark border border-gray/30 rounded-sm [color-scheme:dark];
     }
+    label, button {
+        @apply select-none;
+    }
 
     .splitpanes--vertical > .splitpanes__splitter {
         @apply w-4;

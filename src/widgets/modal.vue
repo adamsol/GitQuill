@@ -4,10 +4,11 @@
         <div
             ref="modal"
             class="absolute inset-0 z-40 flex flex-col bg-black/40 p-6"
+            tabindex="-1"
             @click.self="close"
             @keydown.esc="close"
         >
-            <div class="m-auto max-h-full max-w-full p-8 overflow-auto rounded-lg bg-gray-bg shadow-[0_0_1rem_0_black]">
+            <div class="m-auto max-h-full max-w-full p-8 overflow-auto rounded-lg bg-gray-bg shadow-[0_0_2rem_0_#0008]">
                 <slot :close />
             </div>
         </div>
@@ -22,6 +23,7 @@
             body_css: document.body.style.cssText,
         }),
         mounted() {
+            this.$refs.modal.focus();
             this.$refs.modal.querySelector('input:not([type=checkbox]):not([disabled]), textarea:not([disabled])')?.focus();
 
             if (document.body.style.overflow !== 'hidden') {

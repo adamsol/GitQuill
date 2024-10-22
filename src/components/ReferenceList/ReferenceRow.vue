@@ -6,13 +6,13 @@
         @click="setSelectedReference(reference)"
         @dblclick="hidden || commit === undefined ? {} : setSelectedCommits([reference.hash])"
     >
-        <div class="grow ellipsis" :title="reference.name + '\n(double-click to view commit)'">
+        <div class="grow ellipsis" :title>
             {{ reference.name }}
         </div>
 
         <div class="w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
             <btn
-                :title="hidden ? 'Show': 'Hide'"
+                :title="(hidden ? 'Show': 'Hide') + ' in the graph'"
                 @click="toggleVisibility"
             >
                 <icon :name="hidden ? 'mdi-eye-outline' : 'mdi-eye-off-outline'" class="size-4" />
@@ -39,6 +39,17 @@
             },
             commit() {
                 return this.commit_by_hash[this.reference.hash];
+            },
+            title() {
+                let title = this.reference.name;
+                if (this.hidden) {
+                    title += '\n(hidden in the graph)';
+                } else if (this.commit === undefined) {
+                    title += '\n(not in the graph)';
+                } else {
+                    title += '\n(double-click to view commit)';
+                }
+                return title;
             },
         },
         methods: {

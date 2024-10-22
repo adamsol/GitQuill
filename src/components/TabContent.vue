@@ -2,7 +2,11 @@
 <template>
     <div v-show="active" class="h-full flex flex-col">
         <div v-if="repo_details.path === undefined" class="grow flex flex-col gap-2 items-center justify-center">
-            <input v-model.trim="repo_details.label" placeholder="Label" />
+            <input
+                v-model.trim="repo_details.title"
+                placeholder="Title"
+                :spellcheck="false"
+            />
             <btn @click="openRepo">
                 <icon name="mdi-folder" class="size-5" />
                 Open repository
@@ -13,15 +17,14 @@
             <ActionBar class="pt-1.5 pb-0.5" />
 
             <div class="grow overflow-hidden">
-                <splitpanes @resized="main_pane_size = $event[0].size">
-                    <pane :size="main_pane_size" class="relative">
-                        <FileDiff
-                            v-if="selected_file !== null"
-                            ref="file_diff"
-                            class="absolute inset-0"
-                        />
+                <splitpanes
+                    :dbl-click-splitter="false"
+                    @resized="main_pane_size = $event[0].size"
+                >
+                    <pane class="min-w-min" :size="main_pane_size">
                         <splitpanes
-                            :class="{ invisible: selected_file !== null }"
+                            v-show="selected_file === null"
+                            :dbl-click-splitter="false"
                             @resized="references_pane_size = $event[0].size"
                         >
                             <pane class="min-w-48" :size="references_pane_size">
@@ -31,6 +34,7 @@
                                 <CommitHistory ref="commit_history" class="py-2" />
                             </pane>
                         </splitpanes>
+                        <FileDiff v-if="selected_file !== null" ref="file_diff" />
                     </pane>
                     <pane class="min-w-96">
                         <CommitDetails
@@ -145,7 +149,7 @@
                     current_head() {
                         return this.references_by_type.head[0].hash;
                     },
-                    uncommitted_changes_count() {
+                    uncommitted_file_count() {
                         if (this.working_tree_files === undefined) {
                             return 0;
                         }
@@ -203,7 +207,7 @@
                     },
                 },
             }),
-            StoreMixin('main_pane_size', 70),
+            StoreMixin('main_pane_size', 75),
             StoreMixin('references_pane_size', 15),
         ],
         props: {
@@ -240,7 +244,7 @@
                 if (path !== undefined) {
                     path = path.replace(/\\/g, '/');
                     this.repo_details.path = path;
-                    this.repo_details.label ??= path.slice(path.lastIndexOf('/') + 1);
+                    this.repo_details.title ??= path.slice(path.lastIndexOf('/') + 1);
                 }
             },
         },

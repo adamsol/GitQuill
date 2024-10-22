@@ -1,24 +1,18 @@
 
 <template>
     <modal v-slot="{ close }">
-        <form @submit.prevent="submit().then(close)">
-            <input v-model.trim="name" class="w-96" placeholder="Name" />
-            <div class="flex items-center gap-3 justify-end mt-2">
-                <label>
-                    <input v-model="force" type="checkbox" />
-                    Force
-                </label>
-                <btn type="submit">
-                    <icon name="mdi-source-branch" class="size-5" />
-                    Create branch
-                </btn>
-            </div>
-        </form>
+        <ReferenceNameForm
+            label="Create branch"
+            @submit="submit($event).then(close)"
+        />
     </modal>
 </template>
 
 <script>
+    import ReferenceNameForm from '@/forms/ReferenceNameForm';
+
     export default {
+        components: { ReferenceNameForm },
         inject: [
             'repo',
             'refreshHistory',
@@ -26,13 +20,9 @@
         props: {
             commit: { type: Object, required: true },
         },
-        data: () => ({
-            name: '',
-            force: false,
-        }),
         methods: {
-            async submit() {
-                await this.repo.callGit('branch', this.name, this.commit.hash, ...this.force ? ['--force'] : []);
+            async submit(data) {
+                await this.repo.callGit('branch', data.name, this.commit.hash, ...data.force ? ['--force'] : []);
                 await this.refreshHistory();
             },
         },
