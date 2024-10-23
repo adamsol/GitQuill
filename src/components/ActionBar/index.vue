@@ -119,6 +119,7 @@
                     await this.repo.callGit('cherry-pick', this.last_wip_branch.hash, '--no-commit');
                     await this.repo.callGit('branch', '--delete', this.last_wip_branch.name, '--force');
                 } finally {
+                    await this.repo.deleteFile('.git/MERGE_MSG');
                     await Promise.all([
                         this.refreshHistory(),
                         this.refreshStatus(),
