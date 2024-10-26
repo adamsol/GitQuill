@@ -1,6 +1,6 @@
 
 <template>
-    <teleport to="#tab_wrapper">
+    <teleport v-if="tab_active" to="#tab_wrapper">
         <div
             ref="modal"
             class="absolute inset-0 z-40 flex flex-col bg-black/40 p-6"
@@ -16,6 +16,7 @@
 
 <script>
     export default {
+        inject: ['tab_active'],
         emits: ['close'],
         data: () => ({
             body_css: document.body.style.cssText,

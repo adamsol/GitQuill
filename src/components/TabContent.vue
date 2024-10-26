@@ -47,7 +47,7 @@
         </template>
     </div>
 
-    <modal v-if="active && error_messages.length > 0" @close="error_messages.shift()">
+    <modal v-if="error_messages.length > 0" @close="error_messages.shift()">
         <div class="whitespace-pre font-mono">
             {{ error_messages[0] }}
         </div>
