@@ -388,15 +388,16 @@
                     target = '--root';
                 }
                 const script = `
-                    import fs from 'fs';
-
+                    const fs = require('fs');
                     const file_path = process.argv[1];
-
                     const content = fs.readFileSync(file_path, { encoding: 'utf8' });
                     fs.writeFileSync(file_path, content.replace(/^pick/, 'edit'));
                 `.replace(/\n\s*/g, ' ');
 
-                await this.repo.callGit('-c', `sequence.editor=node --eval "${script}"`, 'rebase', '--interactive', target);
+                // https://stackoverflow.com/questions/49465229/git-interactive-rebase-edit-particular-commit-without-needing-to-use-editor
+                const cmd = `node --eval "${script}"`;
+                await this.repo.callGit('-c', `sequence.editor=${cmd}`, 'rebase', '--interactive', target);
+
                 if (this.selected_file !== null) {
                     const parent_hash = commit.parents[0] ?? await getEmptyRootHash(this.repo);
                     await this.repo.callGit('restore', '--source', parent_hash, '--staged', '--', '.');
