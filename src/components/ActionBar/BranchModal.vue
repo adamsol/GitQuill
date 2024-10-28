@@ -14,12 +14,14 @@
     export default {
         components: { ReferenceNameForm },
         inject: [
-            'repo', 'current_head',
+            'repo', 'references', 'current_head',
             'refreshHistory',
         ],
         methods: {
             async submit(data) {
-                await this.repo.callGit('checkout', this.current_head, data.force ? '-B' : '-b', data.name);
+                const existing_branch = _.find(this.references, { type: 'local_branch', name: data.name });
+                const msg = existing_branch && `Overwritten local branch: ${data.name} (was ${existing_branch.hash})`;
+                await this.repo.callGit('checkout', this.current_head, data.force ? '-B' : '-b', data.name, { msg });
                 await this.refreshHistory();
             },
         },

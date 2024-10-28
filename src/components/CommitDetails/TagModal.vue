@@ -14,7 +14,7 @@
     export default {
         components: { ReferenceNameForm },
         inject: [
-            'repo',
+            'repo', 'references',
             'refreshHistory',
         ],
         props: {
@@ -22,7 +22,9 @@
         },
         methods: {
             async submit(data) {
-                await this.repo.callGit('tag', data.name, this.commit.hash, ...data.force ? ['--force'] : []);
+                const existing_tag = _.find(this.references, { type: 'tag', name: data.name });
+                const msg = existing_tag && `Overwritten tag: ${data.name} (was ${existing_tag.hash})`;
+                await this.repo.callGit('tag', data.name, this.commit.hash, ...data.force ? ['--force'] : [], { msg });
                 await this.refreshHistory();
             },
         },

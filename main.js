@@ -64,7 +64,7 @@ app.whenReady().then(async () => {
     });
     window.maximize();
 
-    async function log(repo_path, repr, func) {
+    async function log(repo_path, repr, func, { msg } = {}) {
         const t = performance.now();
         if (!fs.existsSync(path.join(repo_path, '.git'))) {
             throw new Error('Not a Git repository!');
@@ -74,7 +74,7 @@ app.whenReady().then(async () => {
             const result = await func();
             const ms = `${Math.round(performance.now() - t)}`.padStart(3, ' ');
             logging.transports.file.resolvePathFn = () => file_path;
-            logging.info(`[${ms} ms] ${repr}`);
+            logging.info(`[${ms} ms] ${repr}` + (msg ? `\n${msg}` : ''));
             return result;
         } catch (e) {
             const ms = `${Math.round(performance.now() - t)}`.padStart(3, ' ');
@@ -100,6 +100,11 @@ app.whenReady().then(async () => {
         exec(cmd, { cwd: repo_path });
     });
     ipcMain.handle('call-git', async (event, repo_path, ...args) => {
+        let options = {};
+        if (typeof args.at(-1) === 'object') {
+            options = args.at(-1);
+            args = args.slice(0, -1);
+        }
         const run = async () => await log(
             repo_path,
             `call-git ${JSON.stringify(args)}`,
@@ -118,6 +123,7 @@ app.whenReady().then(async () => {
                     }
                 });
             }),
+            options,
         );
         let retries = 3;
         let delay = 100;

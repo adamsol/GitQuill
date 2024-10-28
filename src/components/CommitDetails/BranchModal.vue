@@ -14,7 +14,7 @@
     export default {
         components: { ReferenceNameForm },
         inject: [
-            'repo',
+            'repo', 'references',
             'refreshHistory',
         ],
         props: {
@@ -22,7 +22,9 @@
         },
         methods: {
             async submit(data) {
-                await this.repo.callGit('branch', data.name, this.commit.hash, ...data.force ? ['--force'] : []);
+                const existing_branch = _.find(this.references, { type: 'local_branch', name: data.name });
+                const msg = existing_branch && `Overwritten local branch: ${data.name} (was ${existing_branch.hash})`;
+                await this.repo.callGit('branch', data.name, this.commit.hash, ...data.force ? ['--force'] : [], { msg });
                 await this.refreshHistory();
             },
         },

@@ -23,7 +23,9 @@
         },
         methods: {
             async submit(data) {
-                await this.repo.callGit('branch', '--move', this.reference.name, data.name, ...data.force ? ['--force'] : []);
+                const existing_branch = _.find(this.references, { type: 'local_branch', name: data.name });
+                const msg = existing_branch && `Overwritten local branch: ${data.name} (was ${existing_branch.hash})`;
+                await this.repo.callGit('branch', '--move', this.reference.name, data.name, ...data.force ? ['--force'] : [], { msg });
                 await this.refreshHistory();
 
                 const new_reference = _.find(this.references, { type: this.reference.type, name: data.name });

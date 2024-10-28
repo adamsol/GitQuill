@@ -109,18 +109,22 @@
                 }
             },
             async resetBranchToHead() {
-                await this.repo.callGit('branch', this.reference.name, '--force');
+                const msg = `Reset local branch: ${this.reference.name} (was ${this.reference.hash})`;
+                await this.repo.callGit('branch', this.reference.name, '--force', { msg });
                 await this.refreshHistory();
             },
             async deleteReference() {
                 if (this.reference.type === 'local_branch') {
-                    await this.repo.callGit('branch', '--delete', this.reference.name, '--force');
+                    const msg = `Deleted local branch: ${this.reference.name} (was ${this.reference.hash})`;
+                    await this.repo.callGit('branch', '--delete', this.reference.name, '--force', { msg });
                 } else if (this.reference.type === 'remote_branch') {
                     // Delete only the local remote-tracking branch.
                     // https://stackoverflow.com/questions/2003505/how-do-i-delete-a-git-branch-locally-and-remotely
-                    await this.repo.callGit('branch', '--delete', this.reference.name, '--remotes');
+                    const msg = `Deleted remote-tracking branch: ${this.reference.name} (was ${this.reference.hash})`;
+                    await this.repo.callGit('branch', '--delete', this.reference.name, '--remotes', { msg });
                 } else if (this.reference.type === 'tag') {
-                    await this.repo.callGit('tag', '--delete', this.reference.name);
+                    const msg = `Deleted tag: ${this.reference.name} (was ${this.reference.hash})`;
+                    await this.repo.callGit('tag', '--delete', this.reference.name, { msg });
                 }
                 this.hidden_references.delete(this.reference.id);
                 await this.refreshHistory();
