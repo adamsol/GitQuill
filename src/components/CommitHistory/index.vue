@@ -214,7 +214,7 @@
                         'for-each-ref', '--sort=version:refname',
                         '--format=%(refname) %(objectname) %(*objectname)',  // https://stackoverflow.com/questions/1862423/how-to-tell-which-commit-a-tag-points-to-in-git
                     );
-                    let references = [];
+                    const references_by_type = {};
 
                     for (const line of _.filter(summary.split('\n'))) {
                         const [id, ...hashes] = line.split(' ');
@@ -231,8 +231,12 @@
                         } else {
                             continue;
                         }
-                        references.push({ type, name, id, hash });
+                        references_by_type[type] ??= [];
+                        references_by_type[type].push({ type, name, id, hash });
                     }
+                    references_by_type.tag?.reverse();
+                    const references = Object.values(references_by_type).flat();
+
                     let head = (await this.repo.readFile('.git/HEAD')).trim();
                     const prefix = 'ref: refs/heads/';
 
