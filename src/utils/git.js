@@ -25,11 +25,6 @@ export async function getStatus(repo, ...args) {
         file.x === file.y && ['A', 'D'].includes(file.x),
     ]));
     if (conflict_files.length > 0) {
-        // The special state of unresolved conflicts makes things complicated to handle,
-        // and annoying from the user perspective, as many standard Git commands refuse to work as expected.
-        // For this reason, we automatically reset the files.
-        // This still leaves the conflict markers to be manually resolved,
-        // but brings the repository back to a normal state.
         await repo.callGit('reset', '--', ..._.map(conflict_files, 'path'));
         // Additionally handle the "deleted by them" conflict, so that it doesn't go unnoticed.
         for (const file of _.filter(conflict_files, { x: 'U', y: 'D' })) {

@@ -41,11 +41,21 @@ const app_menu_template = [
     {
         label: 'View',
         submenu: [
-            { role: 'reload' }, { role: 'toggledevtools' },
+            { role: 'reload' },
+            { role: 'toggledevtools' },
             { type: 'separator' },
-            { role: 'resetzoom' }, { role: 'zoomin' }, { role: 'zoomout' },
+            { role: 'resetzoom' },
+            { role: 'zoomin' },
+            { role: 'zoomout' },
             { type: 'separator' },
             { role: 'togglefullscreen' },
+        ],
+    },
+    {
+        label: 'Help',
+        submenu: [
+            { label: `Version: ${app.getVersion()}`, enabled: false },
+            { label: 'Homepage', click: () => shell.openExternal('https://github.com/adamsol/GitQuill') },
         ],
     },
 ];

@@ -2,11 +2,13 @@
   "name": "git-quill",
   "productName": "GitQuill",
   "version": "0.1.0",
-  "description": "GUI for Git.",
+  "description": "Cross-platform GUI for Git.",
   "keywords": [
     "git",
     "diff",
-    "gui"
+    "graph",
+    "gui",
+    "client"
   ],
   "repository": "https://github.com/adamsol/GitQuill",
   "license": "MIT",
