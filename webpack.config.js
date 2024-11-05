@@ -62,4 +62,7 @@ export default {
     performance: {
         hints: false,
     },
+    optimization: {
+        minimize: false,
+    },
 };
