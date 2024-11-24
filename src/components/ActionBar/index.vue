@@ -68,8 +68,8 @@
                         },
                         {
                             icon: 'mdi-check-all',
-                            label: 'Amend',
-                            title: 'Stage all changes and amend the last commit',
+                            label: 'Amend' + (this.current_operation?.type === 'rebase' ? ' & Proceed' : ''),
+                            title: 'Stage all changes and amend the last commit' + (this.current_operation?.type === 'rebase' ? ', then proceed with the rebase' : ''),
                             callback: this.amendCommit,
                             disabled: this.uncommitted_file_count === 0,
                         },
@@ -131,6 +131,10 @@
                 try {
                     await this.repo.callGit('add', '--all');
                     await this.repo.callGit('commit', '--amend', '--no-edit');
+
+                    if (this.current_operation?.type === 'rebase') {
+                        await this.repo.callGit(this.current_operation.type, '--skip');
+                    }
                 } finally {
                     await Promise.all([
                         this.refreshHistory(),

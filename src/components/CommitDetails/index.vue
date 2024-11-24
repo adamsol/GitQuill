@@ -247,6 +247,10 @@
             },
         },
         watch: {
+            async commits() {
+                this.message = '';
+                this.amend = false;
+            },
             async selected_commits() {
                 await this.load();
             },
@@ -275,7 +279,7 @@
                 const revisions_to_diff = this.revisions_to_diff;
 
                 if (current_commits.length === 1 && current_commits[0].hash === 'WORKING_TREE') {
-                    if (this.message === '' && this.current_operation?.conflict) {
+                    if (this.current_operation?.conflict) {
                         this.message = this.current_operation?.conflict_message;
                     }
                     this.files = this.working_tree_files;
@@ -339,8 +343,6 @@
                 await this.saveSelectedFile();
 
                 await this.repo.callGit('commit', ...this.amend ? ['--amend'] : [], '--message', this.message);
-                this.message = '';
-                this.amend = false;
 
                 await Promise.all([
                     this.refreshHistory(),
@@ -425,9 +427,6 @@
                         await this.repo.callGit(this.current_operation.type, '--skip');
                     }
                 } finally {
-                    this.message = '';
-                    this.amend = false;
-
                     await Promise.all([
                         this.refreshHistory(),
                         this.refreshStatus(),
@@ -439,9 +438,6 @@
                     return;
                 }
                 await this.repo.callGit(this.current_operation.type, cmd);
-
-                this.message = '';
-                this.amend = false;
 
                 await Promise.all([
                     this.refreshHistory(),
