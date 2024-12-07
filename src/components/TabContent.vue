@@ -21,7 +21,7 @@
                     :dbl-click-splitter="false"
                     @resized="main_pane_size = $event[0].size"
                 >
-                    <pane class="min-w-min" :size="main_pane_size">
+                    <pane :size="main_pane_size">
                         <splitpanes
                             v-show="selected_file === null"
                             :dbl-click-splitter="false"
