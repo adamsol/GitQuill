@@ -275,7 +275,8 @@
                 const excluded_references = [...this.hidden_references, 'refs/stash'];
 
                 if (limit === undefined) {
-                    limit = this.commit_history_initial_limit;
+                    limit = this.search_index === null ? this.commit_history_initial_limit : this.commit_history_search_limit;
+
                     if (limit !== null) {
                         const scroller = this.$refs.main_scroller;
                         if (scroller !== undefined) {
