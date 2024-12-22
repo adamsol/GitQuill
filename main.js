@@ -54,7 +54,6 @@ const app_menu_template = [
     {
         label: 'Help',
         submenu: [
-            { label: `Version: ${app.getVersion()}`, enabled: false },
             { label: 'Homepage', click: () => shell.openExternal('https://github.com/adamsol/GitQuill') },
         ],
     },

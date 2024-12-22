@@ -14,7 +14,11 @@
             </div>
             <div class="grow" />
 
-            <select v-model="language" title="Language" @change="onSelectLanguage">
+            <select
+                v-model="language"
+                title="Syntax highlighting language (for current file extension)"
+                @change="onSelectLanguage"
+            >
                 <option v-for="lang in languages" :value="lang">
                     {{ lang }}
                 </option>

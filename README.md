@@ -12,6 +12,7 @@ Unique features
 ---------------
 
 * Edit files directly in the diff view.
+* Choose specific syntax highlighting for your file extensions.
 * Quickly amend past commits with the rebase tool.
 * Configure linking from commit messages to your issue tracker.
 * Configure buttons to execute any Git command with a click.
