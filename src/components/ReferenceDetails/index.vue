@@ -19,10 +19,6 @@
                         <icon name="mdi-archive-arrow-up-outline" class="size-5" />
                         Restore WIP
                     </btn>
-                    <btn v-else :disabled="current_head === reference.hash" @click="resetBranchToHead">
-                        <icon name="mdi-undo" class="size-5" />
-                        Reset branch to HEAD
-                    </btn>
                     <btn @click="show_rename_modal = true">
                         <icon name="mdi-pencil" class="size-5" />
                         Rename
@@ -63,7 +59,7 @@
     export default {
         components: { RenameModal },
         inject: [
-            'repo', 'selected_reference', 'hidden_references', 'current_head', 'current_operation',
+            'repo', 'selected_reference', 'hidden_references', 'current_operation',
             'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
@@ -107,11 +103,6 @@
                         this.refreshStatus(),
                     ]);
                 }
-            },
-            async resetBranchToHead() {
-                const msg = `Reset local branch: ${this.reference.name} (was ${this.reference.hash})`;
-                await this.repo.callGit('branch', this.reference.name, '--force', { msg });
-                await this.refreshHistory();
             },
             async deleteReference() {
                 if (this.reference.type === 'local_branch') {
