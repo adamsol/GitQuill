@@ -54,6 +54,8 @@
 </template>
 
 <script>
+    import { restoreWip } from '@/utils/actions';
+
     import RenameModal from './RenameModal';
 
     export default {
@@ -93,16 +95,7 @@
                 }
             },
             async restoreWip() {
-                try {
-                    await this.repo.callGit('cherry-pick', this.reference.hash, '--no-commit');
-                    await this.repo.callGit('branch', '--delete', this.reference.name, '--force');
-                } finally {
-                    await this.repo.deleteFile('.git/MERGE_MSG');
-                    await Promise.all([
-                        this.refreshHistory(),
-                        this.refreshStatus(),
-                    ]);
-                }
+                await restoreWip.call(this, this.reference);
             },
             async deleteReference() {
                 if (this.reference.type === 'local_branch') {
