@@ -1,12 +1,15 @@
 
 <template>
     <teleport v-if="tab_active" to="#tab_wrapper">
+        <!-- Note: `@click.self` won't work properly.
+             https://stackoverflow.com/questions/55732804/modal-is-closed-when-cursor-is-released-outside-the-modal -->
         <div
             ref="modal"
             class="absolute inset-0 z-40 flex flex-col bg-black/40 p-6"
             tabindex="-1"
-            @click.self="close"
             @keydown.esc="close"
+            @mousedown="mousedown_target = $event.target"
+            @mouseup.self="mousedown_target === $event.target ? close() : {}; mousedown_target = null"
         >
             <div class="m-auto max-h-full max-w-full p-8 overflow-auto rounded-lg bg-gray-bg shadow-[0_0_2rem_0_#0008]">
                 <slot :close />
@@ -21,6 +24,7 @@
         emits: ['close'],
         data: () => ({
             body_css: document.body.style.cssText,
+            mousedown_target: null,
         }),
         mounted() {
             this.$refs.modal.focus();
