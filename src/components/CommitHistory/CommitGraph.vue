@@ -66,23 +66,38 @@
                     for (const parent_hash of commit.parents) {
                         const commit_coords = coords[commit.hash];
                         const parent_coords = coords[parent_hash];
+                        let color_index;
 
-                        ctx.strokeStyle = settings.colors[commit.level % settings.colors.length];
-                        ctx.lineWidth = 2;
                         ctx.beginPath();
                         ctx.moveTo(...commit_coords);
+
                         if (parent_coords === undefined) {
                             ctx.lineTo(commit_coords[0], canvas.height);
                         } else {
+                            const radius = this.row_height / 4;
+                            const dir = Math.sign(commit_coords[0] - parent_coords[0]);
+
+                            if (commit.parents.length === 1) {
+                                color_index = commit.level;
+                                ctx.lineTo(commit_coords[0], parent_coords[1] - radius);
+                                ctx.arcTo(commit_coords[0], parent_coords[1], commit_coords[0] - radius * dir, parent_coords[1], radius);
+                            } else {
+                                // Merge commit.
+                                color_index = this.commit_by_hash[parent_hash].level;
+                                ctx.lineTo(parent_coords[0] + radius * dir, commit_coords[1]);
+                                ctx.arcTo(parent_coords[0], commit_coords[1], parent_coords[0], commit_coords[1] + radius, radius);
+                            }
                             ctx.lineTo(...parent_coords);
                         }
+                        ctx.strokeStyle = settings.colors[color_index % settings.colors.length];
+                        ctx.lineWidth = 2;
                         ctx.stroke();
                     }
                 }
                 for (const commit of commits_to_draw) {
                     ctx.fillStyle = settings.colors[commit.level % settings.colors.length];
                     ctx.beginPath();
-                    ctx.arc(...coords[commit.hash], size/2, 0, 2*Math.PI);
+                    ctx.arc(...coords[commit.hash], commit.parents.length <= 1 ? size/2 : size/3, 0, 2*Math.PI);
                     ctx.fill();
 
                     if (commit.hash === 'WORKING_TREE') {
