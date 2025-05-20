@@ -308,15 +308,15 @@
                 }
                 await this.save_semaphore;
 
+                if (_.isEqual(this.getEditorContents(), this.saved_contents)) {
+                    return false;
+                }
                 // A small hack to trigger trimming the automatically inserted indentation.
                 // https://github.com/microsoft/monaco-editor/issues/1993
                 for (const name of ['original', 'modified']) {
                     this.diff_editor._editors[name].getModel().pushEditOperations([], []);
                 }
                 const contents = this.getEditorContents();
-                if (_.isEqual(contents, this.saved_contents)) {
-                    return false;
-                }
                 let lift;
                 this.save_semaphore = new Promise(resolve => lift = resolve);
 
