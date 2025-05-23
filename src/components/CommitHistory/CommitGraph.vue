@@ -66,7 +66,7 @@
                     for (const parent_hash of commit.parents) {
                         const commit_coords = coords[commit.hash];
                         const parent_coords = coords[parent_hash];
-                        let color_index;
+                        let color_index = commit.level;
 
                         ctx.beginPath();
                         ctx.moveTo(...commit_coords);
@@ -78,7 +78,6 @@
                             const dir = Math.sign(commit_coords[0] - parent_coords[0]);
 
                             if (commit.parents.length === 1) {
-                                color_index = commit.level;
                                 ctx.lineTo(commit_coords[0], parent_coords[1] - radius);
                                 ctx.arcTo(commit_coords[0], parent_coords[1], commit_coords[0] - radius * dir, parent_coords[1], radius);
                             } else {
