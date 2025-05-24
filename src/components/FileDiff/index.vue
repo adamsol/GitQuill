@@ -14,38 +14,40 @@
             </div>
             <div class="grow" />
 
-            <select
-                v-model="language"
-                title="Syntax highlighting language (for current file extension)"
-                @change="onSelectLanguage"
-            >
-                <option v-for="lang in languages" :value="lang">
-                    {{ lang }}
-                </option>
-            </select>
-            <hr class="mx-2" />
+            <template v-if="!binary">
+                <select
+                    v-model="language"
+                    title="Syntax highlighting language (for current file extension)"
+                    @change="onSelectLanguage"
+                >
+                    <option v-for="lang in languages" :value="lang">
+                        {{ lang }}
+                    </option>
+                </select>
+                <hr class="mx-2" />
 
-            <input
-                v-if="collapse_unchanged_regions"
-                v-model="context_line_count"
-                class="w-12"
-                min="0"
-                title="Number of context lines"
-                type="number"
-            />
-            <toggle v-model:active="collapse_unchanged_regions" title="Collapse unchanged regions">
-                <icon name="mdi-view-day" class="size-6" />
-            </toggle>
-            <toggle v-model:active="side_by_side_view" title="Side-by-side view">
-                <icon name="mdi-format-columns" class="size-6" />
-            </toggle>
-            <toggle v-model:active="whitespace_diff" title="Show leading/trailing whitespace diff">
-                <icon name="mdi-keyboard-space" class="size-6" />
-            </toggle>
-            <toggle v-model:active="word_wrap" title="Word wrap">
-                <icon name="mdi-wrap" class="size-6" />
-            </toggle>
-            <hr class="ml-2 mr-1" />
+                <input
+                    v-if="collapse_unchanged_regions"
+                    v-model="context_line_count"
+                    class="w-12"
+                    min="0"
+                    title="Number of context lines"
+                    type="number"
+                />
+                <toggle v-model:active="collapse_unchanged_regions" title="Collapse unchanged regions">
+                    <icon name="mdi-view-day" class="size-6" />
+                </toggle>
+                <toggle v-model:active="side_by_side_view" title="Side-by-side view">
+                    <icon name="mdi-format-columns" class="size-6" />
+                </toggle>
+                <toggle v-model:active="whitespace_diff" title="Show leading/trailing whitespace diff">
+                    <icon name="mdi-keyboard-space" class="size-6" />
+                </toggle>
+                <toggle v-model:active="word_wrap" title="Word wrap">
+                    <icon name="mdi-wrap" class="size-6" />
+                </toggle>
+                <hr class="ml-2 mr-1" />
+            </template>
 
             <btn title="Close file" @click="close">
                 <icon name="mdi-close" class="size-6" />
@@ -55,7 +57,7 @@
         <div class="grow relative">
             <!-- Note: without `key`, the `hideUnchangedRegions` option behaves strangely after reloading the file. -->
             <vue-monaco-diff-editor
-                v-if="loaded_contents !== undefined"
+                v-if="loaded_contents !== undefined && !binary"
                 v-show="!show_no_changes_message"
                 :key="loaded_contents"
                 :options="options"
@@ -65,8 +67,20 @@
                 theme="custom"
                 @mount="onMountEditor"
             />
-            <div v-if="show_no_changes_message" class="absolute inset-0 bg-gray-dark text-center pt-2">
-                No changes
+            <div
+                v-if="show_no_changes_message || binary"
+                class="absolute inset-0 bg-gray-dark text-center pt-2"
+            >
+                <div v-if="show_no_changes_message">
+                    No changes
+                </div>
+                <div v-else-if="binary">
+                    Binary files differ:
+                    {{ loaded_contents[0].length }}
+                    <icon name="mdi-arrow-right" class="size-4 inline mb-1" />
+                    {{ loaded_contents[1].length }}
+                    bytes
+                </div>
             </div>
         </div>
     </div>
@@ -80,6 +94,7 @@
     import ElectronEventMixin from '@/mixins/ElectronEventMixin';
     import StoreMixin from '@/mixins/StoreMixin';
     import WindowEventMixin from '@/mixins/WindowEventMixin';
+    import { isBinary } from '@/utils/git';
     import Btn from '@/widgets/btn';
     import Icon from '@/widgets/icon';
 
@@ -148,6 +163,7 @@
             unsaved_changes: false,
             language: undefined,
             languages: ['plaintext', ..._.map(monaco_metadata.languages, 'label')],
+            binary: false,
         }),
         computed: {
             options() {
@@ -183,7 +199,11 @@
                 return parts.length > 1 ? _.last(parts) : _.last(this.file.path.split('/'));
             },
             show_no_changes_message() {
-                return this.diff_hunk_count === 0 && this.collapse_unchanged_regions && !this.unsaved_changes;
+                if (this.binary) {
+                    return this.loaded_contents[0] === this.loaded_contents[1];
+                } else {
+                    return this.diff_hunk_count === 0 && this.collapse_unchanged_regions && !this.unsaved_changes;
+                }
             },
         },
         watch: {
@@ -290,10 +310,13 @@
                 if (file !== this.selected_file) {
                     return;
                 }
-                // Use only \n as the newline character, for simplicity and consistency between the working tree and the index.
-                // Monaco Editor doesn't handle mixed line endings anyway.
-                // https://github.com/microsoft/vscode/issues/127
-                contents = contents.map(content => content.replace(/\r\n/g, '\n'));
+                this.binary = _.some(contents, isBinary);
+                if (!this.binary) {
+                    // Use only \n as the newline character, for simplicity and consistency between the working tree and the index.
+                    // Monaco Editor doesn't handle mixed line endings anyway.
+                    // https://github.com/microsoft/vscode/issues/127
+                    contents = contents.map(content => content.replace(/\r\n/g, '\n'));
+                }
                 if (_.isEqual([file, contents], [this.file, this.saved_contents])) {
                     return;
                 }
