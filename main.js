@@ -114,19 +114,21 @@ app.whenReady().then(async () => {
             options = args.at(-1);
             args = args.slice(0, -1);
         }
+        const { as_buffer = false } = options;
+
         const run = async () => await log(
             repo_path,
             `call-git ${JSON.stringify(args)}`,
             () => new Promise((resolve, reject) => {
                 const stdout = [], stderr = [];
                 const process = spawn('git', args, { cwd: repo_path });
-                process.stdout.setEncoding('utf8');
                 process.stdout.on('data', buffer => stdout.push(buffer));
                 process.stderr.setEncoding('utf8');
                 process.stderr.on('data', buffer => stderr.push(buffer));
                 process.on('close', code => {
                     if (code === 0) {
-                        resolve(stdout.join(''));
+                        const buffer = Buffer.concat(stdout);
+                        resolve(as_buffer ? buffer : new TextDecoder().decode(buffer));
                     } else {
                         reject(new Error([...stdout, ...stderr].join('')));
                     }
@@ -151,13 +153,13 @@ app.whenReady().then(async () => {
             }
         }
     });
-    ipcMain.handle('read-file', async (event, repo_path, file_path, { null_if_not_exists = false } = {}) => {
+    ipcMain.handle('read-file', async (event, repo_path, file_path, { as_buffer = false, null_if_not_exists = false } = {}) => {
         return await log(
             repo_path,
             `read-file ${file_path}`,
             async () => {
                 try {
-                    return await fs.promises.readFile(path.join(repo_path, file_path), { encoding: 'utf8' });
+                    return await fs.promises.readFile(path.join(repo_path, file_path), { encoding: as_buffer ? null : 'utf8' });
                 } catch (e) {
                     if (null_if_not_exists && e.code === 'ENOENT') {
                         return null;

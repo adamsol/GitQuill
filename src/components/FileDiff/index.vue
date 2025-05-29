@@ -94,7 +94,7 @@
     import ElectronEventMixin from '@/mixins/ElectronEventMixin';
     import StoreMixin from '@/mixins/StoreMixin';
     import WindowEventMixin from '@/mixins/WindowEventMixin';
-    import { isBinary } from '@/utils/git';
+    import { isFileBinary } from '@/utils/git';
     import Btn from '@/widgets/btn';
     import Icon from '@/widgets/icon';
 
@@ -280,29 +280,29 @@
 
                 const loadOriginal = async () => {
                     if (file.status === 'A') {
-                        return '';
+                        return new Uint8Array();
                     } else {
                         // https://stackoverflow.com/questions/60853992/how-to-git-show-a-staged-file
                         const rev = file.area === 'unstaged' ? ':0' : revisions_to_diff[1];
 
                         if (rev === 'EMPTY_ROOT') {
-                            return '';
+                            return new Uint8Array();
                         } else {
                             const file_path = ['R', 'C'].includes(file.status) ? file.old_path : file.path;
-                            return await this.repo.callGit('show', `${rev}:${file_path}`);
+                            return await this.repo.callGit('show', `${rev}:${file_path}`, { as_buffer: true });
                         }
                     }
                 };
                 const loadModified = async () => {
                     if (file.status === 'D') {
-                        return '';
+                        return new Uint8Array();
                     } else {
                         const rev = file.area === 'staged' ? ':0' : revisions_to_diff[0];
 
                         if (rev === 'WORKING_TREE') {
-                            return await this.repo.readFile(file.path);
+                            return await this.repo.readFile(file.path, { as_buffer: true });
                         } else {
-                            return await this.repo.callGit('show', `${rev}:${file.path}`);
+                            return await this.repo.callGit('show', `${rev}:${file.path}`, { as_buffer: true });
                         }
                     }
                 };
@@ -310,8 +310,9 @@
                 if (file !== this.selected_file) {
                     return;
                 }
-                this.binary = _.some(contents, isBinary);
+                this.binary = _.some(contents, isFileBinary);
                 if (!this.binary) {
+                    contents = contents.map(content => new TextDecoder().decode(content));
                     // Use only \n as the newline character, for simplicity and consistency between the working tree and the index.
                     // Monaco Editor doesn't handle mixed line endings anyway.
                     // https://github.com/microsoft/vscode/issues/127

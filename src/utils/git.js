@@ -76,11 +76,11 @@ export function findPathBetweenCommits(source, target, commit_by_hash, path = []
     return found;
 }
 
-export function isBinary(content) {
+export function isFileBinary(buffer) {
     // https://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
-    const n = Math.min(content.length, 8000);
+    const n = Math.min(buffer.length, 8000);
     for (let i = 0; i < n; ++i) {
-        if (content[i] === '\0') {
+        if (buffer[i] === 0) {
             return true;
         }
     }
