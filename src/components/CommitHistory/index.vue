@@ -210,14 +210,15 @@
             },
             async loadHistory({ skip_references = false, limit } = {}) {
                 if (!skip_references) {
+                    // https://stackoverflow.com/questions/1862423/how-to-tell-which-commit-a-tag-points-to-in-git
                     const summary = await this.repo.callGit(
                         'for-each-ref', '--sort=version:refname',
-                        '--format=%(refname) %(objectname) %(*objectname)',  // https://stackoverflow.com/questions/1862423/how-to-tell-which-commit-a-tag-points-to-in-git
+                        '--format=%(refname) %(committerdate:iso-strict) %(objectname) %(*objectname)',
                     );
                     const references_by_type = {};
 
                     for (const line of _.filter(summary.split('\n'))) {
-                        const [id, ...hashes] = line.split(' ');
+                        const [id, date, ...hashes] = line.split(' ');
                         const name = id.split('/').slice(2).join('/');
                         const hash = hashes[1] || hashes[0];
                         let type;
@@ -232,7 +233,7 @@
                             continue;
                         }
                         references_by_type[type] ??= [];
-                        references_by_type[type].push({ type, name, id, hash });
+                        references_by_type[type].push({ type, name, id, date, hash });
                     }
                     references_by_type.tag?.reverse();
                     const references = Object.values(references_by_type).flat();

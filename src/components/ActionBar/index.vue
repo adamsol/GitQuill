@@ -44,7 +44,7 @@
         computed: {
             last_wip_branch() {
                 const branches = _.filter(this.references_by_type.local_branch ?? [], branch => branch.name.startsWith(settings.wip_prefix));
-                return _.last(branches);
+                return _.last(_.sortBy(branches, 'date'));
             },
             actions() {
                 return [
