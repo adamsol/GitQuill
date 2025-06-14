@@ -200,7 +200,7 @@
             },
             show_no_changes_message() {
                 if (this.binary) {
-                    return this.loaded_contents[0] === this.loaded_contents[1];
+                    return _.isEqual(this.loaded_contents[0], this.loaded_contents[1]);
                 } else {
                     return this.diff_hunk_count === 0 && this.collapse_unchanged_regions && !this.unsaved_changes;
                 }
