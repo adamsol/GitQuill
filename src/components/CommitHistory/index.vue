@@ -308,16 +308,20 @@
                     commit.hash_abbr = commit.hash.slice(0, settings.hash_abbr_length);
                     commit.references = this.references_by_hash[commit.hash] ?? [];
                     commit.parents = commit.parents ? commit.parents.split(' ') : [];
+                    
                     for (const parent_hash of commit.parents) {
                         children[parent_hash] ??= [];
                         children[parent_hash].push(commit);
-                        remaining_parents[commit.hash] = new Set(commit.parents);
                     }
+                    remaining_parents[commit.hash] = new Set(commit.parents);
+
+                    let min_child_index = i;
                     for (const child of _.sortBy(children[commit.hash], 'level')) {
-                        if (occupied_levels[child.level] === child && commit.hash === child.parents[0]) {
+                        if (occupied_levels[child.level] === child && commit.hash === child.parents[0] && child.index < min_child_index) {
                             commit.level = child.level;
                             break;
                         }
+                        min_child_index = Math.min(min_child_index, child.index);
                     }
                     if (commit.level === undefined) {
                         for (let level = 0; ; ++level) {
@@ -334,7 +338,7 @@
                     for (const child of children[commit.hash] ?? []) {
                         remaining_parents[child.hash].delete(commit.hash);
                         if (remaining_parents[child.hash].size === 0) {
-                            if (child.level > commit.level) {
+                            if (child.level !== commit.level) {
                                 delete occupied_levels[child.level];
                             }
                             running_commits.delete(child);
