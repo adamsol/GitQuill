@@ -9,7 +9,8 @@
             /
         </div>
         <div v-if="parts.length > 1" class="opacity-65 shrink-[10000] ellipsis [direction:rtl]">
-            /{{ parts.at(-2) }}
+            <!-- https://stackoverflow.com/questions/24800720/how-not-to-make-dir-rtl-send-special-characters-like-to-the-left-side -->
+            <bdi>{{ parts.at(-2) }}/</bdi>
         </div>
         <div class="ellipsis">
             {{ parts.at(-1) }}
