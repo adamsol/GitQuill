@@ -178,7 +178,7 @@
                     ignoreTrimWhitespace: !this.whitespace_diff,
                     wordWrap: this.word_wrap ? 'on' : 'off',
 
-                    readOnly: this.file.area !== 'unstaged',
+                    readOnly: this.file.area === 'committed',
                     originalEditable: this.file.area === 'unstaged',
 
                     links: false,
