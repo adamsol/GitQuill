@@ -56,16 +56,18 @@
                 }
                 this.$refs.canvas.width = (_.max(_.map([...commits_to_draw], 'level')) + 1) * (size + padding) + padding;
 
-                const coords = {};
-                for (const commit of commits_to_draw) {
-                    const x = padding + commit.level * (size + padding) + size/2;
-                    const y = (commit.index + 0.5) * this.row_height - this.scroll_position;
-                    coords[commit.hash] = [x, y];
+                const getCommitCoords = hash => {
+                    const commit = this.commit_by_hash[hash];
+                    if (commit !== undefined) {
+                        const x = padding + commit.level * (size + padding) + size/2;
+                        const y = (commit.index + 0.5) * this.row_height - this.scroll_position;
+                        return [x, y];
+                    }
                 }
                 for (const commit of commits_to_draw) {
                     for (const parent_hash of commit.parents) {
-                        const commit_coords = coords[commit.hash];
-                        const parent_coords = coords[parent_hash];
+                        const commit_coords = getCommitCoords(commit.hash);
+                        const parent_coords = getCommitCoords(parent_hash);
                         let color_index = commit.level;
 
                         ctx.beginPath();
@@ -94,15 +96,17 @@
                     }
                 }
                 for (const commit of commits_to_draw) {
+                    const commit_coords = getCommitCoords(commit.hash);
+
                     ctx.fillStyle = settings.colors[commit.level % settings.colors.length];
                     ctx.beginPath();
-                    ctx.arc(...coords[commit.hash], commit.parents.length <= 1 ? size/2 : size/3, 0, 2*Math.PI);
+                    ctx.arc(...commit_coords, commit.parents.length <= 1 ? size/2 : size/3, 0, 2*Math.PI);
                     ctx.fill();
 
                     if (commit.hash === 'WORKING_TREE') {
                         ctx.fillStyle = colors.gray.dark;
                         ctx.beginPath();
-                        ctx.arc(...coords[commit.hash], size/3, 0, 2*Math.PI);
+                        ctx.arc(...commit_coords, size/3, 0, 2*Math.PI);
                         ctx.fill();
                     }
                 }
