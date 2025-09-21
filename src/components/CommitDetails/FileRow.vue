@@ -28,7 +28,7 @@
     export default {
         inject: [
             'repo', 'selected_file',
-            'updateFileStatus', 'updateSelectedFile', 'saveSelectedFile',
+            'updateFileStatus', 'saveSelectedFile',
         ],
         props: {
             file: { type: Object, required: true },
@@ -56,9 +56,6 @@
                     }
                 }
                 await this.updateFileStatus(this.file);
-                if (this.file.path === this.selected_file?.path) {
-                    this.updateSelectedFile();
-                }
             },
         },
     };

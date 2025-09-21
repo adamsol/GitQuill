@@ -154,7 +154,7 @@
         ],
         inject: [
             'tab_active', 'repo', 'revisions_to_diff', 'working_tree_files', 'selected_file', 'save_semaphore',
-            'updateFileStatus', 'updateSelectedFile',
+            'updateFileStatus',
         ],
         data: () => ({
             file: undefined,
@@ -366,10 +366,6 @@
                     this.unsaved_changes = false;
 
                     await this.updateFileStatus(this.file);
-
-                    if (!_.some(this.working_tree_files[this.file.area], { path: this.file.path })) {
-                        this.updateSelectedFile();
-                    }
                 } finally {
                     lift();
                 }

@@ -150,7 +150,7 @@
             'tab_active', 'repo', 'references', 'references_by_hash', 'selected_reference', 'hidden_references',
             'commits', 'commit_by_hash', 'revisions_to_diff', 'selected_commits',
             'current_branch_name', 'current_head', 'current_operation', 'working_tree_files', 'selected_file',
-            'setSelectedReference', 'setSelectedCommits', 'updateSelectedFile',
+            'setSelectedReference', 'setSelectedCommits',
         ],
         data: () => ({
             current_commit_limit: undefined,
@@ -393,10 +393,6 @@
                 this.current_operation = operation;
 
                 this.working_tree_files = Object.freeze(await getStatus(this.repo));
-
-                if (this.revisions_to_diff?.includes('WORKING_TREE')) {
-                    this.updateSelectedFile();
-                }
             },
             async search() {
                 // https://stackoverflow.com/questions/48368799/vue-vuex-paste-event-triggered-before-input-binded-value-is-updated

@@ -184,18 +184,6 @@
                         }
                         this.working_tree_files = Object.freeze(files);
                     },
-                    updateSelectedFile() {
-                        if (this.selected_file === null) {
-                            return;
-                        }
-                        let area = this.selected_file.area;
-                        // For rebasing.
-                        if (area === 'committed') {
-                            area = 'unstaged';
-                        }
-                        const file = this.working_tree_files[area].find(file => file.path >= this.selected_file.path);
-                        this.selected_file = file ?? _.last(this.working_tree_files[area]) ?? null;
-                    },
                     async saveSelectedFile() {
                         return await this.$refs.file_diff?.save();
                     },

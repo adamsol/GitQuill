@@ -215,7 +215,7 @@
             'repo', 'commits', 'commit_by_hash', 'selected_commits', 'revisions_to_diff',
             'current_branch_name', 'current_head', 'current_operation',
             'working_tree_files', 'uncommitted_file_count', 'selected_file',
-            'setSelectedCommits', 'updateSelectedFile', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
+            'setSelectedCommits', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
             current_commits: undefined,
@@ -321,6 +321,12 @@
                     this.files = Object.freeze({ committed: [] });
                 }
                 this.current_commits = current_commits;
+
+                if (this.selected_file !== null) {
+                    const area = this.selected_file.area;
+                    const file = this.files[area].find(file => file.path >= this.selected_file.path);
+                    this.selected_file = file ?? _.last(this.files[area]) ?? null;
+                }
             },
             async run(action) {
                 await this.saveSelectedFile();
@@ -407,12 +413,14 @@
                     const parent_hash = commit.parents[0] ?? await getEmptyRootHash(this.repo);
                     await this.repo.callGit('restore', '--source', parent_hash, '--staged', '--', '.');
                 }
-                this.setSelectedCommits(['WORKING_TREE']);
-
                 await Promise.all([
                     this.refreshHistory(),
                     this.refreshStatus(),
                 ]);
+                this.setSelectedCommits(['WORKING_TREE']);
+                if (this.selected_file !== null) {
+                    this.selected_file = { ...this.selected_file, area: 'unstaged' };
+                }
             },
             async continueCurrentOperation() {
                 if (await this.saveSelectedFile()) {
