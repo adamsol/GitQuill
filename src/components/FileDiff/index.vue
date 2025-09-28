@@ -263,11 +263,13 @@
                         diff_editor._editors.modified.addGlyphMarginWidget(widget);
                     }
                 });
-                // https://github.com/microsoft/vscode/blob/1.93.1/src/vs/editor/browser/widget/diffEditor/components/diffEditorSash.ts#L78
-                diff_editor._sash.value._sash.onDidEnd(() => {
-                    const [a, b] = ['original', 'modified'].map(name => this.diff_editor._editors[name]._domElement.clientWidth);
-                    this.side_by_side_ratio = a / (a + b);
-                });
+                if (this.side_by_side_view) {
+                    // https://github.com/microsoft/vscode/blob/1.93.1/src/vs/editor/browser/widget/diffEditor/components/diffEditorSash.ts#L78
+                    diff_editor._sash.value._sash.onDidEnd(() => {
+                        const [a, b] = ['original', 'modified'].map(name => this.diff_editor._editors[name]._domElement.clientWidth);
+                        this.side_by_side_ratio = a / (a + b);
+                    });
+                }
             },
             getEditorContents() {
                 return ['original', 'modified'].map(name => this.diff_editor._editors[name].getValue());
