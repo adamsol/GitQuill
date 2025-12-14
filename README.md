@@ -1,3 +1,35 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=id">Bahasa Indonesia</a>
+        | <a href="https://openaitx.github.io/view.html?user=adamsol&project=GitQuill&lang=as">অসমীয়া</
+      </div>
+    </div>
+  </details>
+</div>
+
 <div align="center">
     <h1>GitQuill</h1>
     <img alt="Logo" src="img/logo.jpg" width="200" />
