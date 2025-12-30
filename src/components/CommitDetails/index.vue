@@ -198,7 +198,7 @@
 
 <script>
     import StoreMixin from '@/mixins/StoreMixin';
-    import { findPathBetweenCommits, getEmptyRootHash } from '@/utils/git';
+    import { getEmptyRootHash } from '@/utils/git';
 
     import BranchModal from './BranchModal';
     import CommitterDetails from './CommitterDetails';
@@ -236,14 +236,18 @@
                 if (this.current_operation !== null) {
                     return false;
                 }
-                const path = [];
-                if (!findPathBetweenCommits(this.commits[0], this.current_commits[0], this.commit_by_hash, path)) {
-                    return false;
+                let commit = this.commits[0];
+
+                while (true) {
+                    if (commit.parents.length > 1) {
+                        return false;
+                    }
+                    if (commit.index >= this.current_commits[0].index) {
+                        break;
+                    }
+                    commit = this.commit_by_hash[commit.parents[0]];
                 }
-                if (_.some(path, commit => commit.parents.length > 1)) {
-                    return false;
-                }
-                return true;
+                return commit.index === this.current_commits[0].index;
             },
         },
         watch: {

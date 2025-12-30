@@ -35,8 +35,6 @@
 </template>
 
 <script>
-    import { findPathBetweenCommits } from '@/utils/git';
-
     export default {
         inject: [
             'commits', 'commit_by_hash', 'selected_commits',
@@ -60,8 +58,15 @@
                         [source, target] = [target, source];
                     }
                     const path = [];
-                    findPathBetweenCommits(source, target, this.commit_by_hash, path);
 
+                    for (const commit of this.commits) {
+                        if (commit.index >= source.index) {
+                            path.push(commit);
+                        }
+                        if (commit.index === target.index) {
+                            break;
+                        }
+                    }
                     if (this.commit !== target) {
                         path.reverse();
                     }
