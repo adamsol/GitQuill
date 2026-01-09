@@ -57,6 +57,10 @@
                         <input v-model="amend" type="checkbox" />
                         Amend
                     </label>
+                    <label>
+                        <input v-model="skip_hooks" type="checkbox" />
+                        Skip hooks
+                    </label>
                     <btn :disabled="message === '' || files.staged.length === 0 && !amend" @click="doCommit">
                         <icon name="mdi-source-commit" class="size-5" />
                         Commit
@@ -222,6 +226,7 @@
             files: undefined,
             message: '',
             amend: false,
+            skip_hooks: false,
             show_branch_modal: false,
             show_tag_modal: false,
         }),
@@ -254,6 +259,7 @@
             async commits() {
                 this.message = '';
                 this.amend = false;
+                this.skip_hooks = false;
             },
             async selected_commits() {
                 await this.load();
@@ -269,8 +275,12 @@
 
                 if (this.amend) {
                     this.message = message;
-                } else if (!this.amend && this.message === message) {
-                    this.message = '';
+                    this.skip_hooks = true;
+                } else {
+                    if (this.message === message) {
+                        this.message = '';
+                    }
+                    this.skip_hooks = false;
                 }
             },
         },
@@ -352,8 +362,11 @@
             async doCommit() {
                 await this.saveSelectedFile();
 
-                await this.repo.callGit('commit', ...this.amend ? ['--amend'] : [], '--message', this.message);
-
+                await this.repo.callGit(
+                    'commit', '--message', this.message,
+                    ...this.amend ? ['--amend'] : [],
+                    ...this.skip_hooks ? ['--no-verify'] : [],                    
+                );
                 await Promise.all([
                     this.refreshHistory(),
                     this.refreshStatus(),

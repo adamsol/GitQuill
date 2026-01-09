@@ -72,8 +72,8 @@
                         },
                         {
                             icon: 'mdi-check-all',
-                            label: 'Amend' + (this.current_operation?.type === 'rebase' ? ' & Proceed' : ''),
-                            title: 'Stage all changes and amend the last commit' + (this.current_operation?.type === 'rebase' ? ', then proceed with the rebase' : ''),
+                            label: 'Quick amend' + (this.current_operation?.type === 'rebase' ? ' & proceed' : ''),
+                            title: 'Stage all changes and amend the last commit (skipping hooks)' + (this.current_operation?.type === 'rebase' ? ', then proceed with the rebase' : ''),
                             callback: this.amendCommit,
                             disabled: this.uncommitted_file_count === 0,
                         },
@@ -126,7 +126,7 @@
                 await this.saveSelectedFile();
                 try {
                     await this.repo.callGit('add', '--all');
-                    await this.repo.callGit('commit', '--amend', '--no-edit');
+                    await this.repo.callGit('commit', '--amend', '--no-edit', '--no-verify');
 
                     if (this.current_operation?.type === 'rebase') {
                         await this.repo.callGit(this.current_operation.type, '--skip');
