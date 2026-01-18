@@ -289,7 +289,7 @@
                     }
                 }
                 const log = await this.repo.callGit(
-                    'log', ..._.map(excluded_references, id => `--exclude=${id}`), '--all', '--date-order', '-z',
+                    'log', ..._.map(excluded_references, id => `--exclude=${id}`), '--all', '-z',
                     '--pretty=format:' + Object.values(format).join(field_separator),
                     '--date=format-local:%Y-%m-%d %H:%M',  // https://stackoverflow.com/questions/7853332/how-to-change-git-log-date-formats
                     ...limit === null ? [] : [`--max-count=${limit}`],
