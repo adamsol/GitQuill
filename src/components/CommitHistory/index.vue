@@ -402,7 +402,7 @@
                     this.resetSearch();
                     return;
                 }
-                if (this.commit_history_search_limit === null ? !this.loaded_all : this.commits.length - 1 < this.commit_history_search_limit) {
+                if (!this.loaded_all && (this.commit_history_search_limit === null || this.commits.length - 1 < this.commit_history_search_limit)) {
                     await this.loadHistory({
                         skip_references: true,
                         limit: this.commit_history_search_limit,
