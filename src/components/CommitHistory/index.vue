@@ -293,6 +293,11 @@
                     '--pretty=format:' + Object.values(format).join(field_separator),
                     '--date=format-local:%Y-%m-%d %H:%M',  // https://stackoverflow.com/questions/7853332/how-to-change-git-log-date-formats
                     ...limit === null ? [] : [`--max-count=${limit}`],
+                    // Commits are date-sorted by default, but `--date-order` enforces proper parent-child ordering for commits with equal dates.
+                    // Unfortunately, it can also make the command much slower, as if ignoring `--max-count`.
+                    // Running `git commit-graph write` or `git gc` should help in such cases.
+                    // https://github.com/jesseduffield/lazygit/discussions/2396
+                    '--date-order',
                 );
                 const commits = [
                     { hash: 'WORKING_TREE', parents: this.current_head },
