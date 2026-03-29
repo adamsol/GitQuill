@@ -10,6 +10,8 @@
         :title="title + (click_twice ? (title ? '\n' : '') + '(click twice)' : '')"
         :type
         @click.stop="onClick"
+        @keydown.enter.prevent
+        @keydown.space.prevent
     >
         <slot />
     </button>
