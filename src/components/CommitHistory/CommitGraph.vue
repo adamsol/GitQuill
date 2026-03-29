@@ -65,7 +65,7 @@
                     }
                 }
                 for (const commit of commits_to_draw) {
-                    for (const parent_hash of commit.parents) {
+                    for (const [parent_index, parent_hash] of commit.parents.entries()) {
                         const commit_coords = getCommitCoords(commit.hash);
                         const parent_coords = getCommitCoords(parent_hash);
                         let color_index = commit.level;
@@ -79,11 +79,10 @@
                             const radius = this.row_height / 4;
                             const dir = Math.sign(commit_coords[0] - parent_coords[0]);
 
-                            if (commit.parents.length === 1) {
+                            if (parent_index === 0) {
                                 ctx.lineTo(commit_coords[0], parent_coords[1] - radius);
                                 ctx.arcTo(commit_coords[0], parent_coords[1], commit_coords[0] - radius * dir, parent_coords[1], radius);
                             } else {
-                                // Merge commit.
                                 color_index = this.commit_by_hash[parent_hash].level;
                                 ctx.lineTo(parent_coords[0] + radius * dir, commit_coords[1]);
                                 ctx.arcTo(parent_coords[0], commit_coords[1], parent_coords[0], commit_coords[1] + radius, radius);
