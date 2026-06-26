@@ -185,6 +185,7 @@
                     contextmenu : false,
                     hover: { enabled: false },
                     noSemanticValidation: true,
+                    formatOnPaste: false,
                     scrollBeyondLastLine: false,
                     renderLineHighlight: 'none',
                     glyphMargin: true,  // https://github.com/microsoft/monaco-editor/issues/4068
