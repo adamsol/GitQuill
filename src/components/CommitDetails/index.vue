@@ -309,7 +309,22 @@
                             hashes.push(hash);
                         }
                     }
-                    const status = await this.repo.callGit('diff', ...hashes.reverse(), '--name-status', '-z');
+                    let untracked_paths = [];
+                    if (revisions_to_diff[0] === 'WORKING_TREE') {
+                        // https://stackoverflow.com/questions/855767/can-i-use-git-diff-on-untracked-files
+                        untracked_paths = _.map(_.filter(this.working_tree_files.unstaged, { status: 'A' }), 'path');
+                        if (untracked_paths.length > 0) {
+                            await this.repo.callGit('add', '-N', '--', ...untracked_paths);
+                        }
+                    }
+                    let status;
+                    try {
+                        status = await this.repo.callGit('diff', ...hashes.reverse(), '--name-status', '-z');
+                    } finally {
+                        if (untracked_paths.length > 0) {
+                            await this.repo.callGit('rm', '--cached', '--', ...untracked_paths);
+                        }
+                    }
                     if (!_.isEqual(revisions_to_diff, this.revisions_to_diff)) {
                         return;
                     }
