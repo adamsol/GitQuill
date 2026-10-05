@@ -40,7 +40,7 @@
         </div>
 
         <div class="mt-3">
-            <div v-if="hidden_references.has(reference.id)" class="text-gray">
+            <div v-if="isReferenceHidden(reference)" class="text-gray">
                 hidden in the graph
             </div>
             <div v-else>
@@ -62,7 +62,7 @@
         components: { RenameModal },
         inject: [
             'repo', 'selected_reference', 'hidden_references', 'current_operation',
-            'isCurrentBranch', 'refreshHistory', 'refreshStatus',
+            'isReferenceHidden', 'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
             show_rename_modal: false,

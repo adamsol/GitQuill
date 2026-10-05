@@ -150,7 +150,7 @@
             'tab_active', 'repo', 'references', 'references_by_hash', 'selected_reference', 'hidden_references',
             'commits', 'commit_by_hash', 'revisions_to_diff', 'selected_commits',
             'current_branch_name', 'current_head', 'current_operation', 'working_tree_files', 'selected_file',
-            'setSelectedReference', 'setSelectedCommits',
+            'setSelectedReference', 'setSelectedCommits', 'normalizeReferenceState',
         ],
         data: () => ({
             current_commit_limit: undefined,
@@ -254,12 +254,14 @@
                         return;
                     }
                     this.references = Object.freeze(references);
+                    this.normalizeReferenceState();
 
                     if (this.selected_reference !== null) {
                         const reference = _.find(this.references, { id: this.selected_reference.id });
                         this.setSelectedReference(reference ?? null);
                     }
                 }
+
                 // https://git-scm.com/docs/git-log#_pretty_formats
                 const format = {
                     hash: '%H',

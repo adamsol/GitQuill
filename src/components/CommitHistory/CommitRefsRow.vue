@@ -20,8 +20,8 @@
 <script>
     export default {
         inject: [
-            'repo', 'hidden_references', 'current_branch_name',
-            'setSelectedReference', 'isCurrentBranch', 'refreshHistory', 'refreshStatus',
+            'repo', 'current_branch_name',
+            'setSelectedReference', 'isReferenceHidden', 'isCurrentBranch', 'refreshHistory', 'refreshStatus',
         ],
         props: {
             commit: { type: Object, default: null },
@@ -29,7 +29,7 @@
         computed: {
             references() {
                 const references = this.commit.references.filter(ref =>
-                    !this.hidden_references.has(ref.id) && (ref.type !== 'head' || this.current_branch_name === null)
+                    !this.isReferenceHidden(ref) && (ref.type !== 'head' || this.current_branch_name === null)
                 );
                 return _.sortBy(references, ref =>
                     this.isCurrentBranch(ref) ? -1 : settings.reference_type_order.indexOf(ref.type)

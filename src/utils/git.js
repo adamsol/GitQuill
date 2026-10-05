@@ -75,3 +75,16 @@ export function isFileBinary(buffer) {
     }
     return false;
 }
+
+export function getReferenceAncestorIds(id) {
+    const parts = id.split('/');
+    const patterns = [];
+    // Skip `refs/*` and `refs/<type>/*`.
+    for (let depth = 3; depth < parts.length; ++depth) {
+        const ancestor_id = `${parts.slice(0, depth).join('/')}/*`;
+        if (ancestor_id !== id) {
+            patterns.push(ancestor_id);
+        }
+    }
+    return patterns;
+}

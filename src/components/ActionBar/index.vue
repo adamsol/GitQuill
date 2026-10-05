@@ -34,9 +34,9 @@
             WindowEventMixin('keydown', 'onKeyDown'),
         ],
         inject: [
-            'tab_active', 'repo', 'config', 'references_by_type', 'hidden_references',
+            'tab_active', 'repo', 'config', 'references_by_type',
             'current_branch_name', 'current_head', 'current_operation', 'uncommitted_file_count',
-            'saveSelectedFile', 'refreshHistory', 'refreshStatus',
+            'isReferenceHidden', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
             show_branch_modal: false,
@@ -45,7 +45,7 @@
             last_wip_branch() {
                 const branches = _.filter(
                     this.references_by_type.local_branch ?? [],
-                    branch => branch.name.startsWith(settings.wip_prefix) && !this.hidden_references.has(branch.id),
+                    branch => branch.name.startsWith(settings.wip_prefix) && !this.isReferenceHidden(branch),
                 );
                 return _.last(_.sortBy(branches, 'date'));
             },

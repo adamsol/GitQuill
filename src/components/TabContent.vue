@@ -62,8 +62,9 @@
     import JSON5 from 'json5';
     import { computed as vue_computed } from 'vue/dist/vue.esm-bundler';
 
+    import { ReferenceNode } from '@/domain/reference-node';
     import StoreMixin from '@/mixins/StoreMixin';
-    import { getStatus } from '@/utils/git';
+    import { getReferenceAncestorIds, getStatus } from '@/utils/git';
 
     import ActionBar from './ActionBar';
     import CommitDetails from './CommitDetails';
@@ -71,6 +72,11 @@
     import FileDiff from './FileDiff';
     import ReferenceDetails from './ReferenceDetails';
     import ReferenceList from './ReferenceList';
+
+    const reference_state_files = [
+        ['hidden_references', 'hidden-refs.txt'],
+        ['collapsed_references', 'collapsed-refs.txt'],
+    ];
 
     function provideReactively({ data = () => ({}), computed = {}, methods = {} }) {
         return {
@@ -97,6 +103,7 @@
                     references: undefined,
                     selected_reference: null,
                     hidden_references: new Set(),
+                    collapsed_references: new Set(),
                     commits: undefined,
                     selected_commits: [],
                     current_branch_name: null,
@@ -132,6 +139,30 @@
                     },
                     references_by_type() {
                         return _.groupBy(this.references, 'type');
+                    },
+                    reference_tree() {
+                        const roots = {};
+                        const nodes = {};
+
+                        for (const reference of this.references) {
+                            roots[reference.type] ??= new ReferenceNode({ children: [] });
+                            let parent = roots[reference.type];
+                            const ancestor_ids = getReferenceAncestorIds(reference.id);
+
+                            for (const [depth, id] of ancestor_ids.entries()) {
+                                if (nodes[id] === undefined) {
+                                    const node = new ReferenceNode({ id, depth, children: [], descendant_count: 0 });
+                                    nodes[id] = node;
+                                    parent.children.push(node);
+                                }
+                                parent = nodes[id];
+                                parent.descendant_count += 1;
+                            }
+                            const node = new ReferenceNode({ reference, id: reference.id, depth: ancestor_ids.length });
+                            nodes[reference.id] = node;
+                            parent.children.push(node);
+                        }
+                        return { roots, nodes };
                     },
                     commit_by_hash() {
                         return _.keyBy(this.commits, 'hash');
@@ -173,6 +204,54 @@
                     isCurrentBranch(reference) {
                         return reference.type === 'local_branch' && reference.name === this.current_branch_name || reference.type === 'head';
                     },
+                    isReferenceHidden(reference) {
+                        const node = this.reference_tree.nodes[reference.id];
+                        return node === undefined || this.isReferenceNodeHidden(node);
+                    },
+                    isReferenceNodeHidden(node) {
+                        return [node.id, ...getReferenceAncestorIds(node.id)].some(id => this.hidden_references.has(id));
+                    },
+                    normalizeReferenceState() {
+                        for (const references of [this.hidden_references, this.collapsed_references]) {
+                            for (const id of references) {
+                                if (this.reference_tree.nodes[id] === undefined) {
+                                    references.delete(id);
+                                }
+                            }
+                        }
+                        const normalizeNode = (node) => {
+                            if (node.is_group) {
+                                for (const child of node.children) {
+                                    normalizeNode(child);
+                                }
+                                if (!node.is_root && node.children.every(child => this.isReferenceNodeHidden(child))) {
+                                    for (const child of node.children) {
+                                        this.hidden_references.delete(child.id);
+                                    }
+                                    this.hidden_references.add(node.id);
+                                }
+                            }
+                        };
+                        for (const root of Object.values(this.reference_tree.roots)) {
+                            normalizeNode(root);
+                        }
+                    },
+                    async toggleReferenceNodeVisibility(node) {
+                        if (this.isReferenceNodeHidden(node)) {
+                            for (const pattern of getReferenceAncestorIds(node.id)) {
+                                if (this.hidden_references.delete(pattern)) {
+                                    for (const child of this.reference_tree.nodes[pattern].children) {
+                                        this.hidden_references.add(child.id);
+                                    }
+                                }
+                            }
+                            this.hidden_references.delete(node.id);
+                        } else {
+                            this.hidden_references.add(node.id);
+                        }
+                        this.normalizeReferenceState();
+                        await this.refreshHistory({ skip_references: true });
+                    },
                     async updateFileStatus(file) {
                         // https://stackoverflow.com/questions/71268388/show-renamed-moved-status-with-git-diff-on-single-file
                         const status = await getStatus(this.repo, '--', file.path, ..._.filter([file.old_path]));
@@ -209,21 +288,22 @@
             'repo_details.path': {
                 async handler() {
                     if (this.repo_details.path !== undefined) {
-                        const hidden_references_content = await this.repo.readFile('.git/.quill/hidden-refs.txt', { null_if_not_exists: true });
-                        this.hidden_references = new Set(hidden_references_content?.split('\n') ?? []);
-
+                        await Promise.all(reference_state_files.map(async ([name, filename]) => {
+                            const content = await this.repo.readFile(`.git/.quill/${filename}`, { null_if_not_exists: true });
+                            this[name] = new Set(_.filter(content?.split('\n') ?? []));
+                        }));
                         const config_content = await this.repo.readFile('.git/.quill/config.json5', { null_if_not_exists: true });
                         this.config = Object.freeze(JSON5.parse(config_content ?? '{}'));
                     }
                 },
                 immediate: true,
             },
-            hidden_references: {
+            ...Object.fromEntries(reference_state_files.map(([name, filename]) => [name, {
                 async handler() {
-                    await this.repo.writeFile('.git/.quill/hidden-refs.txt', [...this.hidden_references].join('\n'), { make_directory: true });
+                    await this.repo.writeFile(`.git/.quill/${filename}`, [...this[name]].join('\n'), { make_directory: true });
                 },
                 deep: true,
-            },
+            }])),
         },
         methods: {
             async openRepo() {

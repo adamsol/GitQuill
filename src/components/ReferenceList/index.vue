@@ -24,12 +24,12 @@
                 <recycle-scroller
                     v-if="references_by_type[type] !== undefined"
                     class="grow"
-                    :items="references_by_type[type]"
+                    :items="rows_by_type[type]"
                     :item-size="32"
-                    key-field="name"
+                    key-field="id"
                     v-slot="{ item }"
                 >
-                    <ReferenceRow :key="item.name" :reference="item" />
+                    <ReferenceRow :key="item.id" :node="item" @toggle-group="toggleGroup(item)" />
                 </recycle-scroller>
             </div>
         </pane>
@@ -46,10 +46,34 @@
         mixins: [
             StoreMixin('references_list_pane_sizes', {}),
         ],
-        inject: ['references_by_type'],
+        inject: ['references_by_type', 'reference_tree', 'collapsed_references'],
         computed: {
             reference_types() {
                 return _.without(settings.reference_type_order, 'head');
+            },
+            rows_by_type() {
+                return _.mapValues(this.reference_tree.roots, root => {
+                    const visit = (node) => {
+                        for (const child of node.children) {
+                            rows.push(child);
+                            if (child.is_group && !this.collapsed_references.has(child.id)) {
+                                visit(child);
+                            }
+                        }
+                    };
+                    const rows = [];
+                    visit(root);
+                    return rows;
+                });
+            },
+        },
+        methods: {
+            toggleGroup(group) {
+                if (this.collapsed_references.has(group.id)) {
+                    this.collapsed_references.delete(group.id);
+                } else {
+                    this.collapsed_references.add(group.id);
+                }
             },
         },
     };
