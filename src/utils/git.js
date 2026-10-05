@@ -1,24 +1,32 @@
 
 export async function getStatus(repo, ...args) {
-    // https://git-scm.com/docs/git-status#_short_format
+    // https://git-scm.com/docs/git-status#_porcelain_format_version_2
     // https://stackoverflow.com/questions/28222633/git-status-not-showing-contents-of-newly-added-folder
-    const status = await repo.callGit('status', '--porcelain', '-z', '--untracked-files=all', ...args);
+    const status = await repo.callGit('status', '--porcelain=v2', '-z', '--untracked-files=all', ...args);
     const tokens = status.split('\0');
 
     const files = [];
 
     for (let i = 0; i < tokens.length - 1; ++i) {
         const token = tokens[i];
-        const file = {
-            x: token[0],
-            y: token[1],
-            path: token.slice(3),
-        };
-        // https://stackoverflow.com/questions/73954214/is-it-possible-to-rename-a-file-in-work-tree-without-staging
-        if (['R', 'C'].includes(file.x)) {
-            file.old_path = tokens[++i];
+        const fields = token.split(' ');
+        const type = fields[0];
+
+        if (type === '?') {  // Untracked file.
+            files.push({ x: '.', y: 'A', path: token.slice(2), modes: [] });
+        } else if (['1', '2', 'u'].includes(type)) {
+            const path_index = { 1: 8, 2: 9, u: 10 }[type];
+            const file = {
+                x: fields[1][0],
+                y: fields[1][1],
+                path: fields.slice(path_index).join(' '),
+                modes: fields.slice(3, 6),
+            };
+            if (type === '2') {  // Rename or copy.
+                file.old_path = tokens[++i];
+            }
+            files.push(file);
         }
-        files.push(file);
     }
     const conflict_files = files.filter(file => _.some([
         [file.x, file.y].includes('U'),
@@ -32,19 +40,21 @@ export async function getStatus(repo, ...args) {
         }
         return await getStatus(repo, ...args);
     }
-    const processFiles = files => _.sortBy(_.reject(files, { status: ' ' }), 'path');
+    const processFiles = files => _.sortBy(_.reject(files, { status: '.' }), 'path');
 
     return {
         unstaged: processFiles(files.map(file => ({
-            status: file.y === '?' ? 'A' : file.y,
+            status: file.y,
             path: file.path,
             old_path: file.old_path,
+            modes: file.modes.slice(1),
             area: 'unstaged',
         }))),
         staged: processFiles(files.map(file => ({
-            status: file.x === '?' ? ' ' : file.x,
+            status: file.x,
             path: file.path,
             old_path: file.old_path,
+            modes: file.modes.slice(0, 2),
             area: 'staged',
         }))),
     };

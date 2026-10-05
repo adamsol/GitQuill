@@ -8,6 +8,9 @@
                     <icon name="mdi-arrow-right" class="size-5 inline mx-2" />
                 </template>
                 <file-path :path="file.path" />
+                <span v-if="file_mode_label" class="text-gray text-xs whitespace-nowrap">
+                    ({{ file_mode_label }})
+                </span>
             </template>
             <div v-if="unsaved_changes" title="Unsaved changes">
                 *
@@ -72,7 +75,7 @@
                 class="absolute inset-0 bg-gray-dark text-center pt-2"
             >
                 <div v-if="show_no_changes_message">
-                    No changes
+                    File contents unchanged
                 </div>
                 <div v-else-if="binary">
                     Binary files differ:
@@ -166,6 +169,15 @@
             binary: false,
         }),
         computed: {
+            file_mode_label() {
+                if (!this.file.modes.includes('100755')) {
+                    return '';
+                }
+                if (['A', 'D'].includes(this.file.status) || this.file.modes[0] === this.file.modes[1]) {
+                    return 'executable';
+                }
+                return this.file.modes.map(mode => mode === '100755' ? 'executable' : 'regular').join(' → ');
+            },
             options() {
                 return {
                     hideUnchangedRegions: {

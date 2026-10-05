@@ -319,7 +319,8 @@
                     }
                     let status;
                     try {
-                        status = await this.repo.callGit('diff', ...hashes.reverse(), '--name-status', '-z');
+                        // https://git-scm.com/docs/git-diff#_raw_output_format
+                        status = await this.repo.callGit('diff', ...hashes.reverse(), '--raw', '-z');
                     } finally {
                         if (untracked_paths.length > 0) {
                             await this.repo.callGit('rm', '--cached', '--', ...untracked_paths);
@@ -332,9 +333,11 @@
                     const files = [];
 
                     for (let i = 0; i < tokens.length - 1; ++i) {
+                        const [original_mode, modified_mode, , , status] = tokens[i].slice(1).split(' ');
                         const file = {
-                            status: tokens[i][0],
+                            status: status[0],
                             path: tokens[++i],
+                            modes: [original_mode, modified_mode],
                             area: 'committed',
                         };
                         if (['R', 'C'].includes(file.status)) {
