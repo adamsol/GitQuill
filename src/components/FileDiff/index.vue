@@ -17,7 +17,7 @@
             </div>
             <div class="grow" />
 
-            <template v-if="!binary">
+            <template v-if="!binary && !is_submodule">
                 <select
                     v-model="language"
                     title="Syntax highlighting language (for current file extension)"
@@ -170,13 +170,22 @@
         }),
         computed: {
             file_mode_label() {
-                if (!this.file.modes.includes('100755')) {
+                if (!this.file.modes.includes('100755') && !this.is_submodule) {
                     return '';
                 }
+                const labels = this.file.modes.map(mode => ({
+                    '100755': 'executable',
+                    '160000': 'submodule',
+                })[mode] ?? 'regular');
+
                 if (['A', 'D'].includes(this.file.status) || this.file.modes[0] === this.file.modes[1]) {
-                    return 'executable';
+                    return _.without(labels, '000000')[0];
+                } else {
+                    return labels.join(' → ');
                 }
-                return this.file.modes.map(mode => mode === '100755' ? 'executable' : 'regular').join(' → ');
+            },
+            is_submodule() {
+                return this.file?.modes.includes('160000');
             },
             options() {
                 return {
@@ -190,8 +199,8 @@
                     ignoreTrimWhitespace: !this.whitespace_diff,
                     wordWrap: this.word_wrap ? 'on' : 'off',
 
-                    readOnly: this.file.area === 'committed',
-                    originalEditable: this.file.area === 'unstaged',
+                    readOnly: this.is_submodule || this.file.area === 'committed',
+                    originalEditable: !this.is_submodule && this.file.area === 'unstaged',
 
                     links: false,
                     contextmenu : false,
@@ -212,6 +221,9 @@
                 return parts.length > 1 ? _.last(parts) : _.last(this.file.path.split('/'));
             },
             show_no_changes_message() {
+                if (this.is_submodule) {
+                    return false;
+                }
                 if (this.binary) {
                     return _.isEqual(this.loaded_contents[0], this.loaded_contents[1]);
                 } else {
@@ -241,6 +253,9 @@
                 }
                 this.saved_contents = this.getEditorContents();
 
+                if (this.is_submodule) {
+                    return;
+                }
                 const widgets = [];
 
                 diff_editor.onDidUpdateDiff(async () => {
@@ -299,11 +314,12 @@
                     } else {
                         // https://stackoverflow.com/questions/60853992/how-to-git-show-a-staged-file
                         const rev = file.area === 'unstaged' ? ':0' : revisions_to_diff[1];
+                        const file_path = ['R', 'C'].includes(file.status) ? file.old_path : file.path;
 
-                        if (rev === 'EMPTY_ROOT') {
-                            return new Uint8Array();
+                        if (file.modes[0] === '160000') {
+                            const hash = await this.repo.callGit('rev-parse', `${rev}:${file_path}`);
+                            return new TextEncoder().encode(hash.trim());
                         } else {
-                            const file_path = ['R', 'C'].includes(file.status) ? file.old_path : file.path;
                             return await this.repo.callGit('show', `${rev}:${file_path}`, { as_buffer: true });
                         }
                     }
@@ -315,9 +331,22 @@
                         const rev = file.area === 'staged' ? ':0' : revisions_to_diff[0];
 
                         if (rev === 'WORKING_TREE') {
-                            return await this.repo.readFile(file.path, { as_buffer: true });
+                            if (file.modes[1] === '160000') {
+                                const status = await this.repo.callGit('-C', file.path, 'status', '--branch', '--porcelain=v2', '-z');
+                                const records = status.split('\0');
+                                const hash = records.find(record => record.startsWith('# branch.oid ')).slice(13);  // https://git-scm.com/docs/git-status#_porcelain_format_version_2
+                                const is_dirty = records.some(record => record && !record.startsWith('#'));
+                                return new TextEncoder().encode(hash + (is_dirty ? '-dirty' : ''));
+                            } else {
+                                return await this.repo.readFile(file.path, { as_buffer: true });
+                            }
                         } else {
-                            return await this.repo.callGit('show', `${rev}:${file.path}`, { as_buffer: true });
+                            if (file.modes[1] === '160000') {
+                                const hash = await this.repo.callGit('rev-parse', `${rev}:${file.path}`);
+                                return new TextEncoder().encode(hash.trim());
+                            } else {
+                                return await this.repo.callGit('show', `${rev}:${file.path}`, { as_buffer: true });
+                            }
                         }
                     }
                 };
@@ -338,11 +367,11 @@
                 }
                 this.file = file;
                 this.loaded_contents = contents;
-                this.language = electron.store.get(`language.${this.extension}`, this.languages[0]);
+                this.language = this.is_submodule ? 'plaintext' : electron.store.get(`language.${this.extension}`, this.languages[0]);
                 this.diff_editor = undefined;
             },
             async save() {
-                if (this.diff_editor === undefined) {
+                if (this.diff_editor === undefined || this.is_submodule) {
                     return false;
                 }
                 await this.save_semaphore;
