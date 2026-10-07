@@ -27,7 +27,7 @@
 <script>
     export default {
         inject: [
-            'repo', 'selected_file',
+            'repo', 'current_head', 'selected_file',
             'updateFileStatus', 'saveSelectedFile',
         ],
         props: {
@@ -46,7 +46,8 @@
                     await this.repo.callGit('add', '--', this.file.path);
 
                 } else if (action === 'unstage') {
-                    await this.repo.callGit('restore', '--staged', '--', this.file.path, ..._.filter([this.file.old_path]));
+                    const cmd = this.current_head === undefined ? ['rm', '--cached'] : ['restore', '--staged'];
+                    await this.repo.callGit(...cmd, '--', this.file.path, ..._.filter([this.file.old_path]));
 
                 } else if (action === 'discard') {
                     if (this.file.status === 'A') {

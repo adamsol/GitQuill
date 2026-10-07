@@ -75,7 +75,7 @@
                             label: 'Quick amend' + (this.current_operation?.type === 'rebase' ? ' & proceed' : ''),
                             title: 'Stage all changes and amend the last commit (skipping hooks)' + (this.current_operation?.type === 'rebase' ? ', then proceed with the rebase' : ''),
                             callback: this.amendCommit,
-                            disabled: this.uncommitted_file_count === 0,
+                            disabled: this.uncommitted_file_count === 0 || this.current_head === undefined,
                         },
                     ],
                     {

@@ -243,7 +243,7 @@
 
                     if (head.startsWith(prefix)) {
                         const name = head.slice(prefix.length);
-                        head = _.find(references, { type: 'local_branch', name }).hash;
+                        head = _.find(references, { type: 'local_branch', name })?.hash;
                         this.current_branch_name = name;
                     } else {
                         this.current_branch_name = null;
@@ -301,7 +301,7 @@
                 );
                 const commits = [
                     { hash: 'WORKING_TREE', parents: this.current_head },
-                    ...log.split('\0').map(row => Object.fromEntries(_.zip(Object.keys(format), row.split(field_separator)))),
+                    ..._.filter(log.split('\0')).map(row => Object.fromEntries(_.zip(Object.keys(format), row.split(field_separator)))),
                 ];
                 const occupied_levels = {};
                 const running_commits = new Set();

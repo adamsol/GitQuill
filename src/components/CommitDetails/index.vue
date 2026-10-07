@@ -54,7 +54,7 @@
                 </div>
                 <div v-else class="flex items-center gap-3 justify-end">
                     <label>
-                        <input v-model="amend" type="checkbox" />
+                        <input v-model="amend" :disabled="current_head === undefined" type="checkbox" />
                         Amend
                     </label>
                     <label>
@@ -367,7 +367,8 @@
                     await this.repo.callGit('add', '--all');
 
                 } else if (action === 'unstage') {
-                    await this.repo.callGit('restore', '--staged', '--', '.');
+                    const cmd = this.current_head === undefined ? ['rm', '--cached', '-r'] : ['restore', '--staged'];
+                    await this.repo.callGit(...cmd, '--', '.');
 
                 } else if (action === 'discard') {
                     await Promise.all([
