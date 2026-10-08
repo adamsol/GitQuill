@@ -52,7 +52,7 @@
                 <hr class="ml-2 mr-1" />
             </template>
 
-            <btn title="Close file" @click="close">
+            <btn title="Close file (Esc)" @click="close">
                 <icon name="mdi-close" class="size-6" />
             </btn>
         </div>

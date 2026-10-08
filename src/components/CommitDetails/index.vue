@@ -34,15 +34,7 @@
                                     {{ $_.title(action) }} all
                                 </btn>
                             </div>
-                            <recycle-scroller
-                                class="grow"
-                                :items="files[area]"
-                                :item-size="36"
-                                key-field="path"
-                                v-slot="{ item }"
-                            >
-                                <FileRow :key="item.path" :file="item" />
-                            </recycle-scroller>
+                            <FileList :files="files[area]" :item_size="36" />
                         </div>
                     </pane>
                 </splitpanes>
@@ -187,15 +179,7 @@
             </template>
 
             <hr class="my-2" />
-            <recycle-scroller
-                class="grow"
-                :items="files.committed"
-                :item-size="32"
-                key-field="path"
-                v-slot="{ item }"
-            >
-                <FileRow :key="item.path" :file="item" />
-            </recycle-scroller>
+            <FileList :files="files.committed" :item_size="32" />
         </div>
     </div>
 </template>
@@ -206,7 +190,7 @@
 
     import BranchModal from './BranchModal';
     import CommitterDetails from './CommitterDetails';
-    import FileRow from './FileRow';
+    import FileList from './FileList';
     import TagModal from './TagModal';
 
     export default {
@@ -214,7 +198,7 @@
             StoreMixin('unstaged_pane_size', 50),
             StoreMixin('commit_pane_size', 15),
         ],
-        components: { BranchModal, CommitterDetails, FileRow, TagModal },
+        components: { BranchModal, CommitterDetails, FileList, TagModal },
         inject: [
             'repo', 'commits', 'commit_by_hash', 'selected_commits', 'revisions_to_diff',
             'current_branch_name', 'current_head', 'current_operation',
