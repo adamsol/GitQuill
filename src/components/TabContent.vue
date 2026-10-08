@@ -206,7 +206,7 @@
             error_messages: [],
         }),
         watch: {
-            repo_details: {
+            'repo_details.path': {
                 async handler() {
                     if (this.repo_details.path !== undefined) {
                         const hidden_references_content = await this.repo.readFile('.git/.quill/hidden-refs.txt', { null_if_not_exists: true });
@@ -216,7 +216,6 @@
                         this.config = Object.freeze(JSON5.parse(config_content ?? '{}'));
                     }
                 },
-                deep: true,
                 immediate: true,
             },
             hidden_references: {
@@ -232,7 +231,7 @@
                 if (path !== undefined) {
                     path = path.replace(/\\/g, '/');
                     this.repo_details.path = path;
-                    this.repo_details.title ??= path.slice(path.lastIndexOf('/') + 1);
+                    this.repo_details.title ||= path.slice(path.lastIndexOf('/') + 1);
                 }
             },
         },
