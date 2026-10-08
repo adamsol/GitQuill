@@ -11,9 +11,14 @@
         </div>
         <file-path class="grow" :path="file.path" />
 
-        <div class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
+        <LineChanges v-if="file.line_changes !== undefined" :changes="file.line_changes" />
+
+        <div
+            v-if="file.area !== 'committed'"
+            class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible"
+        >
             <btn
-                v-for="action in file.area === 'unstaged' ? ['discard', 'stage'] : file.area === 'staged' ? ['unstage'] : []"
+                v-for="action in { unstaged: ['discard', 'stage'], staged: ['unstage'] }[file.area]"
                 :click_twice="action === 'discard' && 'text-red'"
                 :title="$_.title(action)"
                 @click="run(action)"
@@ -25,7 +30,10 @@
 </template>
 
 <script>
+    import LineChanges from './LineChanges';
+
     export default {
+        components: { LineChanges },
         inject: [
             'repo', 'current_head', 'selected_file',
             'updateFileStatus', 'saveSelectedFile',

@@ -2,7 +2,6 @@
 <template>
     <recycle-scroller
         v-slot="{ item }"
-        class="grow"
         :items="files"
         :item-size="item_size"
         key-field="path"

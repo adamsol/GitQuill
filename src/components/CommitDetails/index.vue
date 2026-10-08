@@ -179,7 +179,14 @@
             </template>
 
             <hr class="my-2" />
-            <FileList :files="files.committed" :item_size="32" />
+            <FileList class="[scrollbar-gutter:stable]" :files="files.committed" :item_size="32" />
+
+            <div v-if="total_line_changes !== null" class="shrink-0 overflow-y-auto [scrollbar-gutter:stable]">
+                <hr class="my-2" />
+                <div class="row justify-end">
+                    <LineChanges :changes="total_line_changes" />
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -191,6 +198,7 @@
     import BranchModal from './BranchModal';
     import CommitterDetails from './CommitterDetails';
     import FileList from './FileList';
+    import LineChanges from './LineChanges';
     import TagModal from './TagModal';
 
     export default {
@@ -198,7 +206,7 @@
             StoreMixin('unstaged_pane_size', 50),
             StoreMixin('commit_pane_size', 15),
         ],
-        components: { BranchModal, CommitterDetails, FileList, TagModal },
+        components: { BranchModal, CommitterDetails, FileList, LineChanges, TagModal },
         inject: [
             'repo', 'commits', 'commit_by_hash', 'selected_commits', 'revisions_to_diff',
             'current_branch_name', 'current_head', 'current_operation',
@@ -220,6 +228,13 @@
             },
             working_tree_selected() {
                 return _.some(this.current_commits, { hash: 'WORKING_TREE' });
+            },
+            total_line_changes() {
+                const non_binary_files = _.filter(this.files.committed, file => file.line_changes.added !== undefined);
+                return non_binary_files.length > 1 ? {
+                    added: _.sumBy(non_binary_files, 'line_changes.added'),
+                    removed: _.sumBy(non_binary_files, 'line_changes.removed'),
+                } : null;
             },
             can_edit() {
                 if (this.current_operation !== null) {
@@ -304,7 +319,7 @@
                     let status;
                     try {
                         // https://git-scm.com/docs/git-diff#_raw_output_format
-                        status = await this.repo.callGit('diff', ...hashes.reverse(), '--raw', '-z');
+                        status = await this.repo.callGit('diff', ...hashes.reverse(), '--raw', '--numstat', '--ignore-all-space', '-z');
                     } finally {
                         if (untracked_paths.length > 0) {
                             await this.repo.callGit('rm', '--cached', '--', ...untracked_paths);
@@ -315,21 +330,41 @@
                     }
                     const tokens = status.split('\0');
                     const files = [];
+                    let i = 0;
 
-                    for (let i = 0; i < tokens.length - 1; ++i) {
-                        const [original_mode, modified_mode, , , status] = tokens[i].slice(1).split(' ');
+                    // Git outputs all raw records before the numstat records.
+                    while (tokens[i].startsWith(':')) {
+                        const [original_mode, modified_mode, , , status] = tokens[i++].slice(1).split(' ');
                         const file = {
                             status: status[0],
-                            path: tokens[++i],
+                            path: tokens[i++],
                             modes: [original_mode, modified_mode],
                             area: 'committed',
+                            line_changes: { added: 0, removed: 0 },  // For files with only whitespace changes.
                         };
                         if (['R', 'C'].includes(file.status)) {
                             // Note: the order is different to that of `git status -z`.
                             file.old_path = file.path;
-                            file.path = tokens[++i];
+                            file.path = tokens[i++];
                         }
                         files.push(file);
+                    }
+                    const files_by_path = _.keyBy(files, 'path');
+
+                    while (i < tokens.length - 1) {
+                        const token = tokens[i++];
+                        const first_tab = token.indexOf('\t');
+                        const second_tab = token.indexOf('\t', first_tab + 1);
+                        const added = token.slice(0, first_tab);
+                        const removed = token.slice(first_tab + 1, second_tab);
+                        let path = token.slice(second_tab + 1);
+
+                        if (path === '') {
+                            // Renames and copies have separate \0-delimited old and new paths.
+                            i += 1;
+                            path = tokens[i++];
+                        }
+                        files_by_path[path].line_changes = added === '-' ? {} : { added: +added, removed: +removed };
                     }
                     this.files = Object.freeze({ committed: files });
 
