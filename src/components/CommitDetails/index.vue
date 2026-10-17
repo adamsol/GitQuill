@@ -483,6 +483,7 @@
                 }
                 try {
                     if (this.files.staged.length > 0) {
+                        await this.repo.callGit('diff', '--check', '--cached');
                         // https://stackoverflow.com/questions/43489971/how-to-suppress-the-editor-for-git-rebase-continue
                         const noop = 'node --eval ""';
                         await this.repo.callGit('-c', `core.editor=${noop}`, this.current_operation.type, '--continue');
