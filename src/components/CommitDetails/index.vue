@@ -25,13 +25,13 @@
                                     {{ $_.title(area) }} files
                                 </div>
                                 <btn
-                                    v-for="action in area === 'unstaged' ? ['discard', 'stage'] : ['unstage']"
+                                    v-for="action in area === 'unstaged' ? ['save_wip', 'discard', 'stage'] : ['unstage']"
                                     :click_twice="action === 'discard' && 'text-red'"
                                     :disabled="files[area].length === 0"
                                     @click="run(action)"
                                 >
                                     <icon :name="$settings.icons[action]" class="size-5" />
-                                    {{ $_.title(action) }} all
+                                    {{ action === 'save_wip' ? 'Save WIP' : $_.title(action) + ' all' }}
                                 </btn>
                             </div>
                             <FileList :files="files[area]" :item_size="36" />
@@ -193,6 +193,7 @@
 
 <script>
     import StoreMixin from '@/mixins/StoreMixin';
+    import { saveWip } from '@/utils/actions';
     import { getEmptyRootHash } from '@/utils/git';
 
     import BranchModal from './BranchModal';
@@ -394,7 +395,9 @@
                         this.repo.callGit('clean', '--force', '--', '.'),
                         this.repo.callGit('checkout', '--', '.'),
                     ]);
-                }
+                } else if (action === 'save_wip') {
+                    await saveWip.call(this, true);
+                } 
                 await this.refreshStatus();
             },
             async doCommit() {

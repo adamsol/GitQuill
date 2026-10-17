@@ -24,7 +24,7 @@
 
 <script>
     import WindowEventMixin from '@/mixins/WindowEventMixin';
-    import { restoreWip } from '@/utils/actions';
+    import { restoreWip, saveWip } from '@/utils/actions';
 
     import BranchModal from './BranchModal';
 
@@ -58,7 +58,7 @@
                             callback: () => this.show_branch_modal = true,
                         },
                         {
-                            icon: 'mdi-archive-arrow-down-outline',
+                            icon: settings.icons.save_wip,
                             label: 'Save WIP',
                             callback: this.saveWip,
                             disabled: this.uncommitted_file_count === 0,
@@ -101,21 +101,7 @@
         },
         methods: {
             async saveWip() {
-                await this.saveSelectedFile();
-
-                // https://stackoverflow.com/questions/17415579/how-to-iso-8601-format-a-date-with-timezone-offset-in-javascript
-                const formatted_time = new Date().toLocaleString('sv').replace(/\D/g, '');
-                await Promise.all([
-                    this.repo.callGit('checkout', '-b', settings.wip_prefix + formatted_time),
-                    this.repo.callGit('add', '--all'),
-                ]);
-                await this.repo.callGit('commit', '--message', 'WIP', '--no-verify');
-                await this.repo.callGit('checkout', this.current_branch_name ?? this.current_head);
-
-                await Promise.all([
-                    this.refreshHistory(),
-                    this.refreshStatus(),
-                ]);
+                await saveWip.call(this);
             },
             async restoreWip() {
                 await this.saveSelectedFile();

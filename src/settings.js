@@ -3,6 +3,7 @@ export const icons = {
     stage: 'mdi-check',
     unstage: 'mdi-arrow-u-left-top',
     discard: 'mdi-delete-alert',
+    save_wip: 'mdi-archive-arrow-down-outline',
 
     tag: 'mdi-tag-outline',
     local_branch: 'mdi-source-branch',
