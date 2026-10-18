@@ -125,6 +125,9 @@
                         <icon name="mdi-backup-restore" class="size-5" />
                         Revert {{ current_commits.length > 1 ? `${current_commits.length} commits` : '' }}
                     </btn>
+                    <copy-btn v-if="current_commits.length <= 2" :callback="getDiffToCopy" icon_class="size-5">
+                        Copy diff
+                    </copy-btn>
                     <btn v-if="current_commits.length === 1" :disabled="!can_edit" @click="startRebase">
                         <icon name="mdi-file-edit-outline" class="size-5" />
                         Edit (Rebase)
@@ -299,16 +302,6 @@
                     this.files = this.working_tree_files;
 
                 } else if (current_commits.length <= 2) {
-                    const hashes = [];
-                    for (const hash of revisions_to_diff) {
-                        if (hash === 'WORKING_TREE') {
-                            continue;
-                        } else if (hash === 'EMPTY_ROOT') {
-                            hashes.push(await getEmptyRootHash(this.repo));
-                        } else {
-                            hashes.push(hash);
-                        }
-                    }
                     let untracked_paths = [];
                     if (revisions_to_diff[0] === 'WORKING_TREE') {
                         // https://stackoverflow.com/questions/855767/can-i-use-git-diff-on-untracked-files
@@ -319,8 +312,9 @@
                     }
                     let status;
                     try {
+                        const hashes = await this.getDiffHashes();
                         // https://git-scm.com/docs/git-diff#_raw_output_format
-                        status = await this.repo.callGit('diff', ...hashes.reverse(), '--raw', '--numstat', '--ignore-all-space', '-z');
+                        status = await this.repo.callGit('diff', ...hashes, '--raw', '--numstat', '--ignore-all-space', '-z');
                     } finally {
                         if (untracked_paths.length > 0) {
                             await this.repo.callGit('rm', '--cached', '--', ...untracked_paths);
@@ -379,6 +373,16 @@
                     const file = this.files[area].find(file => file.path >= this.selected_file.path);
                     this.selected_file = file ?? _.last(this.files[area]) ?? null;
                 }
+            },
+            async getDiffHashes() {
+                const hashes = [];
+
+                for (const hash of this.revisions_to_diff) {
+                    if (hash !== 'WORKING_TREE') {
+                        hashes.push(hash === 'EMPTY_ROOT' ? await getEmptyRootHash(this.repo) : hash);
+                    }
+                }
+                return hashes.reverse();
             },
             async run(action) {
                 await this.saveSelectedFile();
@@ -448,6 +452,10 @@
                         this.refreshStatus(),
                     ]);
                 }
+            },
+            async getDiffToCopy() {
+                const hashes = await this.getDiffHashes();
+                return await this.repo.callGit('diff', ...hashes, `--unified=${electron.store.get('context_line_count', 3)}`);
             },
             async startRebase() {
                 const commit = this.commit;
