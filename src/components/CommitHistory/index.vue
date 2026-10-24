@@ -122,6 +122,8 @@
 </template>
 
 <script>
+    import diacritics from 'diacritics';
+
     import ElectronEventMixin from '@/mixins/ElectronEventMixin';
     import StoreMixin from '@/mixins/StoreMixin';
     import WindowEventMixin from '@/mixins/WindowEventMixin';
@@ -417,14 +419,16 @@
                 }
                 // https://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
                 const regexes = this.search_query.split(/\s+/).map(term =>
-                    new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+                    new RegExp(diacritics.remove(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
                 );
                 const found = [];
 
                 for (const [i, commit] of this.commits.entries()) {
                     if (i > 0) {
-                        const values = ['hash', 'subject', 'body', 'author_name', 'committer_name'].map(attr => commit[attr]);
-                        values.push(..._.map(commit.references, 'name'));
+                        const values = [
+                            ...['hash', 'subject', 'body', 'author_name', 'committer_name'].map(attr => commit[attr]),
+                            ..._.map(commit.references, 'name'),
+                        ].map(diacritics.remove);
 
                         if (_.every(regexes, regex => _.some(values, value => regex.test(value)))) {
                             found.push(commit.hash);
