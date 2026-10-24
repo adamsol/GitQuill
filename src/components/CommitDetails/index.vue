@@ -21,9 +21,11 @@
                         <div class="flex flex-col h-full">
                             <hr v-if="i > 0" class="mb-2" />
                             <div class="flex items-center gap-1 mb-2">
-                                <div class="grow">
-                                    {{ $_.title(area) }} files
-                                </div>
+                                <panel-header
+                                    :count="files[area].length"
+                                    :icon="$settings.icons[area]"
+                                    :label="`${$_.title(area)} files`"
+                                />
                                 <btn
                                     v-for="action in area === 'unstaged' ? ['save_wip', 'discard', 'stage'] : ['unstage']"
                                     :click_twice="action === 'discard' && 'text-red'"

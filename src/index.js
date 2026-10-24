@@ -20,6 +20,7 @@ import CopyBtn from './widgets/copy-btn';
 import FilePath from './widgets/file-path';
 import Icon from './widgets/icon';
 import Modal from './widgets/modal';
+import PanelHeader from './widgets/panel-header';
 import Toggle from './widgets/toggle';
 
 window._ = _;
@@ -41,6 +42,7 @@ app.component('CopyBtn', CopyBtn);
 app.component('FilePath', FilePath);
 app.component('Icon', Icon);
 app.component('Modal', Modal);
+app.component('PanelHeader', PanelHeader);
 app.component('Toggle', Toggle);
 
 for (const lang of ['css', 'scss', 'less']) {

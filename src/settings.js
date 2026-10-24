@@ -5,6 +5,9 @@ export const icons = {
     discard: 'mdi-delete-alert',
     save_wip: 'mdi-archive-arrow-down-outline',
 
+    unstaged: 'mdi-file-outline',
+    staged: 'mdi-file-plus-outline',
+
     tag: 'mdi-tag-outline',
     local_branch: 'mdi-source-branch',
     remote_branch: 'mdi-cloud-outline',
