@@ -27,8 +27,6 @@
                         {{ lang }}
                     </option>
                 </select>
-                <hr class="mx-2" />
-
                 <input
                     v-if="collapse_unchanged_regions"
                     v-model="context_line_count"
@@ -46,7 +44,11 @@
                 <toggle v-model:active="whitespace_diff" title="Show leading/trailing whitespace diff">
                     <icon name="mdi-keyboard-space" class="size-6" />
                 </toggle>
-                <toggle v-model:active="word_wrap" title="Word wrap">
+                <toggle
+                    v-model:active="word_wrap"
+                    title="Word wrap (for current file extension)"
+                    @update:active="onSelectWordWrap"
+                >
                     <icon name="mdi-wrap" class="size-6" />
                 </toggle>
                 <hr class="ml-2 mr-1" />
@@ -148,7 +150,6 @@
             StoreMixin('side_by_side_view', true),
             StoreMixin('side_by_side_ratio', 0.5),
             StoreMixin('whitespace_diff', true),
-            StoreMixin('word_wrap', false),
 
             ElectronEventMixin('window-blur', 'save'),
 
@@ -165,6 +166,7 @@
             diff_hunk_count: undefined,
             unsaved_changes: false,
             language: undefined,
+            word_wrap: undefined,
             languages: ['plaintext', ..._.map(monaco_metadata.languages, 'label')],
             binary: false,
         }),
@@ -371,6 +373,7 @@
                 this.file = file;
                 this.loaded_contents = contents;
                 this.language = this.is_submodule ? 'plaintext' : electron.store.get(`language.${this.extension}`, this.languages[0]);
+                this.word_wrap = electron.store.get(`word_wrap.${this.extension}`, false);
                 this.diff_editor = undefined;
             },
             async save() {
@@ -435,6 +438,9 @@
             },
             onSelectLanguage() {
                 electron.store.set(`language.${this.extension}`, this.language);
+            },
+            onSelectWordWrap() {
+                electron.store.set(`word_wrap.${this.extension}`, this.word_wrap);
             },
         },
     };
