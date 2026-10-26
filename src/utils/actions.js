@@ -1,10 +1,7 @@
 
-async function runCherryPickNoCommit(rev) {
-    try {
-        await this.repo.callGit('cherry-pick', rev, '--no-commit');
-    } finally {
-        await this.repo.deleteFile('.git/MERGE_MSG');  // To avoid a misleading conflict message when rebasing.
-    }
+async function applyCommitPatch(rev, { to_index = false } = {}) {
+    const diff = await this.repo.callGit('diff', '--binary', `${rev}^`, rev);
+    await this.repo.callGit('apply', ...(to_index ? ['--index'] : []), { input: diff });
 }
 
 export async function saveWip(unstaged_only = false) {
@@ -27,7 +24,7 @@ export async function saveWip(unstaged_only = false) {
         await this.repo.callGit('commit', '--message', 'WIP', '--no-verify');
         await this.repo.callGit('checkout', this.current_branch_name ?? this.current_head);
         if (unstaged_only) {
-            await runCherryPickNoCommit.call(this, `${wip_name}^`);
+            await applyCommitPatch.call(this, `${wip_name}^`, { to_index: true });
         }
     } finally {
         await Promise.all([
@@ -39,7 +36,7 @@ export async function saveWip(unstaged_only = false) {
 
 export async function restoreWip(branch) {
     try {
-        await runCherryPickNoCommit.call(this, branch.hash);
+        await applyCommitPatch.call(this, branch.hash);
 
         const msg = `Deleted local branch: ${branch.name} (was ${branch.hash})`;
         await this.repo.callGit('branch', '--delete', branch.name, '--force', { msg });

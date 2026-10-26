@@ -114,7 +114,7 @@ app.whenReady().then(async () => {
             options = args.at(-1);
             args = args.slice(0, -1);
         }
-        const { as_buffer = false } = options;
+        const { as_buffer = false, input } = options;
 
         const run = async () => await log(
             repo_path,
@@ -122,6 +122,11 @@ app.whenReady().then(async () => {
             () => new Promise((resolve, reject) => {
                 const stdout = [], stderr = [];
                 const process = spawn('git', args, { cwd: repo_path });
+
+                if (input !== undefined) {
+                    process.stdin.write(input);
+                    process.stdin.end();
+                }
                 process.stdout.on('data', buffer => stdout.push(buffer));
                 process.stderr.setEncoding('utf8');
                 process.stderr.on('data', buffer => stderr.push(buffer));
