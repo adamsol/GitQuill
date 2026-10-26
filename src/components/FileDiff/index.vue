@@ -175,13 +175,13 @@
                 if (!this.file.modes.includes('100755') && !this.is_submodule) {
                     return '';
                 }
-                const labels = this.file.modes.map(mode => ({
+                const labels = _.without(this.file.modes, '000000').map(mode => ({
                     '100755': 'executable',
                     '160000': 'submodule',
                 })[mode] ?? 'regular');
 
                 if (['A', 'D'].includes(this.file.status) || this.file.modes[0] === this.file.modes[1]) {
-                    return _.without(labels, '000000')[0];
+                    return labels[0];
                 } else {
                     return labels.join(' → ');
                 }
