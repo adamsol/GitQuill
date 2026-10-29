@@ -1,5 +1,6 @@
 
 import * as monaco from 'monaco-editor';
+import { language as python_language } from 'monaco-editor/esm/vs/basic-languages/python/python';
 import { Splitpanes, Pane } from 'splitpanes';
 import { createApp } from 'vue';
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
@@ -49,6 +50,11 @@ for (const lang of ['css', 'scss', 'less']) {
     // https://github.com/atularen/ngx-monaco-editor/issues/61
     monaco.languages.css[`${lang}Defaults`].setOptions({ validate: false });
 }
+const python_builtin_names_start = python_language.keywords.indexOf('int');
+python_language.keywords = _.without(
+    python_language.keywords.slice(0, python_builtin_names_start),
+    '_', 'case', 'exec', 'match', 'print', 'type',
+);
 monaco.editor.defineTheme('custom', monaco_theme);
 
 app.use(VueMonacoEditorPlugin, { monaco });
