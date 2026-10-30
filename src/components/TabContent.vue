@@ -106,6 +106,7 @@
                     collapsed_references: new Set(),
                     commits: undefined,
                     selected_commits: [],
+                    diff_reversed: undefined,
                     current_branch_name: null,
                     current_operation: null,
                     working_tree_files: undefined,
@@ -171,10 +172,11 @@
                         if (this.selected_commits.length === 1) {
                             const commit = this.commit_by_hash[this.selected_commits[0]];
                             const parent = commit.hash === 'WORKING_TREE' ? 'HEAD' : commit.parents[0] ?? 'EMPTY_ROOT';
-                            return [commit.hash, parent];
+                            return [parent, commit.hash];
 
                         } else if (this.selected_commits.length === 2) {
-                            return _.sortBy(this.selected_commits, hash => this.commit_by_hash[hash].index);
+                            const order = this.diff_reversed ? 'asc' : 'desc';
+                            return _.orderBy(this.selected_commits, hash => this.commit_by_hash[hash].index, order);
                         }
                     },
                     current_head() {
@@ -197,9 +199,13 @@
                     },
                     setSelectedCommits(hashes) {
                         this.selected_commits = hashes;
+                        this.diff_reversed = false;
                         if (hashes.length > 0) {
                             this.setSelectedReference(null);
                         }
+                    },
+                    toggleDiffOrder() {
+                        this.diff_reversed = !this.diff_reversed;
                     },
                     isCurrentBranch(reference) {
                         return reference.type === 'local_branch' && reference.name === this.current_branch_name || reference.type === 'head';

@@ -318,10 +318,12 @@
                         return new Uint8Array();
                     } else {
                         // https://stackoverflow.com/questions/60853992/how-to-git-show-a-staged-file
-                        const rev = file.area === 'unstaged' ? ':0' : revisions_to_diff[1];
+                        const rev = file.area === 'unstaged' ? ':0' : revisions_to_diff[0];
                         const file_path = ['R', 'C'].includes(file.status) ? file.old_path : file.path;
 
-                        if (file.modes[0] === '160000') {
+                        if (rev === 'WORKING_TREE') {
+                            return await this.getWorkingTreeContents(file_path, file.modes[0]);
+                        } else if (file.modes[0] === '160000') {
                             const hash = await this.repo.callGit('rev-parse', `${rev}:${file_path}`);
                             return new TextEncoder().encode(hash.trim());
                         } else {
@@ -333,18 +335,10 @@
                     if (file.status === 'D') {
                         return new Uint8Array();
                     } else {
-                        const rev = file.area === 'staged' ? ':0' : revisions_to_diff[0];
+                        const rev = file.area === 'staged' ? ':0' : revisions_to_diff[1];
 
                         if (rev === 'WORKING_TREE') {
-                            if (file.modes[1] === '160000') {
-                                const status = await this.repo.callGit('-C', file.path, 'status', '--branch', '--porcelain=v2', '-z');
-                                const records = status.split('\0');
-                                const hash = records.find(record => record.startsWith('# branch.oid ')).slice(13);  // https://git-scm.com/docs/git-status#_porcelain_format_version_2
-                                const is_dirty = records.some(record => record && !record.startsWith('#'));
-                                return new TextEncoder().encode(hash + (is_dirty ? '-dirty' : ''));
-                            } else {
-                                return await this.repo.readFile(file.path, { as_buffer: true });
-                            }
+                            return await this.getWorkingTreeContents(file.path, file.modes[1]);
                         } else {
                             if (file.modes[1] === '160000') {
                                 const hash = await this.repo.callGit('rev-parse', `${rev}:${file.path}`);
@@ -375,6 +369,16 @@
                 this.language = this.is_submodule ? 'plaintext' : electron.store.get(`language.${this.extension}`, this.languages[0]);
                 this.word_wrap = electron.store.get(`word_wrap.${this.extension}`, false);
                 this.diff_editor = undefined;
+            },
+            async getWorkingTreeContents(file_path, file_mode) {
+                if (file_mode === '160000') {
+                    const submodule_status = await this.repo.callGit('-C', file_path, 'status', '--branch', '--porcelain=v2', '-z');
+                    const records = submodule_status.split('\0');
+                    const hash = records.find(record => record.startsWith('# branch.oid ')).slice(13);  // https://git-scm.com/docs/git-status#_porcelain_format_version_2
+                    const is_dirty = records.some(record => record && !record.startsWith('#'));
+                    return new TextEncoder().encode(hash + (is_dirty ? '-dirty' : ''));
+                }
+                return await this.repo.readFile(file_path, { as_buffer: true });
             },
             async save() {
                 if (this.diff_editor === undefined || this.is_submodule) {

@@ -138,8 +138,11 @@
                     <TagModal v-if="show_tag_modal" :commit @close="show_tag_modal = false" />
                 </template>
             </div>
-            <div v-if="current_commits.length === 2" class="mb-2">
+            <div v-if="current_commits.length === 2" class="flex items-center justify-between mb-2">
                 Diff between...
+                <toggle :active="diff_reversed" title="Reverse diff direction" @update:active="toggleDiffOrder">
+                    <icon name="mdi-swap-horizontal" class="size-5" />
+                </toggle>
             </div>
             <hr v-if="current_commits.length > 1" class="mb-2" />
 
@@ -147,14 +150,22 @@
                 <template v-for="(c, i) in current_commits">
                     <hr v-if="i > 0" class="my-2" />
 
-                    <div v-if="c.hash === 'WORKING_TREE'" class="text-xl italic">
-                        Working tree
-                    </div>
+                    <div class="flex items-end justify-between gap-2">
+                        <div class="min-w-0">
+                            <div v-if="c.hash === 'WORKING_TREE'" class="text-xl italic">
+                                Working tree
+                            </div>
 
-                    <div v-else>
-                        <commit-hash :hash="c.hash" />
-                        <div class="text-xl">
-                            <commit-message :content="c.subject" />
+                            <div v-else>
+                                <commit-hash :hash="c.hash" />
+                                <div class="text-xl">
+                                    <commit-message :content="c.subject" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="current_commits.length === 2" class="text-sm text-gray">
+                            ({{ ['base', 'target'][revisions_to_diff.indexOf(c.hash)] }})
                         </div>
                     </div>
                 </template>
@@ -214,10 +225,10 @@
         ],
         components: { BranchModal, CommitterDetails, FileList, LineChanges, TagModal },
         inject: [
-            'repo', 'commits', 'commit_by_hash', 'selected_commits', 'revisions_to_diff',
+            'repo', 'commits', 'commit_by_hash', 'selected_commits', 'diff_reversed', 'revisions_to_diff',
             'current_branch_name', 'current_head', 'current_operation',
             'working_tree_files', 'uncommitted_file_count', 'selected_file',
-            'setSelectedCommits', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
+            'setSelectedCommits', 'toggleDiffOrder', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
             current_commits: undefined,
@@ -266,7 +277,7 @@
                 this.amend = false;
                 this.skip_hooks = false;
             },
-            async selected_commits() {
+            async revisions_to_diff() {
                 await this.load();
             },
             async working_tree_files() {
@@ -305,7 +316,7 @@
 
                 } else if (current_commits.length <= 2) {
                     let untracked_paths = [];
-                    if (revisions_to_diff[0] === 'WORKING_TREE') {
+                    if (revisions_to_diff.includes('WORKING_TREE')) {
                         // https://stackoverflow.com/questions/855767/can-i-use-git-diff-on-untracked-files
                         untracked_paths = _.map(_.filter(this.working_tree_files.unstaged, { status: 'A' }), 'path');
                         if (untracked_paths.length > 0) {
@@ -314,9 +325,9 @@
                     }
                     let status;
                     try {
-                        const hashes = await this.getDiffHashes();
+                        const diff_args = await this.getDiffArgs();
                         // https://git-scm.com/docs/git-diff#_raw_output_format
-                        status = await this.repo.callGit('diff', ...hashes, '--raw', '--numstat', '--ignore-all-space', '-z');
+                        status = await this.repo.callGit('diff', ...diff_args, '--raw', '--numstat', '--ignore-all-space', '-z');
                     } finally {
                         if (untracked_paths.length > 0) {
                             await this.repo.callGit('rm', '--cached', '--', ...untracked_paths);
@@ -376,15 +387,18 @@
                     this.selected_file = file ?? _.last(this.files[area]) ?? null;
                 }
             },
-            async getDiffHashes() {
-                const hashes = [];
+            async getDiffArgs() {
+                const args = [];
 
                 for (const hash of this.revisions_to_diff) {
                     if (hash !== 'WORKING_TREE') {
-                        hashes.push(hash === 'EMPTY_ROOT' ? await getEmptyRootHash(this.repo) : hash);
+                        args.push(hash === 'EMPTY_ROOT' ? await getEmptyRootHash(this.repo) : hash);
                     }
                 }
-                return hashes.reverse();
+                if (this.revisions_to_diff[0] === 'WORKING_TREE') {
+                    args.push('-R');
+                }
+                return args;
             },
             async run(action) {
                 await this.saveSelectedFile();
@@ -456,8 +470,8 @@
                 }
             },
             async getDiffToCopy() {
-                const hashes = await this.getDiffHashes();
-                return await this.repo.callGit('diff', ...hashes, `--unified=${electron.store.get('context_line_count', 3)}`);
+                const diff_args = await this.getDiffArgs();
+                return await this.repo.callGit('diff', ...diff_args, `--unified=${electron.store.get('context_line_count', 3)}`);
             },
             async startRebase() {
                 const commit = this.commit;
