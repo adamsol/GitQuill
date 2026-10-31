@@ -11,21 +11,27 @@
         </div>
         <file-path class="grow" :path="file.path" />
 
-        <LineChanges v-if="file.line_changes !== undefined" :changes="file.line_changes" />
-
-        <div
-            v-if="file.area !== 'committed'"
-            class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible"
-        >
-            <btn
-                v-for="action in { unstaged: ['discard', 'stage'], staged: ['unstage'] }[file.area]"
-                :click_twice="action === 'discard' && 'text-red'"
-                :title="$_.title(action)"
-                @click="run(action)"
-            >
-                <icon :name="$settings.icons[action]" class="size-5" />
-            </btn>
+        <div class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
+            <copy-btn
+                v-if="file.area === 'committed'"
+                :callback="() => diff_callback(file)"
+                class="-mr-2"
+                icon_class="size-5"
+                title="Copy file diff to clipboard"
+            />
+            <template v-else>
+                <btn
+                    v-for="action in { unstaged: ['discard', 'stage'], staged: ['unstage'] }[file.area]"
+                    :click_twice="action === 'discard' && 'text-red'"
+                    :title="$_.title(action)"
+                    @click="run(action)"
+                >
+                    <icon :name="$settings.icons[action]" class="size-5" />
+                </btn>
+            </template>
         </div>
+
+        <LineChanges v-if="file.area === 'committed'" :changes="file.line_changes" />
     </div>
 </template>
 
@@ -40,6 +46,7 @@
         ],
         props: {
             file: { type: Object, required: true },
+            diff_callback: { type: Function, default: undefined },
         },
         computed: {
             active() {

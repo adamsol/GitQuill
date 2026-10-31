@@ -1,7 +1,7 @@
 
 <template>
     <btn title="Copy to clipboard" @click="copy">
-        <icon :name="copied ? 'mdi-check' : 'mdi-content-copy'" :class="icon_class" />
+        <icon :name="copied ? 'mdi-check' : 'mdi-content-copy'" class="py-[1px]" :class="icon_class" />
         <slot />
     </btn>
 </template>

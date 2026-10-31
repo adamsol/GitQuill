@@ -36,7 +36,7 @@
                                     {{ action === 'save_wip' ? 'Save WIP' : $_.title(action) + ' all' }}
                                 </btn>
                             </div>
-                            <FileList :files="files[area]" :item_size="36" />
+                            <FileList :files="files[area]" />
                         </div>
                     </pane>
                 </splitpanes>
@@ -195,7 +195,11 @@
             </template>
 
             <hr class="my-2" />
-            <FileList class="[scrollbar-gutter:stable]" :files="files.committed" :item_size="32" />
+            <FileList
+                class="[scrollbar-gutter:stable]"
+                :files="files.committed"
+                :diff_callback="getDiffToCopy"
+            />
 
             <div v-if="total_line_changes !== null" class="shrink-0 overflow-y-auto [scrollbar-gutter:stable]">
                 <hr class="my-2" />
@@ -469,9 +473,12 @@
                     ]);
                 }
             },
-            async getDiffToCopy() {
+            async getDiffToCopy(file) {
                 const diff_args = await this.getDiffArgs();
-                return await this.repo.callGit('diff', ...diff_args, `--unified=${electron.store.get('context_line_count', 3)}`);
+                return await this.repo.callGit(
+                    'diff', ...diff_args, `--unified=${electron.store.get('context_line_count', 3)}`,
+                    ...file === undefined ? [] : ['--', ..._.filter([file.old_path, file.path])],
+                );
             },
             async startRebase() {
                 const commit = this.commit;

@@ -3,13 +3,13 @@
     <recycle-scroller
         v-slot="{ item }"
         :items="files"
-        :item-size="item_size"
+        :item-size="36"
         key-field="path"
         tabindex="0"
         @click="$event.currentTarget.focus()"
         @keydown="onKeyDown"
     >
-        <FileRow :key="item.path" :file="item" />
+        <FileRow :key="item.path" :file="item" :diff_callback />
     </recycle-scroller>
 </template>
 
@@ -21,7 +21,7 @@
         inject: ['selected_file'],
         props: {
             files: { type: Array, required: true },
-            item_size: { type: Number, required: true },
+            diff_callback: { type: Function, default: undefined },
         },
         methods: {
             onKeyDown(event) {
