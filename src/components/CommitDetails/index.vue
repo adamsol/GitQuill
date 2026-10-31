@@ -119,6 +119,9 @@
                             Tag
                         </btn>
                     </template>
+                    <copy-btn v-if="current_commits.length <= 2" :callback="getDiffToCopy" icon_class="size-5">
+                        Copy diff
+                    </copy-btn>
                     <btn :disabled="working_tree_selected" @click="cherrypickCommits">
                         <icon name="mdi-checkbox-marked-outline" class="size-5" />
                         Cherry-pick {{ current_commits.length > 1 ? `${current_commits.length} commits` : '' }}
@@ -127,9 +130,6 @@
                         <icon name="mdi-backup-restore" class="size-5" />
                         Revert {{ current_commits.length > 1 ? `${current_commits.length} commits` : '' }}
                     </btn>
-                    <copy-btn v-if="current_commits.length <= 2" :callback="getDiffToCopy" icon_class="size-5">
-                        Copy diff
-                    </copy-btn>
                     <btn v-if="current_commits.length === 1" :disabled="!can_edit" @click="startRebase">
                         <icon name="mdi-file-edit-outline" class="size-5" />
                         Edit (Rebase)

@@ -13,7 +13,7 @@
                 :title="action.title"
                 @click="action.callback"
             >
-                <icon :name="action.icon" class="size-6" />
+                <icon :name="action.icon" class="size-6" :class="action.icon_class" />
                 {{ action.label }}
             </btn>
         </template>
@@ -58,6 +58,13 @@
                             callback: () => this.show_branch_modal = true,
                         },
                         {
+                            icon: 'mdi-content-paste',
+                            icon_class: 'py-[1px]',
+                            label: 'Apply diff',
+                            title: 'Apply from clipboard',
+                            callback: this.applyDiff,
+                        },
+                        {
                             icon: settings.icons.save_wip,
                             label: 'Save WIP',
                             callback: this.saveWip,
@@ -100,6 +107,14 @@
             },
         },
         methods: {
+            async applyDiff() {
+                await this.saveSelectedFile();
+
+                const patch = await navigator.clipboard.readText();
+                await this.repo.callGit('apply', { input: patch.replaceAll(/\r\n/g, '\n') });
+
+                await this.refreshStatus();
+            },
             async saveWip() {
                 await saveWip.call(this);
             },
