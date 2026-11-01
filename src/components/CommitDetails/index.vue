@@ -119,7 +119,7 @@
                             Tag
                         </btn>
                     </template>
-                    <copy-btn v-if="current_commits.length <= 2" :callback="getDiffToCopy" icon_class="size-5">
+                    <copy-btn v-if="current_commits.length <= 2" :disabled="files.committed.length === 0" :callback="getDiffToCopy" icon_class="size-5">
                         Copy diff
                     </copy-btn>
                     <btn :disabled="working_tree_selected" @click="cherrypickCommits">
@@ -195,6 +195,13 @@
             </template>
 
             <hr class="my-2" />
+            <div class="flex my-2">
+                <panel-header
+                    :count="files.committed.length"
+                    :icon="$settings.icons.committed"
+                    label="Changed files"
+                />
+            </div>
             <FileList
                 class="[scrollbar-gutter:stable]"
                 :files="files.committed"
