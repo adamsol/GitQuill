@@ -372,21 +372,15 @@
             async loadStatus() {
                 let operation = null;
 
-                for (const [type, path] of [
-                    ['rebase', '.git/rebase-merge/stopped-sha'],
-                    ['cherry-pick', '.git/CHERRY_PICK_HEAD'],
-                    ['revert', '.git/REVERT_HEAD'],
-                    ['merge', '.git/MERGE_HEAD'],
+                for (const [type, path, label] of [
+                    ['cherry-pick', '.git/CHERRY_PICK_HEAD', 'Cherry-picking'],
+                    ['revert', '.git/REVERT_HEAD', 'Reverting'],
+                    ['merge', '.git/MERGE_HEAD', 'Merging'],
+                    ['rebase', '.git/rebase-merge/stopped-sha', 'Rebasing'],
                 ]) {
                     const hash = await this.repo.readFile(path, { null_if_not_exists: true });
 
                     if (hash !== null) {
-                        const label = {
-                            'rebase': 'Rebasing',
-                            'cherry-pick': 'Cherry-picking',
-                            'revert': 'Reverting',
-                            'merge': 'Merging',
-                        }[type];
                         const conflict_message = await this.repo.readFile('.git/MERGE_MSG', { null_if_not_exists: true });
 
                         operation = {
