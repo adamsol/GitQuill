@@ -217,7 +217,7 @@
 <script>
     import StoreMixin from '@/mixins/StoreMixin';
     import { saveWip } from '@/utils/actions';
-    import { getEmptyRootHash } from '@/utils/git';
+    import { getEmptyRootHash, handleUntrackedFiles } from '@/utils/git';
 
     import BranchModal from './BranchModal';
     import CommitterDetails from './CommitterDetails';
@@ -325,22 +325,13 @@
                 } else if (current_commits.length <= 2) {
                     let untracked_paths = [];
                     if (revisions_to_diff.includes('WORKING_TREE')) {
-                        // https://stackoverflow.com/questions/855767/can-i-use-git-diff-on-untracked-files
                         untracked_paths = _.map(_.filter(this.working_tree_files.unstaged, { status: 'A' }), 'path');
-                        if (untracked_paths.length > 0) {
-                            await this.repo.callGit('add', '-N', '--', ...untracked_paths);
-                        }
                     }
-                    let status;
-                    try {
+                    const status = await handleUntrackedFiles(this.repo, untracked_paths, async () => {
                         const diff_args = await this.getDiffArgs();
                         // https://git-scm.com/docs/git-diff#_raw_output_format
-                        status = await this.repo.callGit('diff', ...diff_args, '--raw', '--numstat', '--ignore-all-space', '-z');
-                    } finally {
-                        if (untracked_paths.length > 0) {
-                            await this.repo.callGit('rm', '--cached', '--', ...untracked_paths);
-                        }
-                    }
+                        return await this.repo.callGit('diff', ...diff_args, '--raw', '--numstat', '--ignore-all-space', '-z');
+                    });
                     if (!_.isEqual(revisions_to_diff, this.revisions_to_diff)) {
                         return;
                     }

@@ -60,6 +60,20 @@ export async function getStatus(repo, ...args) {
     };
 }
 
+export async function handleUntrackedFiles(repo, paths, callback) {
+    // https://stackoverflow.com/questions/855767/can-i-use-git-diff-on-untracked-files
+    if (paths.length > 0) {
+        await repo.callGit('add', '-N', '--', ...paths);
+    }
+    try {
+        return await callback();
+    } finally {
+        if (paths.length > 0) {
+            await repo.callGit('rm', '--cached', '--', ...paths);
+        }
+    }
+}
+
 export async function getEmptyRootHash(repo) {
     // https://stackoverflow.com/questions/40883798/how-to-get-git-diff-of-the-first-commit
     return (await repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim();

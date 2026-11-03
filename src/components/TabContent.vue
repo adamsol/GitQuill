@@ -64,7 +64,7 @@
 
     import { ReferenceNode } from '@/domain/reference-node';
     import StoreMixin from '@/mixins/StoreMixin';
-    import { getEmptyRootHash, getReferenceAncestorIds, getStatus } from '@/utils/git';
+    import { getEmptyRootHash, getReferenceAncestorIds, getStatus, handleUntrackedFiles } from '@/utils/git';
 
     import ActionBar from './ActionBar';
     import CommitDetails from './CommitDetails';
@@ -218,11 +218,19 @@
                         return args;
                     },
                     async getDiffToCopy(file) {
-                        const diff_args = await this.getDiffArgs();
+                        let diff_args = [];
+                        if (file === undefined || file.area === 'committed') {
+                            diff_args = await this.getDiffArgs();
+                        } else if (file.area === 'staged') {
+                            diff_args = ['--cached'];
+                        }
                         const context_line_count = electron.store.get('context_line_count', 3);
                         const file_args = file === undefined ? [] : ['--', ..._.filter([file.old_path, file.path])];
+                        const is_untracked = file?.area === 'unstaged' && file.status === 'A';
 
-                        return await this.repo.callGit('diff', ...diff_args, `--unified=${context_line_count}`, ...file_args);
+                        return await handleUntrackedFiles(this.repo, is_untracked ? [file.path] : [], async () => {
+                            return await this.repo.callGit('diff', ...diff_args, `--unified=${context_line_count}`, ...file_args);
+                        });
                     },
                     toggleDiffOrder() {
                         this.diff_reversed = !this.diff_reversed;

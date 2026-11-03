@@ -17,7 +17,7 @@
             </div>
             <div class="grow" />
 
-            <template v-if="file?.area === 'committed'">
+            <template v-if="file !== undefined">
                 <copy-btn :callback="() => getDiffToCopy(file)" icon_class="size-5">
                     Copy diff
                 </copy-btn>
