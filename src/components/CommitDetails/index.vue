@@ -36,7 +36,7 @@
                                     {{ action === 'save_wip' ? 'Save WIP' : $_.title(action) + ' all' }}
                                 </btn>
                             </div>
-                            <FileList :files="files[area]" />
+                            <FileList :files="files[area]" :item_size="36" />
                         </div>
                     </pane>
                 </splitpanes>
@@ -202,11 +202,7 @@
                     label="Changed files"
                 />
             </div>
-            <FileList
-                class="[scrollbar-gutter:stable]"
-                :files="files.committed"
-                :diff_callback="getDiffToCopy"
-            />
+            <FileList class="[scrollbar-gutter:stable]" :files="files.committed" :item_size="32" />
 
             <div v-if="total_line_changes !== null" class="shrink-0 overflow-y-auto [scrollbar-gutter:stable]">
                 <hr class="my-2" />
@@ -239,7 +235,8 @@
             'repo', 'commits', 'commit_by_hash', 'selected_commits', 'diff_reversed', 'revisions_to_diff',
             'current_branch_name', 'current_head', 'current_operation',
             'working_tree_files', 'uncommitted_file_count', 'selected_file',
-            'setSelectedCommits', 'toggleDiffOrder', 'saveSelectedFile', 'refreshHistory', 'refreshStatus',
+            'setSelectedCommits', 'getDiffArgs', 'getDiffToCopy', 'toggleDiffOrder',
+            'saveSelectedFile', 'refreshHistory', 'refreshStatus',
         ],
         data: () => ({
             current_commits: undefined,
@@ -398,19 +395,6 @@
                     this.selected_file = file ?? _.last(this.files[area]) ?? null;
                 }
             },
-            async getDiffArgs() {
-                const args = [];
-
-                for (const hash of this.revisions_to_diff) {
-                    if (hash !== 'WORKING_TREE') {
-                        args.push(hash === 'EMPTY_ROOT' ? await getEmptyRootHash(this.repo) : hash);
-                    }
-                }
-                if (this.revisions_to_diff[0] === 'WORKING_TREE') {
-                    args.push('-R');
-                }
-                return args;
-            },
             async run(action) {
                 await this.saveSelectedFile();
 
@@ -479,13 +463,6 @@
                         this.refreshStatus(),
                     ]);
                 }
-            },
-            async getDiffToCopy(file) {
-                const diff_args = await this.getDiffArgs();
-                return await this.repo.callGit(
-                    'diff', ...diff_args, `--unified=${electron.store.get('context_line_count', 3)}`,
-                    ...file === undefined ? [] : ['--', ..._.filter([file.old_path, file.path])],
-                );
             },
             async startRebase() {
                 const commit = this.commit;

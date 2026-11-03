@@ -17,6 +17,13 @@
             </div>
             <div class="grow" />
 
+            <template v-if="file?.area === 'committed'">
+                <copy-btn :callback="() => getDiffToCopy(file)" icon_class="size-5">
+                    Copy diff
+                </copy-btn>
+                <hr class="ml-2 mr-1" />
+            </template>
+
             <template v-if="!binary && !is_submodule">
                 <select
                     v-model="language"
@@ -158,7 +165,7 @@
         ],
         inject: [
             'tab_active', 'repo', 'revisions_to_diff', 'working_tree_files', 'selected_file', 'save_semaphore',
-            'updateFileStatus',
+            'getDiffToCopy', 'updateFileStatus',
         ],
         data: () => ({
             file: undefined,

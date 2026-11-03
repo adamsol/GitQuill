@@ -64,7 +64,7 @@
 
     import { ReferenceNode } from '@/domain/reference-node';
     import StoreMixin from '@/mixins/StoreMixin';
-    import { getReferenceAncestorIds, getStatus } from '@/utils/git';
+    import { getEmptyRootHash, getReferenceAncestorIds, getStatus } from '@/utils/git';
 
     import ActionBar from './ActionBar';
     import CommitDetails from './CommitDetails';
@@ -203,6 +203,26 @@
                         if (hashes.length > 0) {
                             this.setSelectedReference(null);
                         }
+                    },
+                    async getDiffArgs() {
+                        const args = [];
+
+                        for (const hash of this.revisions_to_diff) {
+                            if (hash !== 'WORKING_TREE') {
+                                args.push(hash === 'EMPTY_ROOT' ? await getEmptyRootHash(this.repo) : hash);
+                            }
+                        }
+                        if (this.revisions_to_diff[0] === 'WORKING_TREE') {
+                            args.push('-R');
+                        }
+                        return args;
+                    },
+                    async getDiffToCopy(file) {
+                        const diff_args = await this.getDiffArgs();
+                        const context_line_count = electron.store.get('context_line_count', 3);
+                        const file_args = file === undefined ? [] : ['--', ..._.filter([file.old_path, file.path])];
+
+                        return await this.repo.callGit('diff', ...diff_args, `--unified=${context_line_count}`, ...file_args);
                     },
                     toggleDiffOrder() {
                         this.diff_reversed = !this.diff_reversed;
