@@ -52,7 +52,7 @@
             rows_by_type() {
                 return _.mapValues(this.reference_tree.roots, root => {
                     const visit = (node) => {
-                        for (const child of node.children) {
+                        for (const child of _.sortBy(node.children, child => !child.is_group)) {
                             rows.push(child);
                             if (child.is_group && !this.collapsed_references.has(child.id)) {
                                 visit(child);
