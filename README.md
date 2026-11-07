@@ -22,7 +22,7 @@ Requirements
 ------------
 
 * [Git](https://git-scm.com/) 2.23+
-* [Node.js](https://nodejs.org/) 18+
+* [Node.js](https://nodejs.org/) 20.19+ or 22.12+
 
 
 Installation
@@ -32,6 +32,15 @@ Installation
 npm install
 npm run build
 npm start
+```
+
+
+Development
+-----------
+
+```sh
+npm run dev
+npm start dev
 ```
 
 

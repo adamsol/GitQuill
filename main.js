@@ -12,6 +12,8 @@ import initContextMenu from 'electron-context-menu';
 import logging from 'electron-log';
 import Store from 'electron-store';
 
+import vite_server_config from './vite.server.config.js';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let window;
@@ -208,5 +210,9 @@ app.whenReady().then(async () => {
         shell.openExternal(url);
         return { action: 'deny' };
     });
-    await window.loadFile('index.html');
+    if (process.argv.at(-1) === 'dev') {
+        await window.loadURL(`http://${vite_server_config.host}:${vite_server_config.port}`);
+    } else {
+        await window.loadFile(path.join(__dirname, 'dist/index.html'));
+    }
 });

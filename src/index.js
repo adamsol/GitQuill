@@ -7,11 +7,16 @@ import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 import Draggable from 'vuedraggable';
 import { RecycleScroller } from 'vue-virtual-scroller';
 
+import 'splitpanes/dist/splitpanes.css';
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
+
 import AppRoot from './AppRoot';
-import './index.css';
+import { MonacoEnvironment } from './monaco-setup';
 import * as settings from './settings';
 import monaco_theme from './theme/monaco';
 import _ from './utils';
+
+import './index.css';
 
 import Btn from './widgets/btn';
 import CommitHash from './widgets/commit-hash';
@@ -26,6 +31,7 @@ import Toggle from './widgets/toggle';
 
 window._ = _;
 window.settings = settings;
+window.MonacoEnvironment = MonacoEnvironment;
 
 const app = createApp(AppRoot);
 
@@ -56,6 +62,10 @@ python_language.keywords = _.without(
     '_', 'case', 'exec', 'match', 'print', 'type',
 );
 monaco.editor.defineTheme('custom', monaco_theme);
+
+// Keep one empty Monaco model to prevent destroying and recreating the diff worker when switching files.
+// https://github.com/microsoft/vscode/blob/1.145.2/src/vs/editor/browser/services/editorWorkerService.ts#L380
+monaco.editor.createModel('', 'plaintext');
 
 app.use(VueMonacoEditorPlugin, { monaco });
 
