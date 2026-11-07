@@ -49,6 +49,10 @@
   "//": {
     "vue-virtual-scroller": "https://github.com/Akryum/vue-virtual-scroller/issues/863"
   },
+  "allowScripts": {
+    "electron@29.1.5": true,
+    "vue-demi@0.14.7": true
+  },
   "type": "module",
   "main": "main.js"
 }
