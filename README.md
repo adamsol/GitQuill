@@ -22,16 +22,16 @@ Requirements
 ------------
 
 * [Git](https://git-scm.com/) 2.23+
-* [Node.js](https://nodejs.org/) 20.19+ or 22.12+
+* [Bun](https://bun.com/) 1.3+
 
 
 Installation
 -----------
 
 ```sh
-npm install
-npm run build
-npm start
+bun install
+bun run build
+bun start
 ```
 
 
@@ -39,8 +39,8 @@ Development
 -----------
 
 ```sh
-npm run dev
-npm start dev
+bun run dev
+bun start dev
 ```
 
 

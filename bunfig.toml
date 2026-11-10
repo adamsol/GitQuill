@@ -1,0 +1,6 @@
+
+[install]
+exact = true
+
+[run]
+bun = true  # https://github.com/oven-sh/bun/issues/4464

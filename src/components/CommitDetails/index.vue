@@ -462,15 +462,8 @@
                     // https://stackoverflow.com/questions/22992543/how-do-i-git-rebase-the-first-commit
                     target = '--root';
                 }
-                const script = `
-                    const fs = require('fs');
-                    const file_path = process.argv[1];
-                    const content = fs.readFileSync(file_path, { encoding: 'utf8' });
-                    fs.writeFileSync(file_path, content.replace(/^pick/, 'edit'));
-                `.replace(/\n\s*/g, ' ');
-
                 // https://stackoverflow.com/questions/49465229/git-interactive-rebase-edit-particular-commit-without-needing-to-use-editor
-                const cmd = `node --eval "${script}"`;
+                const cmd = 'sed -i 1s/^pick/edit/';
                 await this.repo.callGit('-c', `sequence.editor=${cmd}`, 'rebase', '--interactive', target);
 
                 if (this.selected_file !== null) {
@@ -494,7 +487,7 @@
                     if (this.files.staged.length > 0) {
                         await this.repo.callGit('diff', '--check', '--cached');
                         // https://stackoverflow.com/questions/43489971/how-to-suppress-the-editor-for-git-rebase-continue
-                        const noop = 'node --eval ""';
+                        const noop = ':';
                         await this.repo.callGit('-c', `core.editor=${noop}`, this.current_operation.type, '--continue');
                     } else {
                         await this.repo.callGit(this.current_operation.type, '--skip');
