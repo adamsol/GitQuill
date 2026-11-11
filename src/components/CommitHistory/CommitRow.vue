@@ -2,7 +2,7 @@
 <template>
     <div
         class="row clickable whitespace-nowrap"
-        :class="active ? 'active' : '[&:not(:first-child)]:*:text-gray'"
+        :class="active ? 'active' : '*:[&:not(:first-child)]:text-gray'"
         @click="select"
     >
         <div v-if="commit.hash === 'WORKING_TREE'" class="italic">

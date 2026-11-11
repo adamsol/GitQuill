@@ -6,8 +6,6 @@
 </template>
 
 <script>
-    import colors from '@/colors';
-
     export default {
         inject: ['commits', 'commit_by_hash'],
         props: {
@@ -103,10 +101,11 @@
                     ctx.fill();
 
                     if (commit.hash === 'WORKING_TREE') {
-                        ctx.fillStyle = colors.gray.dark;
+                        ctx.globalCompositeOperation = 'destination-out';
                         ctx.beginPath();
                         ctx.arc(...commit_coords, size/3, 0, 2*Math.PI);
                         ctx.fill();
+                        ctx.globalCompositeOperation = 'source-over';
                     }
                 }
             },

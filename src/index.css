@@ -1,7 +1,16 @@
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+    --color-gray: #a1a1aa;
+    --color-gray-light: #e4e4e7;
+    --color-gray-bg: #28282e;
+    --color-gray-dark: #1d1d22;
+
+    --color-accent: #7dd1fc;
+    --color-green: #60b960;
+    --color-red: #ff4242;
+}
 
 @layer base {
     html, body, #app {

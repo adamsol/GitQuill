@@ -1,9 +1,8 @@
 
 import path from 'path';
 
+import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
-import tailwindcss from 'tailwindcss';
-import tailwind_nesting from 'tailwindcss/nesting';
 import { defineConfig } from 'vite';
 
 import vite_server_config from './vite.server.config.js';
@@ -11,15 +10,8 @@ import vite_server_config from './vite.server.config.js';
 export default defineConfig({
     plugins: [
         vue(),
+        tailwindcss(),
     ],
-    css: {
-        postcss: {
-            plugins: [
-                tailwind_nesting(),
-                tailwindcss(),
-            ],
-        },
-    },
     resolve: {
         extensions: ['.js', '.vue'],
         alias: {
