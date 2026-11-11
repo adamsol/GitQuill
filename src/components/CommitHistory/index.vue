@@ -54,14 +54,12 @@
                         v-if="commits !== undefined"
                         ref="references_scroller"
                         class="scrollbar-hidden"
-                        emit-update
                         :items="commits"
                         :item-size="row_height"
                         key-field="hash"
                         list-class="static"
                         v-slot="{ item }"
                         @scroll="onScroll"
-                        @update="onScrollerUpdate"
                     >
                         <CommitRefsRow :key="item.hash" :commit="item" />
                     </recycle-scroller>
@@ -95,6 +93,7 @@
                         key-field="hash"
                         v-slot="{ item }"
                         @scroll="onScroll"
+                        @update="onScrollerUpdate"
                     >
                         <CommitRow :key="item.hash" :commit="item" />
                     </recycle-scroller>
