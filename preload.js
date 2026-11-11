@@ -1,6 +1,6 @@
 
-const { contextBridge, ipcRenderer } = require('electron');
-const Store = require('electron-store');
+import { contextBridge, ipcRenderer } from 'electron';
+import Store from 'electron-store';
 
 const store = new Store();
 

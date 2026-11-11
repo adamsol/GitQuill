@@ -68,7 +68,7 @@ Store.initRenderer();
 app.whenReady().then(async () => {
     window = new BrowserWindow({
         webPreferences: {
-            preload: path.join(app.getAppPath(), 'preload.cjs'),
+            preload: path.join(app.getAppPath(), 'preload.js'),
             sandbox: false,  // https://github.com/sindresorhus/electron-store/issues/268#issuecomment-1809555869
         },
         icon: path.join(__dirname, 'img/logo.jpg'),

@@ -480,7 +480,11 @@
                 }
             },
             onScroll(event) {
+                if (this.scroll_position === event.target.scrollTop) {
+                    return;  // Prevent scroll resistance near the top and bottom.
+                }
                 this.scroll_position = event.target.scrollTop;
+
                 this.$refs.main_scroller.scrollToPosition(this.scroll_position);
                 this.$refs.references_scroller.scrollToPosition(this.scroll_position);
                 this.$refs.graph_pane.$el.scrollTop = this.scroll_position;
