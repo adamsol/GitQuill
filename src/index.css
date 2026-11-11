@@ -83,6 +83,9 @@
                 @apply bg-red/35;
             }
         }
+        .diff-range-empty {
+            @apply border-l-1!;
+        }
         .suggest-widget {
             /* https://github.com/microsoft/monaco-editor/issues/1681 */
             @apply hidden!;
