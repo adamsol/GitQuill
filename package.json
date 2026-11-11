@@ -17,17 +17,18 @@
     "url": "https://github.com/adamsol"
   },
   "scripts": {
-    "update-deps": "bun update --latest",
+    "update-deps": "bun update --latest !monaco-editor",
     "postinstall": "install-electron",
     "dev": "vite",
     "build": "vite build",
     "start": "electron ."
   },
   "//": {
+    "update-deps": "https://github.com/microsoft/monaco-editor/issues/4601",
     "postinstall": "https://www.electronjs.org/blog/electron-42-0#electron-no-longer-downloads-itself-via-postinstall-script"
   },
   "dependencies": {
-    "@guolao/vue-monaco-editor": "1.5.1",
+    "@guolao/vue-monaco-editor": "1.6.0",
     "@mdi/js": "7.4.47",
     "@tailwindcss/vite": "4.3.5",
     "@vitejs/plugin-vue": "6.0.10",
@@ -37,13 +38,13 @@
     "electron-log": "5.4.4",
     "electron-store": "12.0.0",
     "json5": "2.2.3",
-    "lodash": "4.17.21",
+    "lodash": "4.18.1",
     "monaco-editor": "0.49.0",
     "pluralize": "8.0.0",
     "splitpanes": "4.1.2",
     "tailwindcss": "4.3.5",
-    "vite": "8.3.6",
-    "vue": "3.4.21",
+    "vite": "8.3.8",
+    "vue": "3.5.45",
     "vue-virtual-scroller": "3.0.5",
     "vuedraggable": "4.1.0"
   },
