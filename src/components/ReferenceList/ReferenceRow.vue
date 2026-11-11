@@ -23,7 +23,7 @@
             </span>
         </div>
 
-        <div class="w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible">
+        <div class="not-group-hover:w-0 not-group-hover:overflow-hidden">
             <btn :title="hidden ? 'Show' : 'Hide'" @click="toggleReferenceNodeVisibility(node)">
                 <icon :name="hidden ? 'mdi-eye-outline' : 'mdi-eye-off-outline'" class="size-4" />
             </btn>

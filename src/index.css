@@ -106,7 +106,7 @@
         @apply flex items-center gap-3 px-3 py-1;
     }
     .clickable {
-        @apply cursor-pointer select-none hover:[&:not(.active)]:bg-accent/10;
+        @apply cursor-pointer select-none hover:not-[.active]:bg-accent/10;
     }
     .active {
         @apply text-accent bg-accent/15;

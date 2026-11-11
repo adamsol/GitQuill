@@ -13,7 +13,7 @@
 
         <div
             v-if="file.area !== 'committed'"
-            class="flex w-0 overflow-hidden group-hover:w-auto group-hover:overflow-visible"
+            class="flex not-group-hover:w-0 not-group-hover:overflow-hidden"
         >
             <btn
                 v-for="action in { unstaged: ['discard', 'stage'], staged: ['unstage'] }[file.area]"
