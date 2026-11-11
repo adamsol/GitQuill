@@ -1,7 +1,7 @@
 
 <template>
     <div
-        class="row clickable group !gap-1"
+        class="row clickable group gap-1!"
         :class="{ active, 'text-gray': hidden }"
         :style="{ paddingLeft: `${4 + node.depth * 20}px` }"
         @click="is_group ? $emit('toggle-group') : setSelectedReference(reference)"

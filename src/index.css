@@ -50,7 +50,7 @@
         @apply h-4;
     }
     .splitpanes__pane {
-        @apply !transition-none;
+        @apply transition-none!;
     }
 
     .monaco-editor {
@@ -59,18 +59,18 @@
 
             .center >:nth-child(2) {
                 /* https://github.com/microsoft/vscode/issues/186406#issuecomment-1697642614 */
-                @apply !items-stretch grow;
+                @apply items-stretch! grow;
 
                 :nth-child(1) {
                     @apply m-auto grow;
                 }
                 :not(:nth-child(1)) {
-                    @apply !hidden;
+                    @apply hidden!;
                 }
             }
         }
         .insert-sign, .delete-sign {
-            @apply !opacity-100;
+            @apply opacity-100!;
 
             &, & + .line-numbers {
                 @apply text-gray-light;
@@ -88,7 +88,7 @@
         }
         .suggest-widget {
             /* https://github.com/microsoft/monaco-editor/issues/1681 */
-            @apply !hidden;
+            @apply hidden!;
         }
         * {
             --vscode-editorLineNumber-activeForeground: var(--vscode-editorLineNumber-foreground);
@@ -97,7 +97,7 @@
 
     .vue-recycle-scroller__item-view {
         /* https://github.com/Akryum/vue-virtual-scroller/issues/118#issuecomment-670852864 */
-        @apply !will-change-auto;
+        @apply will-change-auto!;
     }
 }
 

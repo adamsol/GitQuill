@@ -1,6 +1,6 @@
 
 <template>
-    <div class="row !gap-1 whitespace-nowrap select-none">
+    <div class="row gap-1! whitespace-nowrap select-none">
         <div
             v-for="reference in references"
             class="px-1.5 text-white rounded-md flex items-center gap-1.5"

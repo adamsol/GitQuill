@@ -103,7 +103,7 @@
 
             <btn
                 v-if="commits !== undefined && !scrolled_to_top"
-                class="absolute left-1/2 -translate-x-1/2 top-3 bg-gray-dark/80 border border-accent hover:!bg-gray-bg"
+                class="absolute left-1/2 -translate-x-1/2 top-3 bg-gray-dark/80 border border-accent hover:bg-gray-bg!"
                 @click="$refs.main_scroller.$el.scrollTop = 0"
             >
                 <icon name="mdi-arrow-up" class="size-5" />
@@ -111,7 +111,7 @@
             </btn>
             <btn
                 v-if="scrolled_to_bottom && !loaded_all"
-                class="absolute left-1/2 -translate-x-1/2 bottom-3 bg-gray-dark/80 border border-accent hover:!bg-gray-bg"
+                class="absolute left-1/2 -translate-x-1/2 bottom-3 bg-gray-dark/80 border border-accent hover:bg-gray-bg!"
                 @click="loadMore"
             >
                 <icon name="mdi-arrow-down" class="size-5" />

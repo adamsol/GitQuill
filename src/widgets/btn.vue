@@ -3,7 +3,7 @@
     <button
         class="rounded-lg flex items-center gap-1 p-1 whitespace-nowrap"
         :class="[
-            disabled ? '!text-gray' : 'clickable',
+            disabled ? 'text-gray!' : 'clickable',
             second_click ? click_twice : '',
         ]"
         :disabled
