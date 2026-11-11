@@ -1,7 +1,7 @@
 
 <template>
     <div
-        class="row clickable group"
+        class="row clickable"
         :class="{ active }"
         :title="(['R', 'C'].includes(file.status) ? `${file.old_path} -> ` : '') + file.path"
         @click="selected_file = file"
@@ -11,10 +11,7 @@
         </div>
         <file-path class="grow" :path="file.path" />
 
-        <div
-            v-if="file.area !== 'committed'"
-            class="flex not-group-hover:w-0 not-group-hover:overflow-hidden"
-        >
+        <div v-if="file.area !== 'committed'" class="row-actions flex">
             <btn
                 v-for="action in { unstaged: ['discard', 'stage'], staged: ['unstage'] }[file.area]"
                 :click_twice="action === 'discard' && 'text-red'"

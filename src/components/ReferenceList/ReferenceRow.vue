@@ -1,7 +1,7 @@
 
 <template>
     <div
-        class="row clickable group gap-1!"
+        class="row clickable gap-1!"
         :class="{ active, 'text-gray': hidden }"
         :style="{ paddingLeft: `${4 + node.depth * 20}px` }"
         @click="is_group ? $emit('toggle-group') : setSelectedReference(reference)"
@@ -23,7 +23,7 @@
             </span>
         </div>
 
-        <div class="not-group-hover:w-0 not-group-hover:overflow-hidden">
+        <div class="row-actions">
             <btn :title="hidden ? 'Show' : 'Hide'" @click="toggleReferenceNodeVisibility(node)">
                 <icon :name="hidden ? 'mdi-eye-outline' : 'mdi-eye-off-outline'" class="size-4" />
             </btn>

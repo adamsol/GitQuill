@@ -101,6 +101,10 @@
 @layer utilities {
     .row {
         @apply flex items-center gap-3 px-3 py-1;
+
+        &:not(:hover) > .row-actions {
+            @apply w-0 overflow-hidden;
+        }
     }
     .clickable {
         @apply cursor-pointer select-none hover:not-[.active]:bg-accent/10;
