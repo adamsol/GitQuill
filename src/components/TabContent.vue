@@ -17,26 +17,26 @@
             <ActionBar class="pt-1.5 pb-0.5" />
 
             <div class="grow overflow-hidden">
-                <splitpanes
-                    :maximize-panes="false"
-                    @resized="main_pane_size = $event.panes[0].size"
+                <split-view
+                    :sizes="[main_pane_size, undefined]"
+                    @resize="main_pane_size = $event[0]"
                 >
-                    <pane :size="main_pane_size">
-                        <splitpanes
+                    <div>
+                        <split-view
                             v-show="selected_file === null"
-                            :maximize-panes="false"
-                            @resized="references_pane_size = $event.panes[0].size"
+                            :sizes="[references_pane_size, undefined]"
+                            @resize="references_pane_size = $event[0]"
                         >
-                            <pane class="min-w-48" :size="references_pane_size">
+                            <div>
                                 <ReferenceList class="pt-2 pb-4 pl-4" />
-                            </pane>
-                            <pane>
+                            </div>
+                            <div>
                                 <CommitHistory ref="commit_history" class="py-2" />
-                            </pane>
-                        </splitpanes>
+                            </div>
+                        </split-view>
                         <FileDiff v-if="selected_file !== null" ref="file_diff" />
-                    </pane>
-                    <pane class="min-w-96">
+                    </div>
+                    <div>
                         <CommitDetails
                             v-if="selected_commits.length > 0"
                             class="pt-2 pb-4 pr-4"
@@ -45,8 +45,8 @@
                             v-else-if="selected_reference !== null"
                             class="pt-2 pb-4 pr-4"
                         />
-                    </pane>
-                </splitpanes>
+                    </div>
+                </split-view>
             </div>
         </template>
     </div>

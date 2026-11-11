@@ -1,13 +1,11 @@
 
 import * as monaco from 'monaco-editor';
 import { language as python_language } from 'monaco-editor/esm/vs/basic-languages/python/python';
-import { Splitpanes, Pane } from 'splitpanes';
 import { createApp } from 'vue';
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 import Draggable from 'vuedraggable';
 import { RecycleScroller } from 'vue-virtual-scroller';
 
-import 'splitpanes/dist/splitpanes.css';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
 import AppRoot from './AppRoot';
@@ -27,6 +25,7 @@ import FilePath from './widgets/file-path';
 import Icon from './widgets/icon';
 import Modal from './widgets/modal';
 import PanelHeader from './widgets/panel-header';
+import SplitView from './widgets/split-view';
 import Toggle from './widgets/toggle';
 
 window._ = _;
@@ -34,9 +33,6 @@ window.settings = settings;
 window.MonacoEnvironment = MonacoEnvironment;
 
 const app = createApp(AppRoot);
-
-app.component('Splitpanes', Splitpanes);
-app.component('Pane', Pane);
 
 app.component('Draggable', Draggable);
 app.component('RecycleScroller', RecycleScroller);
@@ -50,6 +46,7 @@ app.component('FilePath', FilePath);
 app.component('Icon', Icon);
 app.component('Modal', Modal);
 app.component('PanelHeader', PanelHeader);
+app.component('SplitView', SplitView);
 app.component('Toggle', Toggle);
 
 for (const lang of ['css', 'scss', 'less']) {

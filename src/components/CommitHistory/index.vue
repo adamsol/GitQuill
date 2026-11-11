@@ -44,11 +44,11 @@
         </div>
 
         <div class="grow py-1 bg-gray-dark overflow-hidden relative">
-            <splitpanes
-                :maximize-panes="false"
-                @resized="[commit_refs_column_size, commit_graph_column_size] = $_.map($event.panes, 'size')"
+            <split-view
+                :sizes="[commit_refs_column_size, commit_graph_column_size, undefined]"
+                @resize="[commit_refs_column_size, commit_graph_column_size] = $event"
             >
-                <pane :size="commit_refs_column_size" class="flex flex-col overflow-x-auto min-w-12">
+                <div class="flex flex-col overflow-x-auto!">
                     <!-- `list-class="static"` is necessary for horizontal scroll. -->
                     <recycle-scroller
                         v-if="commits !== undefined"
@@ -63,11 +63,10 @@
                     >
                         <CommitRefsRow :key="item.hash" :commit="item" />
                     </recycle-scroller>
-                </pane>
-                <pane
-                    :size="commit_graph_column_size"
+                </div>
+                <div
                     ref="graph_pane"
-                    class="relative overflow-auto! scrollbar-hidden min-w-8"
+                    class="relative overflow-auto! scrollbar-hidden"
                     @scroll="onScroll"
                 >
                     <div
@@ -81,8 +80,8 @@
                         :row_height
                         :scroll_position
                     />
-                </pane>
-                <pane class="flex flex-col min-w-96">
+                </div>
+                <div class="flex flex-col">
                     <recycle-scroller
                         v-if="commits !== undefined"
                         ref="main_scroller"
@@ -97,8 +96,8 @@
                     >
                         <CommitRow :key="item.hash" :commit="item" />
                     </recycle-scroller>
-                </pane>
-            </splitpanes>
+                </div>
+            </split-view>
 
             <btn
                 v-if="commits !== undefined && !scrolled_to_top"
@@ -486,7 +485,7 @@
 
                 this.$refs.main_scroller.scrollToPosition(this.scroll_position);
                 this.$refs.references_scroller.scrollToPosition(this.scroll_position);
-                this.$refs.graph_pane.$el.scrollTop = this.scroll_position;
+                this.$refs.graph_pane.scrollTop = this.scroll_position;
             },
             onScrollerUpdate() {
                 const state = this.$refs.main_scroller.getScroll();

@@ -1,15 +1,11 @@
 
 <template>
-    <splitpanes
-        :maximize-panes="false"
-        horizontal
-        @resized="references_list_pane_sizes = Object.fromEntries($_.zip(reference_types, $_.map($event.panes, 'size')))"
+    <split-view
+        :sizes="reference_types.map(type => references_list_pane_sizes[type])"
+        vertical
+        @resize="references_list_pane_sizes = Object.fromEntries($_.zip(reference_types, $event))"
     >
-        <pane
-            v-for="(type, i) in reference_types"
-            class="min-h-20"
-            :size="references_list_pane_sizes[type]"
-        >
+        <div v-for="(type, i) in reference_types">
             <div class="flex flex-col h-full">
                 <hr v-if="i > 0" class="mb-2" />
                 <div class="flex mb-2">
@@ -30,8 +26,8 @@
                     <ReferenceRow :key="item.id" :node="item" @toggle-group="toggleGroup(item)" />
                 </recycle-scroller>
             </div>
-        </pane>
-    </splitpanes>
+        </div>
+    </split-view>
 </template>
 
 <script>

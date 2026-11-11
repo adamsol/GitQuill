@@ -1,23 +1,19 @@
 
 <template>
     <div v-if="files !== undefined" class="h-full break-words">
-        <splitpanes
+        <split-view
             v-if="current_commits.length === 1 && commit.hash === 'WORKING_TREE'"
-            :maximize-panes="false"
-            horizontal
-            @resized="commit_pane_size = $event.panes[1].size"
+            :sizes="[undefined, commit_pane_size]"
+            vertical
+            @resize="commit_pane_size = $event[1]"
         >
-            <pane class="min-h-40">
-                <splitpanes
-                    :maximize-panes="false"
-                    horizontal
-                    @resized="unstaged_pane_size = $event.panes[0].size"
+            <div>
+                <split-view
+                    :sizes="[unstaged_pane_size, undefined]"
+                    vertical
+                    @resize="unstaged_pane_size = $event[0]"
                 >
-                    <pane
-                        v-for="(area, i) in ['unstaged', 'staged']"
-                        class="min-h-20"
-                        :size="area === 'unstaged' ? unstaged_pane_size : undefined"
-                    >
+                    <div v-for="(area, i) in ['unstaged', 'staged']">
                         <div class="flex flex-col h-full">
                             <hr v-if="i > 0" class="mb-2" />
                             <div class="flex items-center gap-1 mb-2">
@@ -38,11 +34,11 @@
                             </div>
                             <FileList :files="files[area]" :item_size="36" />
                         </div>
-                    </pane>
-                </splitpanes>
-            </pane>
+                    </div>
+                </split-view>
+            </div>
 
-            <pane :size="commit_pane_size" class="min-h-24 flex flex-col gap-2">
+            <div class="flex flex-col gap-2">
                 <div v-if="current_operation?.conflict">
                     Conflict:
                 </div>
@@ -92,8 +88,8 @@
                         Abort
                     </btn>
                 </div>
-            </pane>
-        </splitpanes>
+            </div>
+        </split-view>
 
         <div v-else class="flex flex-col h-full">
             <div class="flex justify-end gap-1 flex-wrap mb-4">

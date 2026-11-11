@@ -43,14 +43,11 @@
         @apply select-none;
     }
 
-    .splitpanes--vertical > .splitpanes__splitter {
-        @apply w-4;
+    .gutter-horizontal {
+        @apply cursor-col-resize;
     }
-    .splitpanes--horizontal > .splitpanes__splitter {
-        @apply h-4;
-    }
-    .splitpanes__pane {
-        @apply transition-none!;
+    .gutter-vertical {
+        @apply cursor-row-resize;
     }
 
     .monaco-editor {
