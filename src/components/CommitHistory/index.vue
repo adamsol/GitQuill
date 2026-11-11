@@ -183,9 +183,9 @@
 
                 if (new_value.length === 1 && old_value.length <= 1 && scroller !== undefined) {
                     const state = scroller.getScroll();
-                    const pos = this.commit_by_hash[new_value[0]].index * scroller.itemSize;
-                    if (pos < state.start || pos + scroller.itemSize > state.end) {
-                        this.$refs.main_scroller.scrollToPosition(pos - (state.end - state.start) / 5);
+                    const pos = this.commit_by_hash[new_value[0]].index * this.row_height;
+                    if (pos < state.start || pos + this.row_height > state.end) {
+                        scroller.scrollToPosition(pos - (state.end - state.start) / 5);
                     }
                 }
             },
@@ -286,7 +286,7 @@
                         const scroller = this.$refs.main_scroller;
                         if (scroller !== undefined) {
                             const state = scroller.getScroll();
-                            while ((limit + 1) * scroller.itemSize < state.end) {
+                            while ((limit + 1) * this.row_height < state.end) {
                                 limit *= commit_limit_multiplier;
                             }
                         }
@@ -486,11 +486,10 @@
                 this.$refs.graph_pane.$el.scrollTop = this.scroll_position;
             },
             onScrollerUpdate() {
-                const scroller = this.$refs.main_scroller;
-                const state = scroller.getScroll();
+                const state = this.$refs.main_scroller.getScroll();
 
-                this.scrolled_to_top = state.start < scroller.itemSize;
-                this.scrolled_to_bottom = state.end > (this.commits.length - 1) * scroller.itemSize;
+                this.scrolled_to_top = state.start < this.row_height;
+                this.scrolled_to_bottom = state.end > (this.commits.length - 1) * this.row_height;
             },
         },
     };
