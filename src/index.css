@@ -55,7 +55,7 @@
 
     .monaco-editor {
         .diff-hidden-lines {
-            @apply -translate-y-1.5 select-none;
+            @apply transform-[translateY(-6px)]! select-none;
 
             .center >:nth-child(2) {
                 /* https://github.com/microsoft/vscode/issues/186406#issuecomment-1697642614 */
@@ -73,7 +73,7 @@
             @apply opacity-100!;
 
             &, & + .line-numbers {
-                @apply text-gray-light;
+                @apply text-gray-light!;
             }
         }
         .insert-sign {

@@ -69,7 +69,7 @@
                 <pane
                     :size="commit_graph_column_size"
                     ref="graph_pane"
-                    class="relative overflow-auto scrollbar-hidden min-w-8"
+                    class="relative overflow-auto! scrollbar-hidden min-w-8"
                     @scroll="onScroll"
                 >
                     <div
