@@ -18,14 +18,14 @@
 
             <div class="grow overflow-hidden">
                 <splitpanes
-                    :dbl-click-splitter="false"
-                    @resized="main_pane_size = $event[0].size"
+                    :maximize-panes="false"
+                    @resized="main_pane_size = $event.panes[0].size"
                 >
                     <pane :size="main_pane_size">
                         <splitpanes
                             v-show="selected_file === null"
-                            :dbl-click-splitter="false"
-                            @resized="references_pane_size = $event[0].size"
+                            :maximize-panes="false"
+                            @resized="references_pane_size = $event.panes[0].size"
                         >
                             <pane class="min-w-48" :size="references_pane_size">
                                 <ReferenceList class="pt-2 pb-4 pl-4" />

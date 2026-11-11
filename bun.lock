@@ -18,7 +18,7 @@
         "lodash": "4.17.21",
         "monaco-editor": "0.49.0",
         "pluralize": "8.0.0",
-        "splitpanes": "3.1.5",
+        "splitpanes": "4.1.2",
         "tailwindcss": "4.3.5",
         "vite": "8.3.6",
         "vue": "3.4.21",
@@ -288,7 +288,7 @@
 
     "source-map-js": ["source-map-js@1.2.2", "", {}, "sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw=="],
 
-    "splitpanes": ["splitpanes@3.1.5", "", {}, "sha512-r3Mq2ITFQ5a2VXLOy4/Sb2Ptp7OfEO8YIbhVJqJXoFc9hc5nTXXkCvtVDjIGbvC0vdE7tse+xTM9BMjsszP6bw=="],
+    "splitpanes": ["splitpanes@4.1.2", "", { "peerDependencies": { "vue": "^3.2.0" } }, "sha512-frNchoCv7w0nMQEuaDGgMGMU6jv3NhN6bBGQVfCNgwJdVcYaRmi1dwYDjp7SifAoUFdiQjBRB254LJNidzo15Q=="],
 
     "state-local": ["state-local@1.0.7", "", {}, "sha512-HTEHMNieakEnoe33shBYcZ7NX83ACUjCu8c40iOGEZsngj9zRnkqS9j1pqQPXwobB0ZcVTk27REb7COQ0UR59w=="],
 

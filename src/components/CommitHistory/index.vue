@@ -45,8 +45,8 @@
 
         <div class="grow py-1 bg-gray-dark overflow-hidden relative">
             <splitpanes
-                :dbl-click-splitter="false"
-                @resized="[commit_refs_column_size, commit_graph_column_size] = $_.map($event, 'size')"
+                :maximize-panes="false"
+                @resized="[commit_refs_column_size, commit_graph_column_size] = $_.map($event.panes, 'size')"
             >
                 <pane :size="commit_refs_column_size" class="flex flex-col overflow-x-auto min-w-12">
                     <!-- `list-class="static"` is necessary for horizontal scroll. -->

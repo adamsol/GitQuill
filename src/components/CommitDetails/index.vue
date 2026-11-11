@@ -3,15 +3,15 @@
     <div v-if="files !== undefined" class="h-full break-words">
         <splitpanes
             v-if="current_commits.length === 1 && commit.hash === 'WORKING_TREE'"
-            :dbl-click-splitter="false"
+            :maximize-panes="false"
             horizontal
-            @resized="commit_pane_size = $event[1].size"
+            @resized="commit_pane_size = $event.panes[1].size"
         >
             <pane class="min-h-40">
                 <splitpanes
-                    :dbl-click-splitter="false"
+                    :maximize-panes="false"
                     horizontal
-                    @resized="unstaged_pane_size = $event[0].size"
+                    @resized="unstaged_pane_size = $event.panes[0].size"
                 >
                     <pane
                         v-for="(area, i) in ['unstaged', 'staged']"

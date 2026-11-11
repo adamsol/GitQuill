@@ -1,9 +1,9 @@
 
 <template>
     <splitpanes
-        :dbl-click-splitter="false"
+        :maximize-panes="false"
         horizontal
-        @resized="references_list_pane_sizes = Object.fromEntries($_.zip(reference_types, $_.map($event, 'size')))"
+        @resized="references_list_pane_sizes = Object.fromEntries($_.zip(reference_types, $_.map($event.panes, 'size')))"
     >
         <pane
             v-for="(type, i) in reference_types"
