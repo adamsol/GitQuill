@@ -1,5 +1,5 @@
 
-import colors from './src/theme/colors';
+import colors from './src/colors';
 
 export default {
     content: ['./src/**/*.{vue,css}'],

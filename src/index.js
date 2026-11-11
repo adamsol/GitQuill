@@ -11,9 +11,9 @@ import 'splitpanes/dist/splitpanes.css';
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
 import AppRoot from './AppRoot';
-import { MonacoEnvironment } from './monaco-setup';
+import { MonacoEnvironment } from './monaco/environment';
+import monaco_theme from './monaco/theme';
 import * as settings from './settings';
-import monaco_theme from './theme/monaco';
 import _ from './utils';
 
 import './index.css';

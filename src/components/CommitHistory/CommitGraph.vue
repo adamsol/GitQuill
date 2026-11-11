@@ -6,7 +6,7 @@
 </template>
 
 <script>
-    import colors from '@/theme/colors';
+    import colors from '@/colors';
 
     export default {
         inject: ['commits', 'commit_by_hash'],

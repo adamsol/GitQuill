@@ -1,5 +1,5 @@
 
-import colors from './colors';
+import colors from '@/colors';
 
 const [line_opacity, text_opacity] = [0.1, 0.2].map(x => Math.round(x * 255).toString(16).padStart(2, '0'));
 
