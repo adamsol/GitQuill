@@ -224,12 +224,11 @@
                         } else if (file.area === 'staged') {
                             diff_args = ['--cached'];
                         }
-                        const context_line_count = electron.store.get('context_line_count', 3);
                         const file_args = file === undefined ? [] : ['--', ..._.filter([file.old_path, file.path])];
                         const is_untracked = file?.area === 'unstaged' && file.status === 'A';
 
                         return await handleUntrackedFiles(this.repo, is_untracked ? [file.path] : [], async () => {
-                            return await this.repo.callGit('diff', ...diff_args, `--unified=${context_line_count}`, ...file_args);
+                            return await this.repo.callGit('diff', ...diff_args, `--unified=1`, ...file_args);
                         });
                     },
                     toggleDiffOrder() {
