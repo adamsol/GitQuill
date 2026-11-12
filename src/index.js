@@ -1,6 +1,5 @@
 
 import * as monaco from 'monaco-editor';
-import { language as python_language } from 'monaco-editor/esm/vs/basic-languages/python/python';
 import { createApp } from 'vue';
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 import Draggable from 'vuedraggable';
@@ -10,6 +9,7 @@ import 'vue-virtual-scroller/dist/vue-virtual-scroller.css';
 
 import AppRoot from './AppRoot';
 import { MonacoEnvironment } from './monaco/environment';
+import { configureMonacoLanguages } from './monaco/language-config';
 import monaco_theme from './monaco/theme';
 import * as settings from './settings';
 import _ from './utils';
@@ -49,17 +49,8 @@ app.component('PanelHeader', PanelHeader);
 app.component('SplitView', SplitView);
 app.component('Toggle', Toggle);
 
-for (const lang of ['css', 'scss', 'less']) {
-    // https://github.com/atularen/ngx-monaco-editor/issues/61
-    monaco.languages.css[`${lang}Defaults`].setOptions({ validate: false });
-}
-const python_builtin_names_start = python_language.keywords.indexOf('int');
-python_language.keywords = _.without(
-    python_language.keywords.slice(0, python_builtin_names_start),
-    '_', 'case', 'exec', 'match', 'print', 'type',
-);
+configureMonacoLanguages();
 monaco.editor.defineTheme('custom', monaco_theme);
-
 // Keep one empty Monaco model to prevent destroying and recreating the diff worker when switching files.
 // https://github.com/microsoft/vscode/blob/1.145.2/src/vs/editor/browser/services/editorWorkerService.ts#L380
 monaco.editor.createModel('', 'plaintext');
