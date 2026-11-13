@@ -142,7 +142,7 @@
             </div>
             <hr v-if="current_commits.length > 1" class="mb-2" />
 
-            <div class="min-h-14 overflow-auto shrink-0" :class="{ 'max-h-60': current_commits.length === 1 }">
+            <div class="min-h-14 overflow-auto" :class="{ 'max-h-60': current_commits.length === 1, 'shrink-0': current_commits.length <= 2 }">
                 <template v-for="(c, i) in current_commits">
                     <hr v-if="i > 0" class="my-2" />
 
