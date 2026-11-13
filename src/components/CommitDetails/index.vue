@@ -282,7 +282,14 @@
                 this.skip_hooks = false;
             },
             async revisions_to_diff() {
-                await this.load();
+                if (this.selected_commits.length <= 2) {
+                    await this.load();
+                }
+            },
+            async selected_commits() {
+                if (this.selected_commits.length > 2) {
+                    await this.load();
+                }
             },
             async working_tree_files() {
                 if (_.some(this.current_commits, { hash: 'WORKING_TREE' }) && this.current_commits.length <= 2) {
