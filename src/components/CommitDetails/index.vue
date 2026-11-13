@@ -213,7 +213,7 @@
 <script>
     import StoreMixin from '@/mixins/StoreMixin';
     import { saveWip } from '@/utils/actions';
-    import { getEmptyRootHash, handleUntrackedFiles } from '@/utils/git';
+    import { findPathBetweenCommits, getEmptyRootHash, handleUntrackedFiles } from '@/utils/git';
 
     import BranchModal from './BranchModal';
     import CommitterDetails from './CommitterDetails';
@@ -261,18 +261,8 @@
                 if (this.current_operation !== null) {
                     return false;
                 }
-                let commit = this.commits[0];
-
-                while (true) {
-                    if (commit.parents.length > 1) {
-                        return false;
-                    }
-                    if (commit.index >= this.current_commits[0].index) {
-                        break;
-                    }
-                    commit = this.commit_by_hash[commit.parents[0]];
-                }
-                return commit.index === this.current_commits[0].index;
+                const path = findPathBetweenCommits(this.commits[0], this.current_commits[0], this.commit_by_hash);
+                return path !== null && !_.some(path, commit => commit.parents.length > 1);
             },
         },
         watch: {

@@ -79,6 +79,30 @@ export async function getEmptyRootHash(repo) {
     return (await repo.callGit('hash-object', '-t', 'tree', '/dev/null')).trim();
 }
 
+export function findPathBetweenCommits(source, target, commit_by_hash) {
+    const stack = [{ commit: source, parent_index: 0 }];
+    const visited = new Set([source.hash]);
+
+    while (stack.length > 0) {
+        const frame = stack.at(-1);
+        if (frame.commit.hash === target.hash) {
+            return stack.map(frame => frame.commit);
+        }
+        const parent_hash = frame.commit.parents[frame.parent_index++];
+        if (parent_hash === undefined) {
+            stack.pop();
+            continue;
+        }
+        const parent = commit_by_hash[parent_hash];
+        if (parent === undefined || parent.index > target.index || visited.has(parent_hash)) {
+            continue;
+        }
+        visited.add(parent_hash);
+        stack.push({ commit: parent, parent_index: 0 });
+    }
+    return null;
+}
+
 export function isFileBinary(buffer) {
     // https://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
     const n = Math.min(buffer.length, 8000);
