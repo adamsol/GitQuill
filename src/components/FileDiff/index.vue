@@ -253,6 +253,13 @@
                 await this.save();
                 await this.load();
             },
+            async collapse_unchanged_regions() {
+                // Preserve scroll position, but not manually expanded regions, so that it's easy to reset them.
+                // https://github.com/microsoft/vscode/blob/1.146.0/src/vs/editor/browser/widget/diffEditor/diffEditorWidget.ts#L544
+                const view_state = _.omit(this.diff_editor?.saveViewState(), 'modelState');
+                await this.$nextTick();
+                this.diff_editor?.restoreViewState(view_state);
+            },
         },
         async created() {
             await this.load();
