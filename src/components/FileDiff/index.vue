@@ -406,23 +406,23 @@
                 this.save_semaphore = new Promise(resolve => lift = resolve);
 
                 try {
-                    let unstaged_content, staged_content;
+                    let staged_content;
 
                     if (this.file.area === 'unstaged') {
-                        unstaged_content = contents[1];
                         if (!_.isEqual(contents[0], this.saved_contents[0])) {
                             staged_content = contents[0];
                         }
+                        if (!_.isEqual(contents[1], this.saved_contents[1])) {
+                            await this.repo.writeFile(this.file.path, contents[1]);
+                        }
                     } else if (this.file.area === 'staged') {
-                        unstaged_content = await this.repo.readFile(this.file.path);
                         staged_content = contents[1];
                     }
                     if (staged_content !== undefined) {
-                        await this.repo.writeFile(this.file.path, staged_content);
-                        await this.repo.callGit('add', '--', this.file.path);
+                        const index_mode = this.file.modes[this.file.area === 'unstaged' || this.file.status === 'D' ? 0 : 1];
+                        const content_hash = await this.repo.callGit('hash-object', '-w', '--stdin', { input: staged_content });
+                        await this.repo.callGit('update-index', '--add', '--cacheinfo', index_mode, content_hash.trim(), this.file.path);
                     }
-                    await this.repo.writeFile(this.file.path, unstaged_content);
-
                     this.saved_contents = contents;
                     this.unsaved_changes = false;
 
