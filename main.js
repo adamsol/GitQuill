@@ -110,6 +110,22 @@ app.whenReady().then(async () => {
         }
         exec(cmd, { cwd: repo_path });
     });
+    ipcMain.handle('open-in-external-editor', async (event, repo_path, file_path, external_editor) => {
+        if (!external_editor) {
+            throw new Error('External editor not configured');
+        }
+        const absolute_path = path.resolve(repo_path, file_path);
+        await fs.promises.access(absolute_path);  // Prevent opening a non-existing file.
+
+        await new Promise((resolve, reject) => {
+            const process = spawn(external_editor, [absolute_path], { detached: true, stdio: 'ignore' });
+            process.on('error', reject);  // Handle wrong executable path nicely.
+            process.on('spawn', () => {
+                process.unref();  // Let the application exit without waiting for the editor.
+                resolve();
+            });
+        });
+    });
     ipcMain.handle('call-git', async (event, repo_path, ...args) => {
         let options = {};
         if (typeof args.at(-1) === 'object') {

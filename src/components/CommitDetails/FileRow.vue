@@ -3,8 +3,9 @@
     <div
         class="row clickable"
         :class="{ active }"
-        :title="(['R', 'C'].includes(file.status) ? `${file.old_path} -> ` : '') + file.path"
+        :title="(['R', 'C'].includes(file.status) ? `${file.old_path} -> ` : '') + file.path + '\n(middle-click to open in external editor)'"
         @click="selected_file = file"
+        @click.middle.prevent="onMiddleClick"
     >
         <div class="w-3 shrink-0">
             {{ file.status }}
@@ -32,7 +33,7 @@
     export default {
         components: { LineChanges },
         inject: [
-            'repo', 'current_head', 'selected_file',
+            'repo', 'config', 'current_head', 'selected_file',
             'updateFileStatus', 'saveSelectedFile',
         ],
         props: {
@@ -62,6 +63,10 @@
                     }
                 }
                 await this.updateFileStatus(this.file);
+            },
+            async onMiddleClick() {
+                await this.saveSelectedFile();
+                await this.repo.openInExternalEditor(this.file.path, this.config.external_editor);
             },
         },
     };

@@ -68,6 +68,7 @@ Configuration
           { icon: 'mdi-download-outline', label: 'Pull', command: ['pull'] },
           { icon: 'mdi-upload-outline', label: 'Push', command: ['push'], click_twice: true },
       ],
+      external_editor: 'C:/Program Files/Notepad++/notepad++.exe',
   }
   ```
 

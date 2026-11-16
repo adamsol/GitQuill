@@ -130,7 +130,7 @@
                             }
                         };
                         return Object.freeze(Object.fromEntries(
-                            ['openTerminal', 'callGit', 'readFile', 'writeFile', 'deleteFile'].map(func_name =>
+                            ['openTerminal', 'openInExternalEditor', 'callGit', 'readFile', 'writeFile', 'deleteFile'].map(func_name =>
                                 [func_name, async (...args) => await handleErrors(electron[func_name](this.repo_details.path, ...args))]
                             )
                         ));

@@ -7,6 +7,7 @@ const store = new Store();
 contextBridge.exposeInMainWorld('electron', {
     openRepo: async (...args) => await ipcRenderer.invoke('open-repo', ...args),
     openTerminal: async (...args) => await ipcRenderer.invoke('open-terminal', ...args),
+    openInExternalEditor: async (...args) => await ipcRenderer.invoke('open-in-external-editor', ...args),
     callGit: async (...args) => await ipcRenderer.invoke('call-git', ...args),
     readFile: async (...args) => await ipcRenderer.invoke('read-file', ...args),
     writeFile: async (...args) => await ipcRenderer.invoke('write-file', ...args),
