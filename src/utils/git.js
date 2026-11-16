@@ -60,6 +60,10 @@ export async function getStatus(repo, ...args) {
     };
 }
 
+export async function getDiff(repo, ...args) {
+    return await repo.callGit('diff', '--unified=1', '--binary', ...args);
+}
+
 export async function handleUntrackedFiles(repo, paths, callback) {
     // https://stackoverflow.com/questions/855767/can-i-use-git-diff-on-untracked-files
     if (paths.length > 0) {

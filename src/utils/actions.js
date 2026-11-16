@@ -1,6 +1,8 @@
 
+import { getDiff } from '@/utils/git';
+
 async function applyCommitPatch(rev, { to_index = false } = {}) {
-    const diff = await this.repo.callGit('diff', '--binary', `${rev}^`, rev);
+    const diff = await getDiff(this.repo, `${rev}^`, rev);
     await this.repo.callGit('apply', ...(to_index ? ['--index'] : []), { input: diff });
 }
 

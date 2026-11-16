@@ -64,7 +64,7 @@
 
     import { ReferenceNode } from '@/domain/reference-node';
     import StoreMixin from '@/mixins/StoreMixin';
-    import { getEmptyRootHash, getReferenceAncestorIds, getStatus, handleUntrackedFiles } from '@/utils/git';
+    import { getDiff, getEmptyRootHash, getReferenceAncestorIds, getStatus, handleUntrackedFiles } from '@/utils/git';
 
     import ActionBar from './ActionBar';
     import CommitDetails from './CommitDetails';
@@ -228,7 +228,7 @@
                         const is_untracked = file?.area === 'unstaged' && file.status === 'A';
 
                         return await handleUntrackedFiles(this.repo, is_untracked ? [file.path] : [], async () => {
-                            return await this.repo.callGit('diff', ...diff_args, `--unified=1`, ...file_args);
+                            return await getDiff(this.repo, ...diff_args, ...file_args);
                         });
                     },
                     toggleDiffOrder() {
