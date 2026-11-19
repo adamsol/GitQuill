@@ -220,6 +220,11 @@
                     autoClosingQuotes: 'never',
                     autoSurround: 'never',
                     scrollBeyondLastLine: false,
+                    stickyScroll: {
+                        defaultModel: 'indentationModel',  // The default `outlineModel` doesn't handle Vue files well.
+                        maxLineCount: 20,  // The default is only 5. It's also limited to 1/4 of editor height anyway.
+                        enabled: true,  // Otherwise it doesn't appear immediately after disabling "Collapse unchanged regions".
+                    },
                     renderLineHighlight: 'none',
                     glyphMargin: true,  // https://github.com/microsoft/monaco-editor/issues/4068
                     renderMarginRevertIcon: false,
@@ -256,9 +261,29 @@
             async collapse_unchanged_regions() {
                 // Preserve scroll position, but not manually expanded regions, so that it's easy to reset them.
                 // https://github.com/microsoft/vscode/blob/1.146.0/src/vs/editor/browser/widget/diffEditor/diffEditorWidget.ts#L544
-                const view_state = _.omit(this.diff_editor?.saveViewState(), 'modelState');
+                const view_state = _.omit(this.diff_editor.saveViewState(), 'modelState');
                 await this.$nextTick();
-                this.diff_editor?.restoreViewState(view_state);
+                this.diff_editor.restoreViewState(view_state);
+
+                // In full-file view, scroll up by the amount of current indentation level to accommodate for the sticky-scroll header.
+                if (!this.collapse_unchanged_regions) {
+                    const editor = this.diff_editor.getModifiedEditor();
+                    const line_number = editor.getVisibleRanges()[0]?.startLineNumber;
+
+                    if (line_number !== undefined) {
+                        const model = editor.getModel();
+                        const column = model.getLineFirstNonWhitespaceColumn(line_number);
+
+                        if (column > 0) {
+                            const indent_width = editor.getVisibleColumnFromPosition({ lineNumber: line_number, column }) - 1;
+                            const indent_levels = Math.floor(indent_width / model.getOptions().indentSize);
+                            const line_top = editor.getTopForLineNumber(line_number);
+                            const line_height = editor.getOption(monaco_editor.EditorOption.lineHeight);
+
+                            editor.setScrollTop(line_top - indent_levels * line_height, monaco_editor.ScrollType.Immediate);
+                        }
+                    }
+                }
             },
         },
         async created() {
